@@ -16,10 +16,6 @@
 #include <pthread.h>
 #endif
 
-#ifdef VERBOSE
-#include <stdio.h>
-#endif
-
 #ifdef TEST_ICCCM
 #include <string.h>
 #endif
@@ -28,6 +24,11 @@
 
 #include <X11/XCB/xcb.h>
 #include "reply_formats.h"
+
+#ifdef VERBOSE
+#include <stdio.h>
+#include <X11/XCB/xcbint.h>
+#endif
 
 void try_events(XCBConnection *c);
 void wait_events(XCBConnection *c);
@@ -204,7 +205,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef VERBOSE
-    if(!XCBListIsEmpty(c->reply_data))
+    if(XCBListLength(c->reply_data) > 0)
         printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 
@@ -233,7 +234,7 @@ int show_event(XCBGenericEvent *e)
 void try_events(XCBConnection *c)
 {
     XCBGenericEvent *e;
-    while((e = XCBPollEvent(c)) && show_event(e))
+    while(XCBEventQueueLength(c) > 0 && (e = XCBWaitEvent(c)) && show_event(e))
         /* empty statement */ ;
 }
 

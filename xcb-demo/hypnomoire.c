@@ -75,7 +75,11 @@ void paint(int idx)
 {
 	XCBCopyArea(c, windows[idx].p, windows[idx].w, white, 0, 0, 0, 0,
 		windows[idx].width, windows[idx].height);
-	XCBSync(c, 0);
+	if(!XCBSync(c, 0))
+	{
+		perror("XCBSync failed");
+		abort();
+	}
 }
 
 void *run(void *param)
