@@ -3,6 +3,10 @@
 	* src/c-client.xsl:
 	Add support for an <indent> tag in a function body, which indents
 	the <l>s it contains.
+
+	* debian/.cvsignore:
+	debian/copyright is a generated file, so add it to
+	debian/.cvsignore
 	
 2004-11-08  Jamey Sharp  <jamey@minilop.net>
 
