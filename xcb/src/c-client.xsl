@@ -307,15 +307,16 @@
     <xsl:copy-of select="." />
   </xsl:template>
   
-  <xsl:template match="field" mode="field">
-    <field>
+  <xsl:template match="field|exprfield" mode="field">
+    <xsl:copy>
       <xsl:attribute name="type">
         <xsl:call-template name="canonical-type-name" />
       </xsl:attribute>
       <xsl:attribute name="name">
         <xsl:call-template name="canonical-var-name" />
       </xsl:attribute>
-    </field>
+      <xsl:copy-of select="*" />
+    </xsl:copy>
   </xsl:template>
 
   <xsl:template match="valueparam" mode="field">
@@ -504,27 +505,29 @@
   </xsl:template>
 
   <xsl:template match="enum" mode="pass2">
-    <xsl:text>typedef enum {
+    <xsl:if test="$h">
+      <xsl:text>typedef enum {
     </xsl:text>
-    <xsl:call-template name="list">
-      <xsl:with-param name="separator"><xsl:text>,
+      <xsl:call-template name="list">
+        <xsl:with-param name="separator"><xsl:text>,
     </xsl:text></xsl:with-param>
-      <xsl:with-param name="items">
-        <xsl:for-each select="item">
-          <item>
-            <xsl:value-of select="@name" />
-            <xsl:if test="node()"> <!-- If there is an expression -->
-              <xsl:text> = </xsl:text>
-              <xsl:apply-templates mode="output-expression" />
-            </xsl:if>
-          </item>
-        </xsl:for-each>
-      </xsl:with-param>
-    </xsl:call-template>
-    <xsl:text>
+        <xsl:with-param name="items">
+          <xsl:for-each select="item">
+            <item>
+              <xsl:value-of select="@name" />
+              <xsl:if test="node()"> <!-- If there is an expression -->
+                <xsl:text> = </xsl:text>
+                <xsl:apply-templates mode="output-expression" />
+              </xsl:if>
+            </item>
+          </xsl:for-each>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:text>
 } </xsl:text><xsl:value-of select="@name" /><xsl:text>;
 
 </xsl:text>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="function" mode="pass2">
@@ -565,6 +568,7 @@
     </xsl:text><xsl:value-of select="../@type" /><xsl:text> ret;
     </xsl:text><xsl:value-of select="@ref" /><xsl:text> out;
 </xsl:text>
+
 <xsl:if test="$ext">
 <xsl:text>    const XCBQueryExtensionRep *extension = XCB</xsl:text>
 <xsl:value-of select="$ext" />
@@ -572,27 +576,40 @@
     const CARD8 major_opcode = extension->major_opcode;
     const CARD8 minor_opcode = </xsl:text><xsl:value-of select="@opcode"/>
 <xsl:text>;
-
-    assert(extension &amp;&amp; extension->present);
-
 </xsl:text>
 </xsl:if>
+
 <xsl:if test="not($ext)">
 <xsl:text>    const CARD8 major_opcode = </xsl:text>
 <xsl:value-of select="@opcode" />
 <xsl:text>;
-
 </xsl:text>
 </xsl:if>
 
-<xsl:for-each select="$pass1//struct[@name = current()/@ref]/*">
-  <xsl:choose>
-    <xsl:when test="self::field">
-      <xsl:text>    out.</xsl:text><xsl:value-of select="@name" />
-      <xsl:text> = </xsl:text><xsl:value-of select="@name" /><xsl:text>;
+<xsl:for-each select="$pass1//struct[@name = current()/@ref]/exprfield">
+  <xsl:text>    </xsl:text>
+  <xsl:call-template name="type-and-name" />
+  <xsl:text> = </xsl:text>
+  <xsl:apply-templates mode="output-expression" />
+  <xsl:text>;
 </xsl:text>
-    </xsl:when>
-  </xsl:choose>
+</xsl:for-each>
+
+<xsl:if test="$ext">
+<xsl:text>    assert(extension &amp;&amp; extension->present);
+</xsl:text>
+</xsl:if>
+
+<xsl:text>
+</xsl:text>
+<xsl:for-each select="$pass1//struct[@name = current()/@ref]
+                             /*[self::field|self::exprfield]">
+  <xsl:text>    out.</xsl:text>
+  <xsl:value-of select="@name" />
+  <xsl:text> = </xsl:text>
+  <xsl:value-of select="@name" />
+  <xsl:text>;
+</xsl:text>
 </xsl:for-each>
 
 <xsl:text>
@@ -631,7 +648,7 @@
     <xsl:text>)</xsl:text>
   </xsl:template>
 
-  <xsl:template match="field">
+  <xsl:template match="field|exprfield">
     <xsl:call-template name="type-and-name" />
   </xsl:template>
 
