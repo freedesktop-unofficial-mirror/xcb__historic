@@ -4,7 +4,7 @@
  * 
  * See the file COPYING for licensing information. */
 #include "xclint.h"
-#include <xcb_event.h>
+#include <X11/XCB/xcb_event.h>
 #include <assert.h>
 #include <unistd.h>
 

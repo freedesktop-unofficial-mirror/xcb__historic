@@ -4,7 +4,7 @@
  * 
  * See the file COPYING for licensing information. */
 #include "xclint.h"
-#include <xcb_event.h>
+#include <X11/XCB/xcb_event.h>
 
 /* Read in pending events if needed and return the number of queued events. */
 int XEventsQueued(register Display *dpy, int mode)

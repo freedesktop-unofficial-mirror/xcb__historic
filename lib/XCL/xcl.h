@@ -5,7 +5,7 @@
 #ifndef XCL_H
 #define XCL_H
 
-#include <xcb.h>
+#include <X11/XCB/xcb.h>
 #include <X11/Xlib.h>
 
 #define XCBConnectionOfDisplay(dpy) (*(((XCBConnection **)(dpy)) - 1))
