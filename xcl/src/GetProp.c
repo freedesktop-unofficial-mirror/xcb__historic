@@ -20,6 +20,7 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
 
     *prop = (unsigned char *) NULL;
     if (r->type.xid != None) {
+	long bytes;
 	/* Check that the server returned a valid format. If it didn't,
 	 * throw a BadImplementation error in the library. */
 	switch (r->format) {
@@ -43,13 +44,14 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
 	 * returning string properties, so the client doesn't then have to 
 	 * recopy the string to make it null terminated. On the other hand,
 	 * it's a really stupid idea. */
-	*prop = Xmalloc (r->bytes_after + 1);
+	bytes = r->value_len * 8 / r->format;
+	*prop = Xmalloc (bytes + 1);
 	if (!*prop)
 	    goto error;
 	/* FIXME: Xlib has a different behavior than this for systems where a
 	 * short isn't 16 bits or where a long isn't 32 bits. */
-	memcpy (*prop, XCBGetPropertyvalue(r), r->bytes_after);
-	(*prop)[r->bytes_after] = '\0';
+	memcpy (*prop, XCBGetPropertyvalue(r), bytes);
+	(*prop)[bytes] = '\0';
     }
 
     *actual_type = r->type.xid;
