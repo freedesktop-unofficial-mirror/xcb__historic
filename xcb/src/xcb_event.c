@@ -47,7 +47,6 @@ XCBGenericEvent *XCBEventQueueFind(struct XCBConnection *c, int (*cmp)(const XCB
 
 void XCBEventQueueClear(struct XCBConnection *c)
 {
-    void *tmp;
     pthread_mutex_lock(&c->locked);
     XCBListClear(c->event_data, free);
     pthread_mutex_unlock(&c->locked);
