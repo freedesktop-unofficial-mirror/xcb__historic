@@ -57,7 +57,7 @@ AC_HELP_STRING([--with-opt=debug], [compile for debugging (default)]),
 ])
 AC_CACHE_CHECK([what compiler optimizations to apply], [optflags], [optflags="-g"])
 AC_DEFINE(_XOPEN_SOURCE, 500, [Conform to Single Unix Specification.])
-CDEBUGFLAGS="$optflags -Wall -std=c99 -pedantic -Wpointer-arith \
+CDEBUGFLAGS="$optflags -Wall -pedantic -Wpointer-arith \
 	-Wstrict-prototypes -Wmissing-declarations -Wnested-externs"
 AC_SUBST(CDEBUGFLAGS)
 
