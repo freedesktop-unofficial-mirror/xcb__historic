@@ -12,6 +12,14 @@ CARD32 XCBGenerateID(XCBConnection *c)
 {
     CARD32 ret;
     pthread_mutex_lock(&c->xid.lock);
+    if(c->xid.last == c->xid.mask)
+    {
+	    XCBXCMiscGetXIDRangeRep *range;
+	    range = XCBXCMiscGetXIDRangeReply(c, XCBXCMiscGetXIDRange(c), 0);
+	    c->xid.last = range->start_id;
+	    c->xid.max = range->start_id + (range->count - 1) * c->xid.inc;
+	    free(range);
+    }
     ret = c->xid.last | c->xid.base;
     c->xid.last += c->xid.inc;
     pthread_mutex_unlock(&c->xid.lock);
@@ -26,6 +34,7 @@ int _xcb_xid_init(XCBConnection *c)
         return 0;
     c->xid.last = 0;
     c->xid.base = c->setup->resource_id_base;
+    c->xid.max = c->setup->resource_id_mask;
     c->xid.inc = c->setup->resource_id_mask & -(c->setup->resource_id_mask);
     return 1;
 }

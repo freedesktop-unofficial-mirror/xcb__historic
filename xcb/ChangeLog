@@ -1,5 +1,13 @@
 2004-07-06  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcbint.h:
+	* src/xcb_xid.c:
+	Added support for the XC-Misc extension's ability
+	to request more XIDs from the server when the
+	client runs out of them.
+
+2004-07-06  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb.h.m4:
 	* src/xcb_auth.c:
 	* src/xcb_util.c:

@@ -101,6 +101,7 @@ typedef struct _xcb_xid {
     pthread_mutex_t lock;
     CARD32 last;
     CARD32 base;
+    CARD32 max;
     CARD32 inc;
 } _xcb_xid;
 
