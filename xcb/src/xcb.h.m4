@@ -93,6 +93,7 @@ typedef struct XCBConnection {
     unsigned int seqnum_written;
     unsigned int seqnum_read;
     CARD32 last_xid;
+    CARD32 maximum_request_length;
 
     XCBUnexpectedReplyFunc unexpected_reply_handler;
     void *unexpected_reply_data;
@@ -102,6 +103,7 @@ typedef struct XCBConnection {
 
 int XCBOnes(unsigned long mask);
 CARD32 XCBGenerateID(XCBConnection *c);
+CARD32 XCBMaximumRequestLength(XCBConnection *c);
 void XCBAddReplyData(XCBConnection *c, int seqnum);
 void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
 unsigned int XCBGetLastSeqnumRead(XCBConnection *c);

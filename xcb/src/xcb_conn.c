@@ -13,6 +13,7 @@
 
 #include "xcb.h"
 #include "xcbint.h"
+#include "extensions/bigreq.h"
 
 #undef USENONBLOCKING
 
@@ -44,6 +45,12 @@ CARD32 XCBGenerateID(XCBConnection *c)
     c->last_xid += c->setup->resource_id_mask & -(c->setup->resource_id_mask);
     pthread_mutex_unlock(&c->locked);
     return ret;
+}
+
+CARD32 XCBMaximumRequestLength(XCBConnection *c)
+{
+    /* doesn't need locking because it's never written to. */
+    return c->maximum_request_length;
 }
 
 void XCBAddReplyData(XCBConnection *c, int seqnum)
@@ -332,8 +339,22 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
         /*NOTREACHED*/
     }
 
+    c->maximum_request_length = c->setup->maximum_request_length;
+
     XCBIOSetReader(c->handle, XCBReadPacket, c);
     pthread_mutex_unlock(&c->locked);
+
+    {
+        const XCBQueryExtensionRep *ext = XCBBigRequestsInit(c);
+        if(!ext)
+            goto error;
+        if(ext->present)
+        {
+            XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
+            c->maximum_request_length = r->maximum_request_length;
+        }
+    }
+
     return c;
 
 error:

@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libXCB.la
 M4FLAGS = $(XCBPROTO_CFLAGS)
 
 EXTENSIONS = \
+		extensions/bigreq.c extensions/bigreq.h \
 		extensions/shm.c extensions/shm.h \
 		extensions/shape.c extensions/shape.h \
 		extensions/render.c extensions/render.h \
@@ -11,6 +12,7 @@ EXTENSIONS = \
 COREPROTO = xcb.h xproto.c xcb_types.c
 
 xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb \
+		extensions/bigreq.h \
 		extensions/shm.h extensions/shape.h \
 		extensions/render.h extensions/dpms.h
 
