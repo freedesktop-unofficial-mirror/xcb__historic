@@ -49,13 +49,7 @@
 
   <xsl:template match="extension" mode="pass1">
     <extension xname="{@xname}" name="{@name}">
-      <declaration><!--
-        -->extern const char XCB<xsl:value-of select="@name" />Id[];<!--
-      --></declaration>
-      <variable><!--
-        -->const char XCB<xsl:value-of select="@name" />Id[] = <!--
-        -->"<xsl:value-of select="@xname" />";<!--
-      --></variable>
+      <constant type="string" name="XCB{@name}Id" value="{@xname}" />
       <function type="const XCBQueryExtensionRep *" name="XCB{@name}Init">
         <field type="XCBConnection *" name="c" />
         <l>return XCBQueryExtensionCached(c, XCB<!--
@@ -163,8 +157,8 @@
         <xsl:call-template name="cookie-type" />
       </xsl:attribute>
       <field type="XCBConnection *" name="c" />
-      <xsl:for-each select="field|list|localparam|valueparam">
-        <xsl:if test="self::field|self::localparam">
+      <xsl:for-each select="field|list|localfield|valueparam">
+        <xsl:if test="self::field|self::localfield">
           <field>
             <xsl:attribute name="type">
               <xsl:call-template name="canonical-type-name" />
@@ -177,6 +171,7 @@
         <xsl:if test="self::list">
           <field>
             <xsl:attribute name="type">
+              <xsl:text>const </xsl:text>
               <xsl:call-template name="canonical-type-name" />
               <xsl:text> *</xsl:text>
             </xsl:attribute>
@@ -304,6 +299,21 @@
     <xsl:call-template name="make-iterator" />
   </xsl:template>
 
+  <xsl:template match="typedef" mode="pass1">
+    <typedef>
+      <xsl:attribute name="oldname">
+        <xsl:call-template name="canonical-type-name">
+          <xsl:with-param name="type" select="@oldname" />
+        </xsl:call-template>
+      </xsl:attribute>
+      <xsl:attribute name="newname">
+        <xsl:call-template name="canonical-type-name">
+          <xsl:with-param name="type" select="@newname" />
+        </xsl:call-template>
+      </xsl:attribute>
+    </typedef>
+  </xsl:template>
+
   <xsl:template match="/">
     <!-- Second pass: Process the variable. -->
     <xsl:apply-templates select="$pass1/*" mode="pass2" />
@@ -334,13 +344,7 @@
 
 </xsl:text></xsl:if>
 
-    <xsl:if test="$c">
-      <xsl:apply-templates mode="pass2" select="//variable" />
-    </xsl:if>
-    <xsl:if test="$h">
-      <xsl:apply-templates mode="pass2" select="//declaration" />
-      <xsl:apply-templates mode="pass2" select="//struct" />
-    </xsl:if>
+    <xsl:apply-templates mode="pass2" select="//constant|//struct|//typedef" />
     <xsl:apply-templates mode="pass2" select="//function" />
 
 <xsl:if test="$h">
@@ -350,44 +354,75 @@
 </xsl:if>
   </xsl:template>
 
-  <xsl:template match="declaration" mode="pass2">
-    <xsl:value-of select="." /><xsl:text>
+  <xsl:template match="constant" mode="pass2">
+    <xsl:if test="(@type = 'number') and $h">
+      <xsl:text>#define </xsl:text>
+      <xsl:value-of select="@name" />
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="@value" />
+      <xsl:text>
 
 </xsl:text>
+    </xsl:if>
+    <xsl:if test="@type = 'string'">
+      <xsl:if test="$h">
+        <xsl:text>extern </xsl:text>
+      </xsl:if>
+      <xsl:text>const char </xsl:text>
+      <xsl:value-of select="@name" />
+      <xsl:text>[]</xsl:text>
+      <xsl:if test="$c">
+        <xsl:text> = "</xsl:text>
+        <xsl:value-of select="@value" />
+        <xsl:text>"</xsl:text>
+      </xsl:if>
+      <xsl:text>;
+
+</xsl:text>
+    </xsl:if>
   </xsl:template>
 
-  <xsl:template match="variable" mode="pass2">
-    <xsl:value-of select="." /><xsl:text>
+  <xsl:template match="typedef" mode="pass2">
+    <xsl:if test="$h">
+      <xsl:text>typedef </xsl:text>
+      <xsl:value-of select="@oldname" />
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="@newname" />
+      <xsl:text>;
 
 </xsl:text>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="struct" mode="pass2">
-    <xsl:variable name="fields">
-      <!-- FIXME: This should go by size, not number of fields. -->
-      <xsl:copy-of select="node()[not(self::middle) and position() &lt; 3]" />
-      <xsl:if test="middle and (count(*[not(self::middle)]) &lt; 2)">
-        <pad bytes="{2 - count(*[not(self::middle)])}" />
-      </xsl:if>
-      <xsl:copy-of select="middle/*" />
-      <xsl:copy-of select="*[not(self::middle) and (position() > 2)]" />
-    </xsl:variable>
+    <xsl:if test="$h">
+      <xsl:variable name="fields">
+        <!-- FIXME: This should go by size, not number of fields. -->
+        <xsl:copy-of select="node()[not(self::middle)
+                                    and position() &lt; 3]" />
+        <xsl:if test="middle and (count(*[not(self::middle)]) &lt; 2)">
+          <pad bytes="{2 - count(*[not(self::middle)])}" />
+        </xsl:if>
+        <xsl:copy-of select="middle/*" />
+        <xsl:copy-of select="node()[not(self::middle) and (position() > 2)]" />
+      </xsl:variable>
 
-    <xsl:text>typedef </xsl:text>
-    <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
-    <xsl:text> {
+      <xsl:text>typedef </xsl:text>
+      <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
+      <xsl:text> {
 </xsl:text>
-    <xsl:for-each select="e:node-set($fields)/*">
-      <xsl:text>    </xsl:text>
-      <xsl:apply-templates select="." />
+      <xsl:for-each select="e:node-set($fields)/*">
+        <xsl:text>    </xsl:text>
+        <xsl:apply-templates select="." />
+        <xsl:text>;
+</xsl:text>
+      </xsl:for-each>
+      <xsl:text>} </xsl:text>
+      <xsl:value-of select="@name" />
       <xsl:text>;
-</xsl:text>
-    </xsl:for-each>
-    <xsl:text>} </xsl:text>
-    <xsl:value-of select="@name" />
-    <xsl:text>;
 
 </xsl:text>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="function" mode="pass2">
