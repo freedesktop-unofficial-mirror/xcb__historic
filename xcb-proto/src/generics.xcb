@@ -41,11 +41,27 @@ define(`UNINDENT', `popdef(`TAB')')
 
 dnl Transliterates lowercase characters to uppercase.
 dnl TOUPPER(string)
-define(`TOUPPER', `translit($1, `a-z', `A-Z')')
+define(`TOUPPER', `translit(`$1', `a-z', `A-Z')')
+
+dnl Transliterates the first character of the string to uppercase.
+dnl UCFIRST(string)
+define(`UCFIRST', `TOUPPER(substr(`$1', 0, 1))`'substr(`$1', 1)')
+
+dnl Split a string into a list of strings, at each point that the given
+dnl substring appears.
+dnl SPLIT(substring, string)
+define(`SPLIT', `pushdef(`IDX', index(`$2', `$1'))dnl
+ifelse(IDX, -1, `$2', `substr(`$2', 0, IDX),`'SPLIT(`$1', substr(`$2', eval(IDX+len(`$1'))))')`'dnl
+popdef(`IDX')')
 
 dnl Join a list of strings with a given string as separator.
 dnl JOIN(sep, string, ...)
-define(`JOIN', `ifelse(`$3', , `$2', `$2'`$1'`JOIN(`$1', shift(shift($@)))')')
+define(`JOIN', `$2`'ifelse(`$3', , , `$1'`JOIN(`$1', shift(shift($@)))')')
+
+dnl Applies the macro to each following string and returns the
+dnl transformed list.
+dnl MAP(macro, string, ...)
+define(`MAP', `ifelse(`$2', , , `$1(`$2'),MAP(`$1', shift(shift($@)))')')
 
 
 dnl Provide a warning if a macro is called in the wrong context.
@@ -82,6 +98,8 @@ UNIMPLEMENTED(`EVENT')
 UNIMPLEMENTED(`EVENTCOPY')
 UNIMPLEMENTED(`ERROR')
 UNIMPLEMENTED(`ERRORCOPY')
+UNIMPLEMENTED(`STRUCT')
+UNIMPLEMENTED(`UNION')
 
 UNIMPLEMENTED(`PAD')
 UNIMPLEMENTED(`FIELD')
