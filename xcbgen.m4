@@ -6,6 +6,9 @@ divert(-1)
 
 dnl --- General definitions ---------------------------------------------------
 
+define(`pushdiv', `pushdef(`_divnum',divnum)divert($1)')
+define(`popdiv', `divert(_divnum)popdef(`_divnum')')
+
 define(`TAB', `')
 define(`INDENT', `pushdef(`TAB', `    'TAB)')
 define(`UNINDENT', `popdef(`TAB')')
@@ -21,6 +24,7 @@ define(`_parmdiv',1)
 define(`_outdiv',2)
 define(`_vardiv',3)
 define(`_sizediv',4)
+define(`_datadiv',5)
 
 define(`_index',0)
 define(`_SIZE',0)
@@ -49,22 +53,39 @@ define(_SIZEOF($1),`$2')dnl
 define(_PACK($1),`$3')dnl
 define(_UNPACK($1),`$4')dnl')
 
-BASETYPE(unsigned char,1,`dnl
+BASETYPE(char,1,`dnl
 TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
 TAB()`$1' = buf[INDEX];')
-BASETYPE(unsigned short,2,`dnl
+BASETYPE(short,2,`dnl
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 8);
 TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
 TAB()`$1' = (buf[INDEX] << 8) | buf[INDEX];')
-BASETYPE(unsigned int,4,`dnl
+BASETYPE(int,4,`dnl
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 24);
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 16);
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 8);
 TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
 TAB()`$1' = (buf[INDEX] << 24) | (buf[INDEX] << 16) | (buf[INDEX] << 8) | buf[INDEX];')
-TYPE(unsigned char,signed char)
-TYPE(unsigned short,signed short)
-TYPE(unsigned int,signed int)
+TYPE(char,unsigned char)
+TYPE(short,unsigned short)
+TYPE(int,unsigned int)
+TYPE(char,signed char)
+TYPE(short,signed short)
+TYPE(int,signed int)
+
+define(`ENUMVALUE', `pushdiv(_outdiv)dnl
+    _ENUMNAME`'_`'$1,
+popdiv()')
+
+define(`ENUMTYPE', `pushdiv(-1)
+pushdef(`_ENUMNAME', $2)
+TYPE($1, $2)
+$3
+popdef(`_ENUMNAME')
+popdiv()dnl
+_TYPE(`enum {
+undivert(_outdiv)dnl
+}', `$2')')
 
 define(`COOKIETYPE', `pushdef(`_BASESTRUCT',1)dnl
 STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')`'dnl
@@ -75,49 +96,58 @@ dnl --- Request/Response macros -----------------------------------------------
 define(`VALUE', `STRUCT($1, `FIELD(XP_CARD32, `mask')')')
 define(`VALUECODE', `dnl')
 
-define(`BITMASKPARAM', `pushdef(`_divnum',divnum)dnl
+define(`BITMASKPARAM', `pushdiv(_sizediv)dnl
 define(`_VARSIZE',1)dnl
-divert(_sizediv)dnl
-    {
-        $1 mask = $2.mask;
-        for(; mask; mask >>= 1)
-            if(mask & 1)
-                varsize += 4;
-    }
+    varsize += 4 * XCB_Ones($2.mask);
 divert(_outdiv)dnl
 PACK($1, `$2'.mask)
-divert(_divnum)popdef(`_divnum')')
+popdiv()')
 
-define(`LISTPARAM', `pushdef(`_divnum',divnum)dnl
+define(`LISTPARAM', `pushdiv(_sizediv)dnl
 define(`_VARSIZE',1)dnl
-divert(_sizediv)dnl
-    varsize += (`$3') + XP_PAD((`$3') * sizeof($1));
+    varsize += (`$3') * SIZEOF($1)dnl
+ifelse(eval(SIZEOF($1)%4),0,, ` + XP_PAD((`$3') * SIZEOF($1))');
 divert(_outdiv)dnl
-    memcpy(buf + _index, $2, (`$3') * sizeof($1));
+ifelse(SIZEOF($1),1,`dnl
+    memcpy(buf + _index, $2, (`$3') * SIZEOF($1));
+',`dnl
+TAB()INDENT(){
+TAB()int i;
+TAB()unsigned char *tmp = buf;
+TAB()buf += _index;
+TAB()for(i = 0; i < `$3'; ++i)
+TAB()INDENT(){
+pushdef(`_index', 0)dnl
+PACK($1, `$2'[i])
+TAB()buf += _index;
+popdef(`_index')dnl
+UNINDENT()TAB()}
+TAB()buf = tmp;
+UNINDENT()TAB()}
+')dnl
 divert(_parmdiv), $1 *$2`'dnl
-divert(_divnum)popdef(`_divnum')')
+popdiv()')
 
-define(`VALUEPARAM', `pushdef(`_divnum',divnum)dnl
-divert(_outdiv)`'dnl
+define(`VALUEPARAM', `pushdiv(_outdiv)dnl
     /* pack in values from `$1' here */
 divert(_parmdiv), $1 $2`'dnl
-divert(_divnum)popdef(`_divnum')')
+popdiv()')
 
-define(`STRLENPARAM', `pushdef(`_divnum',divnum)dnl
-divert(_vardiv)dnl
+define(`STRLENPARAM', `pushdiv(_vardiv)dnl
     $1 `$3';
 divert(_sizediv)dnl
     `$3' = strlen(`$2');
-divert(_outdiv)`'PACK($1, `$3')
-divert(_divnum)popdef(`_divnum')')
+divert(_outdiv)dnl
+PACK($1, `$3')
+popdiv()')
 
-define(`PARAM', `pushdef(`_divnum',divnum)dnl
-divert(_outdiv)`'PACK($1,`$2')
+define(`PARAM', `pushdiv(_outdiv)dnl
+PACK($1,`$2')
 divert(_parmdiv), $1 `$2'`'dnl
-divert(_divnum)popdef(`_divnum')')
+popdiv()')
 
-dnl return type, name, opcode, data, and a collection of parameters.
-define(`REQUEST',`divert(-1)
+dnl return type, name, opcode, data, 0+ PARAMs, opt SAVEPARAMs
+define(`REQUEST',`pushdiv(-1)
 INDENT()
 define(`_index',0) divert(_outdiv)PACK(XP_CARD8,$3)
 divert(-1) ifelse($4,unused,,`PARAM(`XP_CARD8',`$4')')
@@ -125,7 +155,7 @@ define(`_index',4) define(`_SIZE',4) $5 define(`_THISSIZE', _SIZE)
 define(`_index',2)
 divert(_outdiv)PACK(XP_CARD16,dnl
 ifelse(_VARSIZE,1,(eval(_THISSIZE/4) + varsize / 4),eval(_THISSIZE/4)))
-UNINDENT()divert(0)dnl
+UNINDENT()popdiv()dnl
 FUNCTION(`', `XCB_'$1`_cookie XP_'$2, `XCB_Connection *c`'undivert(_parmdiv)', `
     XCB_`'$1`'_cookie ret;
 ifelse($1,void,`dnl',`    XCB_Reply_Data *reply_data;')
@@ -140,12 +170,13 @@ undivert(_outdiv)dnl
 
     XCB_Connection_Lock(c);
     ret.seqnum = XCB_Write(c, buf, ifelse(_VARSIZE,1,_THISSIZE + varsize,_THISSIZE));
-ifelse($1,void,,`dnl
+ifelse($1,void,,`
 ALLOC(XCB_Reply_Data, reply_data, 1)
+    reply_data->pending = 0;
     reply_data->received = 0;
     reply_data->reply_handler = XP_`'$1`'_Reply_Handler;
     reply_data->seqnum = ret.seqnum;
-    reply_data->data = 0; /* FIXME: no really, I mean it! */
+    reply_data->data = 0;
     XCB_Add_Reply_Data(c, reply_data);
 ')dnl
     XCB_Connection_Unlock(c);
@@ -154,46 +185,92 @@ ALLOC(XCB_Reply_Data, reply_data, 1)
     return ret;
 ')define(`_VARSIZE',0)')
 
-define(`REPLY', `COOKIETYPE($1)
+define(`REPLY', `dnl
+COOKIETYPE($1)
 _H
+STRUCT(XP_`'$1`'_Reply, `
+PAD(1) dnl == 1, meaning reply
+ifelse($2,unused,`PAD(1)',`FIELD(XP_CARD8, `$2')')
+PAD(6) dnl == seqnum followed by reply length
+$3
+')
+_H
+/* It is the caller''`s responsibility to free the returned
+ * XP_'$1`_Reply object. */
+FUNCTION(`', `XP_'$1`_Reply *XP_'$1`_Get_Reply', dnl
+`XCB_Connection *c, XCB_'$1`_cookie cookie', `
+    return (XP_'$1`_Reply *) XCB_Wait_Seqnum(c, cookie.seqnum);
+')
+_C
 FUNCTION(`', `int XP_'$1`_Reply_Handler', dnl
 `XCB_Connection *c, XCB_Reply_Data *r, unsigned char *buf', `
+    XP_`'$1`'_Reply *data;
+ALLOC(XP_`'$1`'_Reply, data, 1)
+UNPACK(XP_`'$1`'_Reply, data)
+    r->data = (void *) data;
+    r->received = 1;
     return 1;
 ')')
 
 dnl --- Structure macros ------------------------------------------------------
 
-define(`FIELD', `divert(1)dnl
+define(`FIELD', `pushdiv(1)dnl
     $1 $2;
 divert(-1)
 ifelse(_BASESTRUCT,1,,`
-    define(`_UNPACKSTRUCT', defn(`_UNPACKSTRUCT')UNPACK($1,$`'1.$2)
-)
-')
-')
+    define(`_UNPACKSTRUCT', defn(`_UNPACKSTRUCT')UNPACK($1,$`'1->$2)
+)')
+popdiv()dnl')
 
-define(`ARRAYFIELD', `divert(1)dnl
+define(`ARRAYFIELD', `pushdiv(1)dnl
     $1 $2[$3];
 divert(-1)
 ifelse(_BASESTRUCT,1,,`define(`_SIZE', eval(SIZEOF($1)*$3+_SIZE))')
-')
+popdiv()dnl')
 
-define(`POINTERFIELD', `divert(1)dnl
+define(`POINTERFIELD', `pushdiv(1)dnl
+    $1 *$2;
+popdiv()dnl')
+
+dnl FIXME: can not nest lists of structs containing lists.
+dnl FIXME: can not have more than one list in a struct
+define(`LISTFIELD', `pushdiv(1)dnl
     $1 *$2;
 divert(-1)
-')
+ifelse(_BASESTRUCT,1,,`
+define(`_UNPACKSTRUCT', defn(`_UNPACKSTRUCT')`dnl
+TAB()INDENT(){
+TAB()int i;
+TAB()$1 *tmp_`'$2;
+TAB()'$`'1` = ('_STRUCTTYPE` *) realloc('$`'1`, sizeof('_STRUCTTYPE`) + sizeof($1) * '$`'1`->$3);
+TAB()assert('$`'1`);
 
-define(`LISTFIELD', defn(`POINTERFIELD'))
+TAB()tmp_`'$2 = ($1 *) ((('_STRUCTTYPE` *) '$`'1`) + 1);
+TAB()'$`'1`->$2 = tmp_`'$2;
 
-define(`STRUCT', `divert(-1)
+TAB()buf += SIZEOF('_STRUCTTYPE`);
+TAB()for(i = 0; i < ('$`'1`->$3); ++i)
+TAB()INDENT(){
+pushdef(`_index', 0)dnl
+UNPACK($1, tmp_`'$2[i])
+TAB()buf += _index + XP_PAD(_index);
+popdef(`_index')dnl
+UNINDENT()TAB()}
+UNINDENT()TAB()}
+')')
+popdiv()dnl')
+
+define(`STRUCT', `pushdiv(-1)
 define(`_index',0) define(`_SIZE',0)
-define(`_UNPACKSTRUCT',`')
+pushdef(`_UNPACKSTRUCT',`')
+pushdef(`_STRUCTTYPE', $1)
 pushdef(`TAB', ``TAB()'') dnl delay evaluation of tabs
 $2
 popdef(`TAB')
-define(_UNPACK($1),defn(`_UNPACKSTRUCT')`dnl') undefine(`_UNPACKSTRUCT')
+popdef(`_STRUCTTYPE')
+define(_UNPACK($1),defn(`_UNPACKSTRUCT')`dnl') popdef(`_UNPACKSTRUCT')
 define(_SIZEOF($1), _SIZE)
-divert(0)_STRUCT($1, `undivert(1)')')
+popdiv()_STRUCT($1, `undivert(1)')')
 
 m4wrap(`divert(-1)undivert')
 

@@ -75,7 +75,7 @@ _H`'typedef int (*XCB_Reply_Handler)(struct XCB_Connection *,
 _H`'    struct XCB_Reply_Data *, unsigned char *);
 _H
 STRUCT(XCB_Reply_Data, `
-FIELD(pthread_mutex_t, `pending')
+FIELD(int, `pending')
 FIELD(int, `received')
 FIELD(XCB_Reply_Handler, `reply_handler')
 FIELD(int, `seqnum')
@@ -114,9 +114,25 @@ POINTERFIELD(XCB_Reply_Data, `reply_data_head')
 POINTERFIELD(XCB_Reply_Data, `reply_data_tail')
 dnl FIELD(XCB_Atom_Dictionary, `atoms')
 FIELD(XCB_Display_Info, `disp_info')
+FIELD(XP_CARD32, `last_xid')
 ')
 define(`_BASESTRUCT',0)dnl
 _H
+FUNCTION(`', `int XCB_Ones', `unsigned long mask', `
+    register unsigned long y;
+    y = (mask >> 1) & 033333333333;
+    y = mask - y - ((y >> 1) & 033333333333);
+    return ((y + (y >> 3)) & 030707070707) % 077;
+')
+_C
+FUNCTION(`', `XP_CARD32 XCB_Generate_ID', `XCB_Connection *c', `
+    XP_CARD32 ret;
+    XCB_Connection_Lock(c);
+    ret = (c->last_xid += c->disp_info.resource_id_mask & -(c->disp_info.resource_id_mask)) | c->disp_info.resource_id_base;
+    XCB_Connection_Unlock(c);
+    return ret;
+')
+
 FUNCTION(`', `int XCB_Connection_Lock', `XCB_Connection *c', `
     return pthread_mutex_lock(&c->locked);
 ')
@@ -217,6 +233,7 @@ FUNCTION(`', `int XCB_Remove_Reply_Data', dnl
     return 1;
 ')
 
+/* PRE: c is unlocked */
 FUNCTION(`', `int XCB_Wait_Once', `XCB_Connection *c', `
     unsigned char *buf;
     int seqnum;
@@ -225,10 +242,15 @@ FUNCTION(`', `int XCB_Wait_Once', `XCB_Connection *c', `
 
 ALLOC(unsigned char, buf, 32)
 
+    XCB_Connection_Lock(c);
+
     XCB_Read(c, buf, 32);
     switch(buf[0])
     {INDENT()
     case 0: /* error */
+define(`_index', 2)dnl
+UNPACK(XP_CARD16, `seqnum')
+        printf("Got error %d for request %d - ignoring\n", buf[1], seqnum);
         break;
     case 1: /* reply */
 define(`_index', 2)dnl
@@ -249,13 +271,87 @@ REALLOC(unsigned char, buf, 32 + length * 4)
         cur->reply_handler(c, cur, buf);
         break;
     default: /* event */
+        printf("Got event %d - ignoring\n", buf[0]);
     }UNINDENT()
+
+    XCB_Connection_Unlock(c);
     return 1;
 ')
 
+/* PRE: c is unlocked */
+FUNCTION(`', `void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum', `
+    void *ret = 0;
+    XCB_Reply_Data *cur, *prev;
+
+    XCB_Connection_Lock(c);
+    XCB_Flush(c);
+    XCB_Find_Reply_Data(c, seqnum, &cur, &prev);
+    if(!cur) /* nothing found to hand back */
+        goto done;
+
+    if(cur->pending) /* someone else is already waiting */
+        goto done;
+    ++cur->pending;
+
+    while(!cur->received) /* wait for the reply to arrive */
+    {
+        XCB_Connection_Unlock(c);
+        XCB_Wait_Once(c);
+        XCB_Connection_Lock(c);
+    }
+
+    ret = cur->data;
+    XCB_Remove_Reply_Data(c, cur, prev);
+    free(cur);
+
+done:
+    XCB_Connection_Unlock(c);
+    return ret;
+')
+
 FUNCTION(`', `int XCB_Open', `const char *display', `
-    /* TODO: write this */
-    return -1;
+    int fd = -1;
+    char *buf, *colon, *screen;
+
+    if(!display)
+    {
+        printf("Error: display not set\n");
+        return -1;
+    }
+
+ALLOC(char, buf, strlen(display) + 1)
+    strcpy(buf, display);
+
+    colon = strchr(buf, '':'`);
+    *colon = ''\0'`;
+    ++colon;
+
+    screen = strchr(colon, ''.'`);
+    if(screen)
+    {
+        *screen = ''\0'`;
+        ++screen;
+        printf("You asked for screen %s. I''`m ignoring you.\n", screen);
+    }
+
+    if(*buf)
+    {
+        /* display specifies TCP */
+        unsigned short port = 6000 + atoi(colon);
+        printf("Attempting to open \"%s:%d\"...\n", buf, port);
+        fd = XCB_Open_TCP(buf, port);
+    }
+    else
+    {
+        /* display specifies Unix socket */
+        char file[] = "/tmp/.X11-unix/X\0\0";
+        strcat(file, colon);
+        printf("Attempting to open \"%s\"...\n", file);
+        fd = XCB_Open_Unix(file);
+    }
+
+    free(buf);
+    return fd;
 ')
 _C
 FUNCTION(`', `int XCB_Open_TCP', `const char *host, unsigned short port', `
@@ -287,7 +383,8 @@ FUNCTION(`', `int XCB_Open_Unix', `const char *file', `
 _C
 pushdef(`_outdiv',0)dnl
 FUNCTION(`', `XCB_Connection *XCB_Connect', `int fd', `
-dnl using calloc to make gdb use slightly less painful
+dnl Using calloc to make gdb use slightly less painful.
+dnl Should probably switch to malloc when things work better.
     XCB_Connection* c = (XCB_Connection*) calloc(1, sizeof(XCB_Connection));
     int i, j, k, vendor_length, additional_data_length;
     unsigned char *tmp, *buf;
@@ -298,9 +395,10 @@ dnl using calloc to make gdb use slightly less painful
     c->n_outqueue = 0;
     c->reply_data_head = 0;
     c->reply_data_tail = 0;
+    c->last_xid = 0;
 
     /* Write the connection setup request. */
-pushdef(`_divnum',divnum)divert(1)define(`_index',0)define(`_SIZE',0)dnl
+pushdiv(1)define(`_index',0)define(`_SIZE',0)dnl
     /* B = 0x42 = MSB first, l = 0x6c = LSB first */
 PACK(XP_CARD8,0x42)
 PAD(1)dnl
@@ -315,7 +413,7 @@ dnl    LISTFIELD(XP_CARD8,authorization_protocol_name,dnl
 dnl       XP_PAD(authorization_protocol_name_length))
 dnl    LISTFIELD(XP_CARD8,authorization_protocol_data,dnl
 dnl       XP_PAD(authorization_protocol_data_length))
-divert(_divnum)popdef(`_divnum')dnl
+popdiv()dnl
 ALLOC(unsigned char, buf, _SIZE)
 undivert(1)dnl
     write(c->fd, buf, _SIZE);
@@ -330,13 +428,14 @@ undivert(1)dnl
         return 0; /* aw, screw you. */
     }
 
-pushdef(`_divnum',divnum)divert(1)define(`_index',0)define(`_SIZE',0)dnl
+pushdiv(1)define(`_index',0)define(`_SIZE',0)dnl
 PAD(1)dnl
 UNPACK(XP_CARD16, `c->disp_info.protocol_major_version')
 UNPACK(XP_CARD16, `c->disp_info.protocol_minor_version')
 UNPACK(XP_CARD16, `additional_data_length')
-divert(_divnum)popdef(`_divnum')dnl
+popdiv()dnl
 dnl assume this _SIZE is smaller than previous _SIZE to avoid a realloc
+dnl currently this is 7 bytes and the other is 12, so it is OK.
     read(c->fd, buf, _SIZE);
 undivert(1)dnl
 
@@ -371,26 +470,26 @@ ALLOC(char, c->disp_info.vendor, vendor_length + 1)
 ALLOC(XP_FORMAT, c->disp_info.pixmap_formats, c->disp_info.pixmap_formats_length)
     for(i = 0; i < c->disp_info.pixmap_formats_length; ++i)
     {INDENT()
-UNPACK(XP_FORMAT, `c->disp_info.pixmap_formats[i]')
+UNPACK(XP_FORMAT, `(c->disp_info.pixmap_formats + i)')
         buf += SIZEOF(XP_FORMAT);
     }UNINDENT()
 
 ALLOC(XP_SCREEN, c->disp_info.roots, c->disp_info.roots_length)
     for(i = 0; i < c->disp_info.roots_length; ++i)
     {INDENT()
-UNPACK(XP_SCREEN, `c->disp_info.roots[i]')
+UNPACK(XP_SCREEN, `(c->disp_info.roots + i)')
         buf += SIZEOF(XP_SCREEN);
 
 ALLOC(XP_DEPTH, c->disp_info.roots[i].allowed_depths, c->disp_info.roots[i].allowed_depths_length)
         for(j = 0; j < c->disp_info.roots[i].allowed_depths_length; ++j)
         {INDENT()
-UNPACK(XP_DEPTH, `c->disp_info.roots[i].allowed_depths[j]')
+UNPACK(XP_DEPTH, `(c->disp_info.roots[i].allowed_depths + j)')
             buf += SIZEOF(XP_DEPTH);
 
 ALLOC(XP_VISUALTYPE, c->disp_info.roots[i].allowed_depths[j].visuals, c->disp_info.roots[i].allowed_depths[j].visuals_length)
             for(k = 0; k < c->disp_info.roots[i].allowed_depths[j].visuals_length; ++k)
             {INDENT()
-UNPACK(XP_VISUALTYPE, `c->disp_info.roots[i].allowed_depths[j].visuals[k]')
+UNPACK(XP_VISUALTYPE, `(c->disp_info.roots[i].allowed_depths[j].visuals + k)')
                 buf += SIZEOF(XP_VISUALTYPE);
             }UNINDENT()
         }UNINDENT()
