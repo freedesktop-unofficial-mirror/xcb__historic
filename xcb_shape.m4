@@ -1,4 +1,8 @@
-XCBGEN(xcb_shape)
+XCBGEN(xcb_shape, `
+Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+')
 BEGINEXTENSION(SHAPE, Shape)
 HEADERONLY(`
 typedef CARD8 SHAPE_OP;

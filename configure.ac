@@ -1,3 +1,9 @@
+dnl Process this file with autoconf to produce a configure script.
+
+dnl Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+dnl All Rights Reserved.  See the file COPYING in this directory
+dnl for licensing information.
+
 AC_INIT(xcb_conn.m4)
 AM_INIT_AUTOMAKE([xcb], [0.1])
 

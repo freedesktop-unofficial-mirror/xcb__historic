@@ -1,6 +1,11 @@
-divert(-1)
+dnl Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+dnl All Rights Reserved.  See the file COPYING in this directory
+dnl for licensing information.
+dnl
+dnl macros.m4: Generic macros useful in m4
+divert(-1) dnl Discard any text until a divert(0).
 
-dnl -- Generic macros useful in m4
+dnl -- Macros defined here
 
 dnl GNU m4 m4wrap() executes argument at end of input.
 dnl In this case the argument discards unprocessed diversions.
@@ -68,7 +73,7 @@ UNIMPLEMENTED(`DESCRIPTION')
 
 dnl Generates the standard prefix in the output code. The source file name
 dnl should not include extension or path.
-dnl XCBGEN(source file name)
+dnl XCBGEN(source file name, copyright notice)
 UNIMPLEMENTED(`XCBGEN')
 
 dnl Generates the standard suffix in the output code.

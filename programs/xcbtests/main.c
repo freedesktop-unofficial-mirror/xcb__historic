@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 #define TEST_GET_WINDOW_ATTRIBUTES
 #define TEST_GET_GEOMETRY
 #define TEST_QUERY_TREE

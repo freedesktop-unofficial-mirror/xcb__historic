@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 #include <client/xp_core.h>
 #include "reply_formats.h"
 #include <math.h>

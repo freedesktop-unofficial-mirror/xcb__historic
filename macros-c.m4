@@ -1,4 +1,9 @@
-divert(-1)
+dnl Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+dnl All Rights Reserved.  See the file COPYING in this directory
+dnl for licensing information.
+dnl
+dnl macros-c.m4: Macros for generating C code
+divert(-1) dnl Discard any text until a divert(0).
 
 dnl -- Implementations of macros specified in global macros.m4
 
