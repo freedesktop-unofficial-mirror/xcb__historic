@@ -171,6 +171,11 @@ static Xauth *get_authptr(struct sockaddr *sockname, unsigned int socknamelen)
                                  N_AUTH_PROTOS, authnames, authnamelens);
 }
 
+static void do_append(char *buf, int *idxp, void *val, size_t valsize) {
+    memcpy(buf + *idxp, val, valsize);
+    *idxp += valsize;
+}
+     
 static int compute_auth(XCBAuthInfo *info, Xauth *authptr, struct sockaddr *sockname)
 {
     if (authname_match(AUTH_MC1, authptr->name, authptr->name_length)) {
@@ -180,57 +185,53 @@ static int compute_auth(XCBAuthInfo *info, Xauth *authptr, struct sockaddr *sock
         return 1;
     }
 #ifdef HAS_AUTH_XA1
-#define APPEND(buf,idx,val) do { \
-    memcpy((buf) + (idx), &(val), sizeof(val)); \
-    (idx) += sizeof(val); \
-} while(0)
+#define APPEND(buf,idx,val) do_append((buf),&(idx),(val),sizeof(val))
+    if (authname_match(AUTH_XA1, authptr->name, authptr->name_length)) {
+	int j;
 
-if (authname_match(AUTH_XA1, authptr->name, authptr->name_length)) {
-    int j;
+	info->data = malloc(192 / 8);
+	if(!info->data)
+	    return 0;
 
-    info->data = malloc(192 / 8);
-    if(!info->data)
-        return 0;
-
-    for (j = 0; j < 8; j++)
-        info->data[j] = authptr->data[j];
-    switch(sockname->sa_family) {
+	for (j = 0; j < 8; j++)
+	    info->data[j] = authptr->data[j];
+	switch(sockname->sa_family) {
         case AF_INET:
             /*block*/ {
-                struct sockaddr_in *si = (struct sockaddr_in *) sockname;
-                APPEND(info->data, j, si->sin_addr.s_addr);
-                APPEND(info->data, j, si->sin_port);
-            }
-            break;
+	    struct sockaddr_in *si = (struct sockaddr_in *) sockname;
+	    APPEND(info->data, j, si->sin_addr.s_addr);
+	    APPEND(info->data, j, si->sin_port);
+	}
+	break;
         case AF_UNIX:
             /*block*/ {
-                long fakeaddr = htonl(0xffffffff - next_nonce());
-                short fakeport = htons(getpid());
-                APPEND(info->data, j, fakeaddr);
-                APPEND(info->data, j, fakeport);
-            }
-            break;
+	    long fakeaddr = htonl(0xffffffff - next_nonce());
+	    short fakeport = htons(getpid());
+	    APPEND(info->data, j, fakeaddr);
+	    APPEND(info->data, j, fakeport);
+	}
+	break;
         default:
             free(info->data);
             return 0;   /* do not know how to build this */
+	}
+	{
+	    long now;
+	    time(&now);
+	    now = htonl(now);
+	    APPEND(info->data, j, now);
+	}
+	assert(j <= 192 / 8);
+	while (j < 192 / 8)
+	    info->data[j++] = 0;
+	info->datalen = j;
+	Wrap (info->data, authptr->data + 8, info->data, info->datalen);
+	return 1;
     }
-    {
-        long now;
-        time(&now);
-        now = htonl(now);
-        APPEND(info->data, j, now);
-    }
-    assert(j <= 192 / 8);
-    while (j < 192 / 8)
-        info->data[j++] = 0;
-    info->datalen = j;
-    Wrap (info->data, authptr->data + 8, info->data, info->datalen);
-    return 1;
-}
 #undef APPEND
 #endif
 
-return 0;   /* Unknown authorization type */
+    return 0;   /* Unknown authorization type */
 }
 
 int XCBGetAuthInfo(int fd, XCBAuthInfo *info)
@@ -244,6 +245,9 @@ int XCBGetAuthInfo(int fd, XCBAuthInfo *info)
     int ret = 1;
 
     /* ensure info has reasonable contents */
+    /* XXX This should be removed, but Jamey depends on it
+       somehow but can't remember how.  Principle: don't touch
+       someone else's data if you're borken. */
     info->namelen = info->datalen = 0;
     info->name = info->data = 0;
 
