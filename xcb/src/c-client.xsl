@@ -287,6 +287,43 @@
     <xsl:call-template name="make-iterator" />
   </xsl:template>
 
+  <xsl:template match="event|error" mode="pass1">
+    <xsl:variable name="ext"><!--
+      --><xsl:call-template name="current-extension" /><!--
+    --></xsl:variable>
+    <xsl:variable name="suffix">
+      <xsl:choose>
+        <xsl:when test="self::event"><xsl:text>Event</xsl:text></xsl:when>
+        <xsl:when test="self::error"><xsl:text>Error</xsl:text></xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <constant type="number" name="XCB{$ext}{@name}" value="{@number}" />
+    <struct name="XCB{$ext}{@name}{$suffix}">
+      <field type="BYTE" name="response_type" />
+      <xsl:if test="self::error">
+        <field type="BYTE" name="error_code" />
+      </xsl:if>
+      <xsl:for-each select="field|pad">
+        <xsl:if test="self::pad">
+          <xsl:copy-of select="." />
+        </xsl:if>
+        <xsl:if test="self::field">
+          <field>
+            <xsl:attribute name="type">
+              <xsl:call-template name="canonical-type-name" />
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name" />
+            </xsl:attribute>
+          </field>
+        </xsl:if>
+      </xsl:for-each>
+      <middle>
+        <field type="CARD16" name="sequence" />
+      </middle>
+    </struct>
+  </xsl:template>
+
   <xsl:template match="typedef" mode="pass1">
     <typedef>
       <xsl:attribute name="oldname">
