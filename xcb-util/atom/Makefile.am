@@ -1,3 +1,6 @@
+
+MAINTAINERCLEANFILES = Makefile.in
+
 lib_LTLIBRARIES = libXCBAtom.la
 
 xcbinclude_HEADERS = xcb_atom.h

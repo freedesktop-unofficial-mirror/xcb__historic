@@ -1,3 +1,6 @@
+
+MAINTAINERCLEANFILES = Makefile.in
+
 lib_LTLIBRARIES = libXCBProperty.la
 
 xcbinclude_HEADERS = xcb_property.h

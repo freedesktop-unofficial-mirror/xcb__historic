@@ -1,1 +1,4 @@
-SUBDIRS = image atom event property icccm wm
+
+MAINTAINERCLEANFILES = Makefile.in
+
+SUBDIRS = convenient image atom event property icccm wm

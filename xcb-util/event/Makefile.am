@@ -1,3 +1,6 @@
+
+MAINTAINERCLEANFILES = Makefile.in
+
 lib_LTLIBRARIES = libXCBEvent.la
 
 xcbinclude_HEADERS = xcb_event.h

@@ -1,3 +1,6 @@
+
+MAINTAINERCLEANFILES = Makefile.in
+
 lib_LTLIBRARIES = libXCBWM.la
 
 xcbinclude_HEADERS = xcb_wm.h

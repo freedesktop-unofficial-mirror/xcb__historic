@@ -17,6 +17,7 @@ AC_SUBST(pkgconfigdir)
 PKG_CHECK_MODULES(XCB, xcb)
 
 AC_OUTPUT([Makefile
+	convenient/Makefile convenient/xcb-convenient.pc
 	image/Makefile image/xcb-image.pc
 	atom/Makefile atom/xcb-atom.pc
 	event/Makefile event/xcb-event.pc
