@@ -151,4 +151,9 @@ POPDIV()TYPEDEF(`union $1 {
 undivert(STRUCTDIV)dnl
 }', `$1')')
 
+dnl CHAR(char-literal)
+changequote([,])
+define([CHAR],['$1'])
+changequote(`,')
+
 divert(0)`'dnl

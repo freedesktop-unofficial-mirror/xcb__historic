@@ -4,7 +4,7 @@
  * for licensing information.
  */
 
-#include <client/xcb_dpms.h>
+#include <xcb.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>

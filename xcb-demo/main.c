@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#include <client/xp_core.h>
+#include <xcb.h>
 #include "reply_formats.h"
 
 void try_events(XCB_Connection *c);

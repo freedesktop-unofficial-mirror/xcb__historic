@@ -6,7 +6,7 @@ for licensing information.
 _C`'REQUIRE(stdlib)
 _C`'REQUIRE(stdio)
 _C`'REQUIRE(string)
-_H`'REQUIRE(PACKAGE, xcb_conn)
+_H`'REQUIRE(xcb_conn)
 HEADERONLY(`
 
 /* Core event and error types */
