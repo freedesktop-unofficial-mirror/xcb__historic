@@ -7,6 +7,7 @@ _H
 _H`'#include <sys/uio.h>
 _C`'#include <sys/types.h>
 _C`'#include <sys/socket.h>
+_C`'#include <sys/fcntl.h>
 _C`'#include <sys/un.h>
 _C`'#include <netinet/in.h>
 _C`'#include <netdb.h>
@@ -547,6 +548,8 @@ FUNCTION(`XCB_Connection *XCB_Connect', `int fd', `
 
 ALLOC(XCB_Connection, c, 1)
 
+    if (fcntl(fd, F_SETFL, (long)O_NONBLOCK) == -1)
+        return 0;
     c->fd = fd;
     pthread_mutex_init(&c->locked, 0);
     c->selecting = 0;
