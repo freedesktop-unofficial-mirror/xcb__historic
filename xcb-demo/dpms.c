@@ -5,7 +5,7 @@
  */
 
 #include <X11/XCB/xcb.h>
-#include <X11/XCB/xcb_dpms.h>
+#include <X11/XCB/dpms.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>

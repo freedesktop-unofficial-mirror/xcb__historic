@@ -23,7 +23,6 @@
 #include <stdlib.h>
 
 #include <X11/XCB/xcb.h>
-#include <X11/XCB/xcb_event.h>
 #include "reply_formats.h"
 
 void try_events(XCBConnection *c);
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
 #endif
 
     c = XCBConnectBasic();
-    root = XCBConnSetupSuccessReproots(c->setup).data;
+    root = XCBConnSetupSuccessRepRoots(c->setup).data;
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE
@@ -94,7 +93,7 @@ int main(int argc, char **argv)
     mask |= XCBCWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XCBCreateWindow(c, SCREENallowed_depths(root).data->depth,
+    XCBCreateWindow(c, SCREENAllowedDepths(root).data->depth,
         window, root->root,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,

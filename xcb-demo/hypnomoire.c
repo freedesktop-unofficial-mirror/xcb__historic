@@ -47,7 +47,7 @@ int main()
 	DRAWABLE rootwin;
 
 	c = XCBConnectBasic();
-	root = XCBConnSetupSuccessReproots(c->setup).data;
+	root = XCBConnSetupSuccessRepRoots(c->setup).data;
 
 	rootwin.window = root->root;
 	white = XCBGCONTEXTNew(c);
@@ -110,7 +110,7 @@ void *run(void *param)
 		values[1] = ButtonReleaseMask | ExposureMask;
 		values[2] = ButtonPressMask;
 
-		depth = SCREENallowed_depths(root).data->depth;
+		depth = SCREENAllowedDepths(root).data->depth;
 
 		XCBCreateWindow(c, depth, windows[idx].w.window, root->root,
 			/* x */ 0, /* y */ 0,
