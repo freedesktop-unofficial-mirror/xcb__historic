@@ -505,30 +505,59 @@ REQUEST(ListInstalledColormaps, `PARAM(Window, `id')', `
     REPLYFIELD(Colormap, `cmaps', `nColormaps')
 ')
 
-dnl **REQUEST(AllocColor, `
-dnl     PARAM(Colormap, `cmap')
-dnl     PARAM(CARD16, `red')
-dnl     PARAM(CARD16, `green')
-dnl     PARAM(CARD16, `blue')
-dnl ')
+REQUEST(AllocColor, `
+    PARAM(Colormap, `cmap')
+    PARAM(CARD16, `red')
+    PARAM(CARD16, `green')
+    PARAM(CARD16, `blue')
+')
 
-dnl **REQUEST(AllocNamedColor, `
-dnl     PARAM(Colormap, `cmap)
-dnl ')
+REQUEST(AllocNamedColor, `
+    PARAM(Colormap, `cmap')
+    STRLENFIELD(`name', `nbytes')
+    LISTPARAM(char, `name', `nbytes')
+')
 
-dnl TODO: AllocColorCells
-dnl TODO: AllocColorPlanes
+REQUEST(AllocColorCells, `
+    PARAM(BOOL, `contiguous')
+    PARAM(Colormap, `cmap')
+    PARAM(CARD16, `colors')
+    PARAM(CARD16, `planes')
+', `
+    REPLYFIELD(CARD32, `pixels', `nPixels')
+    REPLYFIELD(CARD32, `masks', `nMasks')
+')
 
-dnl **VOIDREQUEST(FreeColors, `
-dnl     PARAM(Colormap, `cmap')
-dnl     PARAM(CARD32, `planeMask')
-dnl ')
+REQUEST(AllocColorPlanes, `
+    PARAM(BOOL, `contiguous')
+    PARAM(Colormap, `cmap')
+    PARAM(CARD16, `colors')
+    PARAM(CARD16, `red')
+    PARAM(CARD16, `green')
+    PARAM(CARD16, `blue')
+', `
+    REPLYFIELD(CARD32, `pixels', `nPixels')
+')
+
+VOIDREQUEST(FreeColors, `
+    PARAM(Colormap, `cmap')
+    VALUEPARAM(CARD32, `planeMask', `pixels')
+')
     
-dnl **VOIDREQUEST(StoreColors, `
-dnl     PARAM(Colormap, `cmap')
-dnl ')
+VOIDREQUEST(StoreColors, `
+    PARAM(Colormap, `cmap')
+    LOCALPARAM(CARD16, `nItems')
+    LISTPARAM(xColorItem, `items', `nItems')
+')
 
-dnl TODO: StoreNamedColor
+VOIDREQUEST(StoreNamedColor, `
+    PARAM(CARD8, `flags')
+    PARAM(Colormap, `cmap')
+    PARAM(CARD32, `pixel')
+    STRLENFIELD(`name', `nbytes')
+    LISTPARAM(char, `name', `nbytes')
+')
+
 dnl TODO: QueryColors
 dnl TODO: LookupColor
 dnl TODO: CreateCursor
