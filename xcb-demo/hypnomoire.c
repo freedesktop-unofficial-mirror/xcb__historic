@@ -22,6 +22,7 @@
 #define PI 3.14159265
 
 static XCBConnection *c;
+static SCREEN *root;
 static GCONTEXT white, black;
 
 #define WINS 8
@@ -43,11 +44,12 @@ int main()
 
 	CARD32 mask = GCForeground | GCGraphicsExposures;
 	CARD32 values[2];
-	DRAWABLE root;
+	DRAWABLE rootwin;
 
 	c = XCBConnectBasic();
+	root = XCBConnSetupSuccessReproots(c->setup).data;
 
-	root.window = c->roots[0].data->root;
+	rootwin.window = root->root;
 	white = XCBGCONTEXTNew(c);
 	black = XCBGCONTEXTNew(c);
 
@@ -55,11 +57,11 @@ int main()
 
 	values[1] = 0; /* no graphics exposures */
 
-	values[0] = c->roots[0].data->white_pixel;
-	XCBCreateGC(c, white, root, mask, values);
+	values[0] = root->white_pixel;
+	XCBCreateGC(c, white, rootwin, mask, values);
 
-	values[0] = c->roots[0].data->black_pixel;
-	XCBCreateGC(c, black, root, mask, values);
+	values[0] = root->black_pixel;
+	XCBCreateGC(c, black, rootwin, mask, values);
 
 	for(i = 1; i < WINS; ++i)
 		pthread_create(&thr, 0, run, (void*)i);
@@ -100,29 +102,29 @@ void *run(void *param)
 	}
 
 	{
+		int depth;
 		CARD32 mask = XCBCWBackPixel | XCBCWEventMask | XCBCWDontPropagate;
 		CARD32 values[3];
-		values[0] = c->roots[0].data->white_pixel;
+		RECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
+		values[0] = root->white_pixel;
 		values[1] = ButtonReleaseMask | ExposureMask;
 		values[2] = ButtonPressMask;
 
-		XCBCreateWindow(c, c->roots[0].depths[0].data->depth,
-			windows[idx].w.window, c->roots[0].data->root,
+		depth = SCREENallowed_depths(root).data->depth;
+
+		XCBCreateWindow(c, depth, windows[idx].w.window, root->root,
 			/* x */ 0, /* y */ 0,
 			windows[idx].width, windows[idx].height,
 			/* border */ 0, InputOutput,
-			/* visual */ c->roots[0].data->root_visual,
+			/* visual */ root->root_visual,
 			mask, values);
-	}
 
-	XCBMapWindow(c, windows[idx].w.window);
+		XCBMapWindow(c, windows[idx].w.window);
 
-	XCBCreatePixmap(c, c->roots[0].depths[0].data->depth,
-		windows[idx].p.pixmap, windows[idx].w,
-		windows[idx].width, windows[idx].height);
+		XCBCreatePixmap(c, depth,
+			windows[idx].p.pixmap, windows[idx].w,
+			windows[idx].width, windows[idx].height);
 
-	{
-		RECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
 		XCBPolyFillRectangle(c, windows[idx].p, white, 1, &rect);
 	}
 

@@ -71,31 +71,42 @@ dnl CONSTANT(type, name, value)
 define(`CONSTANT', `CPPDEFINE(`$2', `$3')')
 
 
+dnl Function prototypes and implementations
+define(`FUNCDIV', ALLOCDIV)
+dnl Function prototypes and implementations
+define(`INLINEFUNCDIV', ALLOCDIV)
+
 dnl Declare a C function.
 dnl Note that this macro also sticks a declaration
 dnl in the header file.
 dnl FUNCTION(return type and function name, params, body)
-define(`FUNCTION', `dnl
+define(`FUNCTION', `PUSHDIV(FUNCDIV)dnl
 $1($2)HEADERONLY(;)SOURCEONLY(`
 {INDENT()dnl
-$3}UNINDENT()')')
+$3}UNINDENT()
+')
+POPDIV()')
 
 dnl Declare a C function local to the .c file.
 dnl The header file is not affected.
 dnl STATICFUNCTION(return type and function name, params, body)
-define(`STATICFUNCTION', `SOURCEONLY(
+define(`STATICFUNCTION', `PUSHDIV(FUNCDIV)SOURCEONLY(
 `static $1($2)
 {INDENT()dnl
-$3}UNINDENT()')')
+$3}UNINDENT()
+
+')POPDIV()')
 
 dnl Declare a C function which should be compiled inline if possible.
 dnl TODO: fallback to a regular function if inline is not supported by
 dnl       the compiler.
 dnl INLINEFUNCTION(return type and function name, params, body)
-define(`INLINEFUNCTION', `HEADERONLY(
+define(`INLINEFUNCTION', `PUSHDIV(INLINEFUNCDIV)HEADERONLY(
 `static inline $1($2)
 {INDENT()dnl
-$3}UNINDENT()')')
+$3}UNINDENT()
+
+')POPDIV()')
 
 
 dnl Allocate a block or array of storage with a given name.
@@ -114,16 +125,20 @@ TAB()assert($2);')
 dnl -- Type macros
 
 dnl TYPEDEF(old name, new name)
-define(`TYPEDEF', `HEADERONLY(`typedef $1 $2;')')
+define(`TYPEDEF', `PUSHDIV(TYPEDIV)HEADERONLY(`typedef $1 $2;
+')POPDIV()')
 
 dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)
 pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
 $2
 popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()TYPEDEF(`union $1 {
+divert(TYPEDIV)HEADERONLY(`dnl
+typedef union $1 {
 undivert(STRUCTDIV)dnl
-}', `$1')')
+} $1;
+
+')POPDIV()')
 
 dnl CHAR(char-literal)
 changequote([,])

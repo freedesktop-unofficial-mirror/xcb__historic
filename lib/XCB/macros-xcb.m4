@@ -19,8 +19,8 @@ dnl List of values to check to ensure marshaling is OK in REQUEST
 define(`MARSHALDIV', ALLOCDIV)
 dnl Holds body of structure declared with STRUCT or UNION macros
 define(`STRUCTDIV', ALLOCDIV)
-dnl Functions associated with other structures
-define(`FUNCDIV', ALLOCDIV)
+dnl Buffers all structures until end of input
+define(`TYPEDIV', ALLOCDIV)
 
 dnl PAD, FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
 dnl UNION definitions.
@@ -174,29 +174,29 @@ dnl portion of a structure. The length parameter is an expression, usually
 dnl involving the fixed-length portion of the structure, which evaluates
 dnl at run-time to the number of elements in this array.
 dnl ARRAYFIELD(field type, field name, list length expr)
-define(`ARRAYFIELD', `PUSHDIV(FUNCDIV)
+define(`ARRAYFIELD', `
 INLINEFUNCTION(`$1 *'REQ`$2', REQ`'KIND` *R', `
-    return ($1 *) (NEXTFIELD);
+    return (`$1' *) (NEXTFIELD);
 ')
 
 INLINEFUNCTION(`int 'REQ`$2'Length, REQ`'KIND` *R', `
     return `$3';
 ')
-POPDIV()
+
 define(`NEXTFIELD', REQ`$2'`(R) + (`$3')')')
 
 define(`ARRAYREPLY', `ARRAYFIELD($@)')
 
 dnl Generates an iterator for the variable-length portion of a structure.
 dnl LISTFIELD(field type, field name, list length expr)
-define(`LISTFIELD', `PUSHDIV(FUNCDIV)
+define(`LISTFIELD', `
 FUNCTION(`$1Iter 'REQ`$2', REQ`'KIND` *R', `
 TAB()$1Iter i;
-TAB()i.data = ($1 *) (NEXTFIELD);
-TAB()i.rem = ($3);
+TAB()i.data = (`$1' *) (NEXTFIELD);
+TAB()i.rem = (`$3');
 TAB()return i;
 ')
-POPDIV()
+
 define(`NEXTFIELD', `$1AfterIter(REQ`$2'((REQ *) R))')')
 
 
@@ -276,8 +276,7 @@ dnl Declares a struct holding an XID, and a function to allocate new
 dnl instances of this struct.
 dnl XIDTYPE(name)
 define(`XIDTYPE', `STRUCT(`$1', `FIELD(`CARD32', `xid')')
-_H
-INLINEFUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
+FUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
     `$1' ret = { XCBGenerateID(c) };
     return ret;
 ')')
@@ -287,10 +286,9 @@ dnl Declares a struct named XCB<name>Cookie with a single "int seqnum"
 dnl field.
 dnl COOKIETYPE(name)
 define(`COOKIETYPE', `dnl
-HEADERONLY(`typedef struct XCB`$1'Cookie {
+TYPEDEF(`struct XCB`$1'Cookie {
     int seqnum;
-} XCB`$1'Cookie;
-')')
+}', `XCB`$1'Cookie')')
 
 
 dnl EVENT(name, number, 1 or more FIELDs)
@@ -299,10 +297,8 @@ _H`'#define XCB`$1' `$2'
 PACKETSTRUCT(`$1', `Event', `$3')')
 
 dnl EVENTCOPY(new name, new number, old name)
-define(`EVENTCOPY', `HEADERONLY(
-#define XCB`$1' `$2'
-typedef XCB`$3'Event XCB`$1'Event;
-)')
+define(`EVENTCOPY', `HEADERONLY(CPPDEFINE(`XCB'`$1', `$2')
+)TYPEDEF(`XCB`$3'Event', `XCB`$1'Event')')
 
 dnl ERROR(name, number, 1 or more FIELDs)
 define(`ERROR', `dnl
@@ -310,10 +306,8 @@ _H`'#define XCB`$1' `$2'
 PACKETSTRUCT(`$1', `Error', `$3')')
 
 dnl ERRORCOPY(new name, new number, old name)
-define(`ERRORCOPY', `HEADERONLY(
-#define XCB`$1' `$2'
-typedef XCB`$3'Error XCB`$1'Error;
-)')
+define(`ERRORCOPY', `HEADERONLY(CPPDEFINE(`XCB'`$1', `$2')
+)TYPEDEF(`XCB`$3'Error', `XCB`$1'Error')')
 
 
 dnl EVENTMIDDLE()
@@ -340,8 +334,8 @@ define(`NEXTFIELD', `R + 1')
 define(`REQ', $1)
 define(`KIND')
 $2
-POPDIV()dnl
-HEADERONLY(`typedef struct `$1' {
+divert(TYPEDIV)HEADERONLY(`dnl
+typedef struct `$1' {
 undivert(STRUCTDIV)dnl
 } `$1';
 
@@ -349,20 +343,24 @@ typedef struct `$1'Iter {INDENT()
 TAB()`$1' *data;
 TAB()int rem;
 UNINDENT()} `$1'Iter;
-')
-PUSHDIV(FUNCDIV)
+
+')divert(-1)
+
 INLINEFUNCTION(`void `$1'Next', ``$1'Iter *i', `
 TAB()$1 *R = i->data;
 TAB()--i->rem;
 TAB()i->data = ($1 *) (NEXTFIELD());
 ')
+
 FUNCTION(`void *`$1'AfterIter', ``$1'Iter i', `
 TAB()while(i.rem > 0)INDENT()
 TAB()`$1'Next(&i);UNINDENT()
 TAB()return (void *) i.data;
 ')
-POPDIV()popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')dnl
-define(`FIELDQTY', 0)define(`PADQTY', 0)')
+
+popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')
+define(`FIELDQTY', 0)define(`PADQTY', 0)
+POPDIV()')
 
 dnl for kind in (Event, Error, Rep, Req)
 dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)
@@ -382,17 +380,22 @@ ifelse(FIELDQTY, 1,
     `ifelse(`$2', `Req', `PAD(1)',
     `ifelse(`$2', `Rep', `PAD(1)')')')
 UNINDENT()
-POPDIV()dnl
-HEADERONLY(`typedef struct XCB`$1'`$2' {
+
+divert(TYPEDIV)HEADERONLY(`dnl
+typedef struct XCB`$1'`$2' {
 undivert(STRUCTDIV)dnl
 } XCB`$1'`$2';
-')popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')dnl
-define(`FIELDQTY', 0)define(`PADQTY', 0)_H')
+
+')divert(-1)
+
+popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')
+define(`FIELDQTY', 0)define(`PADQTY', 0)
+POPDIV()_H')
 
 
 dnl -- Other macros
 
-define(`PACKAGE', `client')
+define(`PACKAGE', `X11, XCB')
 
 dnl Generates the standard prefix in the output code. The source file name
 dnl should not include extension or path.
@@ -410,9 +413,13 @@ REQUIRE(X11, XCB, xcb_trace)
 ')SOURCEONLY(`dnl
 REQUIRE(assert)
 REQUIRE(X11, XCB, $1)')')
+
 dnl Generates the standard suffix in the output code.
 dnl ENDXCBGEN()
-define(`ENDXCBGEN', `undivert(FUNCDIV)
+define(`ENDXCBGEN', `dnl
+undivert(TYPEDIV)dnl
+undivert(FUNCDIV)dnl
+undivert(INLINEFUNCDIV)dnl
 _H`'#endif')
 
 divert(0)`'dnl

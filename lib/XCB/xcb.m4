@@ -10,9 +10,6 @@ REQUIRE(string)
 ')HEADERONLY(`
 REQUIRE(X11, XCB, xcb_conn)
 
-COMMENT(universal null resource or null atom)
-CONSTANT(CARD32, `None', `0L')
-
 /* Core event and error types */
 
 EVENT(KeyPress, 2, `
@@ -277,21 +274,11 @@ ERRORCOPY(Implementation, 17, Request)
 /* The requests, in major number order. */
 /* It is the caller's responsibility to free returned XCB*Rep objects. */
 
-COMMENT(background pixmap in CreateWindow and ChangeWindowAttributes)
-CONSTANT(PIXMAP, `ParentRelative', `1L')
+/* The ListFontsWithInfo request is not supported by XCB. */
 
-COMMENT(border pixmap in CreateWindow and ChangeWindowAttributes
-special VisualID and special window class passed to CreateWindow)
-CONSTANT(PIXMAP, `CopyFromParent', `0L')
+divert(-1)
 
-COMMENT(Window classes used by CreateWindow.
-Note that CopyFromParent is already defined as 0 above.)
-
-#define InputOutput             1
-#define InputOnly               2
-
-COMMENT(Window attributes for CreateWindow and ChangeWindowAttributes.)
-
+dnl Window attributes for CreateWindow and ChangeWindowAttributes.
 XCBENUM(CW,
 BackPixmap = 1L<<0,
 BackPixel = 1L<<1,
@@ -816,8 +803,6 @@ REQUEST(ListFonts, `
     PAD(22)
     LISTFIELD(STR, `names', `R->names_len')
 ')
-
-/* The ListFontsWithInfo request is not supported by XCB. */
 
 VOIDREQUEST(SetFontPath, `
     OPCODE(51)
@@ -1542,18 +1527,15 @@ VOIDREQUEST(NoOperation, `
     OPCODE(127)
 ')
 
+dnl Pseudo-requests: these functions don't map directly to protocol requests,
+dnl but depend on requests in the core protocol, so they're here.
 
-/* Pseudo-requests: these functions don't map directly to protocol requests,
- * but depend on requests in the core protocol, so they're here. */
-
-/* Returns true iff the sync was sucessful. */
 FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
     XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
     free(reply);
     return (reply != 0);
 ')
 
-HEADERONLY(
-REQUIRE(X11, XCB, xcb_extension)
-)
+divert(0)
 ENDXCBGEN
+HEADERONLY(REQUIRE(X11, XCB, xcb_extension))

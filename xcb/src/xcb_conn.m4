@@ -51,16 +51,6 @@ STRUCT(XCBAuthInfo, `
     FIELD(`char', `data[AUTHDATA_MAX]')
 ')
 
-STRUCT(XCBDepth, `
-    POINTERFIELD(DEPTH, `data')
-    POINTERFIELD(VISUALTYPE, `visuals')
-')
-
-STRUCT(XCBScreen, `
-    POINTERFIELD(SCREEN, `data')
-    POINTERFIELD(XCBDepth, `depths')
-')
-
 STRUCT(XCBConnection, `
     FIELD(pthread_mutex_t, `locked')
 
@@ -75,9 +65,6 @@ STRUCT(XCBConnection, `
     FIELD(unsigned int, `seqnum_written')
     FIELD(CARD32, `last_xid')
 
-    POINTERFIELD(char, `vendor')
-    POINTERFIELD(FORMAT, `pixmapFormats')
-    POINTERFIELD(XCBScreen, `roots')
     POINTERFIELD(XCBConnSetupSuccessRep, `setup')
 ')
 ')dnl end HEADERONLY
@@ -453,36 +440,6 @@ ALLOC(XCBConnection, c, 1)
         }
         /*NOTREACHED*/
     }
-
-    /* Set up a collection of convenience pointers. */
-    c->vendor = (char *) (c->setup + 1);
-    c->pixmapFormats = (FORMAT *) (c->vendor + XCB_CEIL(c->setup->vendor_len));
-
-    {INDENT()
-        SCREEN *root;
-        DEPTH *depth;
-        VISUALTYPE *visual;
-        int i, j;
-
-ALLOC(XCBScreen, c->roots, c->setup->roots_len)
-
-        root = (SCREEN *) (c->pixmapFormats + c->setup->pixmap_formats_len);
-        for(i = 0; i < c->setup->roots_len; ++i)
-        {INDENT()
-            c->roots[i].data = root;
-ALLOC(XCBDepth, c->roots[i].depths, root->allowed_depths_len)
-
-            depth = (DEPTH *) (root + 1);
-            for(j = 0; j < root->allowed_depths_len; ++j)
-            {
-                c->roots[i].depths[j].data = depth;
-                visual = (VISUALTYPE *) (depth + 1);
-                c->roots[i].depths[j].visuals = visual;
-                depth = (DEPTH *) (visual + depth->visuals_len);
-            }
-            root = (SCREEN *) depth;
-        }UNINDENT()
-    }UNINDENT()
 
     pthread_mutex_unlock(&c->locked);
     return c;

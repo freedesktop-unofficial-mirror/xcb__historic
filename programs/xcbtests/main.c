@@ -37,6 +37,7 @@ int main(int argc, char **argv)
     CARD32 mask = 0;
     CARD32 values[6];
     DRAWABLE d;
+    SCREEN *root;
 #ifdef TEST_GET_GEOMETRY
     XCBGetGeometryCookie geom[3];
     XCBGetGeometryRep *geomrep[3];
@@ -58,6 +59,7 @@ int main(int argc, char **argv)
 #endif
 
     c = XCBConnectBasic();
+    root = XCBConnSetupSuccessReproots(c->setup).data;
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE
@@ -74,16 +76,16 @@ int main(int argc, char **argv)
 #endif
 
     mask |= XCBCWBackPixel;
-    values[0] = c->roots[0].data->white_pixel;
+    values[0] = root->white_pixel;
 
     mask |= XCBCWBorderPixel;
-    values[1] = c->roots[0].data->black_pixel;
+    values[1] = root->black_pixel;
 
     mask |= XCBCWBackingStore;
     values[2] = Always;
 
     mask |= XCBCWOverrideRedirect;
-    values[3] = FALSE;
+    values[3] = 0;
 
     mask |= XCBCWEventMask;
     values[4] = ButtonReleaseMask | ExposureMask | StructureNotifyMask
@@ -92,11 +94,11 @@ int main(int argc, char **argv)
     mask |= XCBCWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XCBCreateWindow(c, c->roots[0].depths[0].data->depth,
-        window, c->roots[0].data->root,
+    XCBCreateWindow(c, SCREENallowed_depths(root).data->depth,
+        window, root->root,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
-        /* visual */ c->roots[0].data->root_visual, mask, values);
+        /* visual */ root->root_visual, mask, values);
 #ifdef TEST_ICCCM
     atom[0] = XCBInternAtom(c, 0, sizeof("WM_PROTOCOLS")-1, "WM_PROTOCOLS");
     atom[1] = XCBInternAtom(c, 0, sizeof("WM_DELETE_WINDOW")-1, "WM_DELETE_WINDOW");
@@ -124,14 +126,14 @@ int main(int argc, char **argv)
     attr[0] = XCBGetWindowAttributes(c, window);
 #endif
 #ifdef TEST_GET_GEOMETRY
-    d.window = c->roots[0].data->root;
+    d.window = root->root;
     geom[0] = XCBGetGeometry(c, d);
     d.window = window;
     geom[1] = XCBGetGeometry(c, d);
 #endif
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
-    tree[0] = XCBQueryTree(c, c->roots[0].data->root);
+    tree[0] = XCBQueryTree(c, root->root);
 # endif
     tree[1] = XCBQueryTree(c, window);
 #endif
@@ -139,14 +141,14 @@ int main(int argc, char **argv)
     /* Start reading replies and possibly events */
 #ifdef TEST_GET_GEOMETRY
     geomrep[0] = XCBGetGeometryReply(c, geom[0], 0);
-    formatGetGeometryReply(c->roots[0].data->root, geomrep[0]);
+    formatGetGeometryReply(root->root, geomrep[0]);
     free(geomrep[0]);
 #endif
 
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
     treerep[0] = XCBQueryTreeReply(c, tree[0], 0);
-    formatQueryTreeReply(c->roots[0].data->windowId, treerep[0]);
+    formatQueryTreeReply(root->windowId, treerep[0]);
     free(treerep[0]);
 # endif
 #endif
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
     treerep[1] = XCBQueryTreeReply(c, tree[1], 0);
     formatQueryTreeReply(window, treerep[1]);
 
-    if(treerep[1] && treerep[1]->parent.xid && treerep[1]->parent.xid != c->roots[0].data->root.xid)
+    if(treerep[1] && treerep[1]->parent.xid && treerep[1]->parent.xid != root->root.xid)
     {
         tree[2] = XCBQueryTree(c, treerep[1]->parent);
 
