@@ -70,7 +70,8 @@ STRUCT(XCBConnection, `
     POINTERFIELD(XCBList, `event_data')
     POINTERFIELD(XCBList, `extension_cache')
 
-    FIELD(int, `seqnum')
+    FIELD(unsigned int, `seqnum')
+    FIELD(unsigned int, `seqnum_written')
     FIELD(CARD32, `last_xid')
 
     POINTERFIELD(char, `vendor')
@@ -169,18 +170,26 @@ ALLOC(unsigned char, buf, length)
     return 1; /* I have something for you... */
 ')
 _C
-FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, int seqnum, XCBGenericEvent **e', `
+FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e', `
     void *ret = 0;
     XCBReplyData *cur;
     if(e)
         *e = 0;
 
     pthread_mutex_lock(&c->locked);
+    /* If this request has not been written yet, write it. */
+    if((signed int) (c->seqnum_written - seqnum) < 0)
+    {
+        if(XCBFlushLocked(c->handle) <= 0)
+            goto done; /* error */
+        c->seqnum_written = c->seqnum;
+    }
+
     /* Compare the sequence number as a full int. */
     cur = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum32, &seqnum);
 
-    if(!cur || cur->pending || XCBFlushLocked(c->handle) <= 0) /* error */
-        goto done;
+    if(!cur || cur->pending)
+        goto done; /* error */
 
     ++cur->pending;
 
@@ -239,6 +248,7 @@ FUNCTION(`int XCBFlush', `XCBConnection *c', `
     int ret;
     pthread_mutex_lock(&c->locked);
     ret = XCBFlushLocked(c->handle);
+    c->seqnum_written = c->seqnum;
     pthread_mutex_unlock(&c->locked);
     return ret;
 ')
@@ -380,6 +390,7 @@ ALLOC(XCBConnection, c, 1)
     c->extension_cache = XCBListNew();
 
     c->seqnum = 0;
+    c->seqnum_written = 0;
     c->last_xid = 0;
 
     /* Write the connection setup request. */

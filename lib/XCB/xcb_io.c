@@ -177,7 +177,7 @@ done:
 int XCBFlushLocked(XCBIOHandle *c)
 {
     int ret = 1;
-    while(ret > 0 && c->n_outqueue)
+    while(ret >= 0 && c->n_outqueue)
         ret = XCBWait(c, /*should_write*/ 1);
     return ret;
 }
@@ -200,7 +200,7 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
                 memset(c->outqueue + c->n_outqueue + vector[i].iov_len, 0, XCB_PAD(vector[i].iov_len));
             c->n_outqueue += XCB_CEIL(vector[i].iov_len);
         }
-        return XCBFlushLocked(c);
+        return len;
     }
 
     if(USEOUTVEC)
