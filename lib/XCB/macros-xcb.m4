@@ -50,6 +50,11 @@ dnl ENDEXTENSION()
 define(`ENDEXTENSION', `undefine(`EXTENSION')dnl')
 
 
+dnl Defines an enumerated protocol type.
+dnl XCBENUM(type name, name list)
+define(`XCBENUM', `ENUM(XCB`$1', shift($@))')
+
+
 dnl Defines a BITMASK/LISTofVALUE parameter pair. The bitmask type should
 dnl probably be either CARD16 or CARD32, depending on the specified width
 dnl of the bitmask. The value array must be given to the generated

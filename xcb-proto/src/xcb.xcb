@@ -291,7 +291,7 @@ Note that CopyFromParent is already defined as 0 above.)
 
 COMMENT(Window attributes for CreateWindow and ChangeWindowAttributes.)
 
-ENUM(CW,
+XCBENUM(CW,
 BackPixmap = 1L<<0,
 BackPixel = 1L<<1,
 BorderPixmap = 1L<<2,
@@ -545,7 +545,7 @@ VOIDREQUEST(SendEvent, `
     PARAM(BOOL, `propagate')
     PARAM(WINDOW, `destination')
     PARAM(CARD32, `event_mask')
-    PARAM(char, `event[32]') dnl FIXME: really, really wrong.
+    PARAM(char, `event[32]')
 ')
 
 REQUEST(GrabPointer, `
