@@ -1204,7 +1204,9 @@ VOIDREQUEST(FreeColors, `
     OPCODE(88)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    VALUEPARAM(CARD32, `plane_mask', `pixels')
+    PARAM(CARD32, `plane_mask')
+    LOCALPARAM(CARD16, `pixels_len')
+    LISTPARAM(CARD32, `pixels', `pixels_len')
 ')
 
 STRUCT(COLORITEM, `
