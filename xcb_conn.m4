@@ -1,20 +1,28 @@
-/* TODO:
- * Add better error handling, especially on pthreads calls
- */
-
-XCBGEN(XCB_CONN)
+XCBGEN(xcb_conn)
 SOURCEONLY(`
-INCHEADERS(INCHERE(xcb_conn.h), sys/types.h, sys/socket.h, sys/fcntl.h,
-    sys/un.h, netinet/in.h, netdb.h, stdio.h, unistd.h, stdlib.h, errno.h)
-#undef USENONBLOCKING
-')HEADERONLY(`dnl
-#define NEED_EVENTS
-#define NEED_REPLIES
-#define ANSICPP
-INCHEADERS(X11/X.h, X11/Xproto.h, sys/uio.h, pthread.h)
+REQUIRE(sys/types)
+REQUIRE(sys/socket)
+REQUIRE(sys/fcntl)
+REQUIRE(sys/un)
+REQUIRE(netinet/in)
+REQUIRE(netdb)
+REQUIRE(stdio)
+REQUIRE(unistd)
+REQUIRE(stdlib)
+REQUIRE(errno)
 
-#define XCB_PAD(E) ((4-((E)%4))%4)
-#define X_TCP_PORT 6000	/* add display number */
+CPPUNDEF(`USENONBLOCKING')
+')HEADERONLY(`dnl
+CPPDEFINE(`NEED_EVENTS')
+CPPDEFINE(`NEED_REPLIES')
+CPPDEFINE(`ANSICPP')
+REQUIRE(X11/X)
+REQUIRE(X11/Xproto)
+REQUIRE(sys/uio)
+REQUIRE(pthread)
+
+CPPDEFINE(`XCB_PAD(E)', `((4-((E)%4))%4)')
+CPPDEFINE(`X_TCP_PORT', `6000')	/* add display number */
 
 STRUCT(XCB_ListNode, `
     POINTERFIELD(struct XCB_ListNode, `next')

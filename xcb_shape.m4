@@ -1,7 +1,4 @@
-XCBGEN(XCB_SHAPE)
-_H`'INCHEADERS(INCHERE(xp_core.h))
-_C`'INCHEADERS(INCHERE(xcb_shape.h))
-
+XCBGEN(xcb_shape)
 BEGINEXTENSION(SHAPE, Shape)
 HEADERONLY(`
 typedef CARD8 SHAPE_OP;
@@ -110,7 +107,7 @@ REQUEST(ShapeGetRectangles, `
     REPLY(BYTE, `ordering')
     PAD(1)
     REPLY(CARD32, `rectangles_len')
-    ARRAYREPLY(xRectangle, `rectangles', `rectangles_len')
+    ARRAYREPLY(xRectangle, `rectangles', `R->rectangles_len')
 ')
 
 ENDEXTENSION

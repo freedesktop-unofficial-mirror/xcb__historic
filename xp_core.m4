@@ -1,7 +1,9 @@
-XCBGEN(XP_CORE)
-_C`'INCHEADERS(INCHERE(xp_core.h), stdlib.h, stdio.h, string.h)
+XCBGEN(xp_core)
+_C`'REQUIRE(stdlib)
+_C`'REQUIRE(stdio)
+_C`'REQUIRE(string)
+_H`'REQUIRE(PACKAGE, xcb_conn)
 HEADERONLY(`
-INCHEADERS(INCHERE(xcb_conn.h))
 typedef char CHAR2B[2];
 
 
@@ -400,7 +402,7 @@ REQUEST(QueryTree, `
     REPLY(Window, `parent')
     REPLY(CARD16, `children_len')
     PAD(14)
-    ARRAYREPLY(Window, `children')
+    ARRAYREPLY(Window, `children', `R->children_len')
 ')
 
 REQUEST(InternAtom, `
@@ -422,7 +424,7 @@ REQUEST(GetAtomName, `
     PAD(1)
     REPLY(CARD16, `name_len')
     PAD(22)
-    ARRAYREPLY(CARD8, `name')
+    ARRAYREPLY(CARD8, `name', `R->name_len')
 ')
 
 VOIDREQUEST(ChangeProperty, `
@@ -458,7 +460,7 @@ REQUEST(GetProperty, `
     REPLY(CARD32, `bytes_after')
     REPLY(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(BYTE, `value')
+    ARRAYREPLY(BYTE, `value', `R->value_len')
 ')
 
 REQUEST(ListProperties, `
@@ -469,7 +471,7 @@ REQUEST(ListProperties, `
     PAD(1)
     REPLY(CARD16, `atoms_len')
     PAD(22)
-    ARRAYREPLY(Atom, `atoms')
+    ARRAYREPLY(Atom, `atoms', `R->atoms_len')
 ')
 
 VOIDREQUEST(SetSelectionOwner, `
@@ -630,7 +632,7 @@ REQUEST(GetMotionEvents, `
     PAD(1)
     REPLY(CARD32, `events_len')
     PAD(20)
-    ARRAYREPLY(xTimecoord, `events', `events_len')
+    ARRAYREPLY(xTimecoord, `events', `R->events_len')
 ')
 
 REQUEST(TranslateCoordinates, `
@@ -730,8 +732,8 @@ REQUEST(QueryFont, `
     REPLY(INT16, `font_ascent')
     REPLY(INT16, `font_descent')
     REPLY(CARD32, `char_infos_len')
-    ARRAYREPLY(FONTPROP, `properties', `properties_len')
-    ARRAYREPLY(CHARINFO, `char_infos', `char_infos_len')
+    ARRAYREPLY(FONTPROP, `properties', `R->properties_len')
+    ARRAYREPLY(CHARINFO, `char_infos', `R->char_infos_len')
 ')
 
 REQUEST(QueryTextExtents, `
@@ -976,7 +978,7 @@ VOIDREQUEST(PutImage, `
     LISTPARAM(BYTE, `data', `data_len')
 ')
 
-dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
+dnl FIXME: data array in reply will include padding, but ought not to.
 REQUEST(GetImage, `
     OPCODE(73)
     PARAM(CARD8, `format')
@@ -990,7 +992,7 @@ REQUEST(GetImage, `
     REPLY(CARD8, `depth')
     REPLY(VisualID, `visual')
     PAD(20)
-    ARRAYREPLY(BYTE, `data')
+    ARRAYREPLY(BYTE, `data', `R->length * 4')
 ')
 
 VOIDREQUEST(PolyText8, `
@@ -1076,7 +1078,7 @@ REQUEST(ListInstalledColormaps, `
     PAD(1)
     REPLY(CARD16, `cmaps_len')
     PAD(22)
-    ARRAYREPLY(Colormap, `cmaps', `cmaps_len')
+    ARRAYREPLY(Colormap, `cmaps', `R->cmaps_len')
 ')
 
 REQUEST(AllocColor, `
@@ -1123,8 +1125,8 @@ REQUEST(AllocColorCells, `
     REPLY(CARD16, `pixels_len')
     REPLY(CARD16, `mask_len')
     PAD(20)
-    ARRAYREPLY(CARD32, `pixels', `pixels_len')
-    ARRAYREPLY(CARD32, `masks', `masks_len')
+    ARRAYREPLY(CARD32, `pixels', `R->pixels_len')
+    ARRAYREPLY(CARD32, `masks', `R->masks_len')
 ')
 
 REQUEST(AllocColorPlanes, `
@@ -1143,7 +1145,7 @@ REQUEST(AllocColorPlanes, `
     REPLY(CARD32, `green_mask')
     REPLY(CARD32, `blue_mask')
     PAD(8)
-    ARRAYREPLY(CARD32, `pixels', `pixels_len')
+    ARRAYREPLY(CARD32, `pixels', `R->pixels_len')
 ')
 
 VOIDREQUEST(FreeColors, `
@@ -1187,7 +1189,7 @@ REQUEST(QueryColors, `
     PAD(1)
     REPLY(CARD16, `colors_len')
     PAD(22)
-    ARRAYREPLY(RGB, `colors', `colors_len')
+    ARRAYREPLY(RGB, `colors', `R->colors_len')
 ')
 
 REQUEST(LookupColor, `
@@ -1298,7 +1300,6 @@ VOIDREQUEST(ChangeKeyboardMapping, `
     LISTPARAM(KeySym, `keysyms', `keycode_count * keysyms_per_keycode')
 ')
 
-dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
 REQUEST(GetKeyboardMapping, `
     OPCODE(101)
     PAD(1)
@@ -1307,7 +1308,7 @@ REQUEST(GetKeyboardMapping, `
 ', `
     REPLY(BYTE, `keysyms_per_keycode')
     PAD(24)
-    ARRAYREPLY(Keysym, `keysyms')
+    ARRAYREPLY(KeySym, `keysyms', `R->length * 4')
 ')
 
 VOIDREQUEST(ChangeKeyboardControl, `
@@ -1428,7 +1429,7 @@ REQUEST(GetPointerMapping, `
 ', `
     REPLY(CARD8, `map_len')
     PAD(24)
-    ARRAYREPLY(CARD8, `map', `map_len')
+    ARRAYREPLY(CARD8, `map', `R->map_len')
 ')
 
 REQUEST(SetModifierMapping, `
@@ -1439,13 +1440,12 @@ REQUEST(SetModifierMapping, `
     REPLY(BYTE, `status')
 ')
 
-dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
 REQUEST(GetModifierMapping, `
     OPCODE(119)
 ', `
     REPLY(CARD8, `keycodes_per_modifier')
     PAD(24)
-    ARRAYREPLY(KeyCode, `keycodes', `keycodes_per_modifier * 8')
+    ARRAYREPLY(KeyCode, `keycodes', `R->keycodes_per_modifier * 8')
 ')
 
 dnl FIXME: NoOperation should allow specifying payload length

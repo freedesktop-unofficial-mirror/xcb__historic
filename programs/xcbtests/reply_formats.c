@@ -7,7 +7,7 @@ int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *repl
 {
     if(!reply)
     {
-        fprintf(stderr, "Failed to get attributes for window 0x%x.\n",
+        fprintf(stderr, "Failed to get attributes for window " WINFMT ".\n",
             (unsigned int) wid);
         return 0;
     }
@@ -89,7 +89,7 @@ int formatQueryTreeReply(Window wid, XCB_QueryTree_Rep *reply)
 
     for(i = 0; i < reply->children_len; ++i)
         printf("    window " WINFMT "\n",
-            (unsigned int) XCB_QUERYTREE_CHILDREN(reply)[i]);
+            (unsigned int) XCB_QueryTree_children(reply)[i]);
 
     fflush(stdout);
     return 1;
