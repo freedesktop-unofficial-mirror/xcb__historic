@@ -120,7 +120,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     POINTFIX        trifans[9];
     int index;
 
-    root = XCBConnSetupSuccessRepRoots(c->setup).data;
+    root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
     root_drawable.window = root->root;
    
     /* Setting query so that it will search for an 8 bit alpha surface. */
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
     PICTFORMINFO  forminfo_query, *forminfo_result;
     
     c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRoots(c->setup).data;
+    root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
     
     version_cookie = XCBRenderQueryVersion(c, (CARD32)0, (CARD32)3);
     version_reply = XCBRenderQueryVersionReply(c, version_cookie, 0);

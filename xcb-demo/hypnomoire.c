@@ -47,7 +47,7 @@ int main()
 	DRAWABLE rootwin;
 
 	c = XCBConnectBasic();
-	root = XCBConnSetupSuccessRepRoots(c->setup).data;
+	root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
 
 	rootwin.window = root->root;
 	white = XCBGCONTEXTNew(c);

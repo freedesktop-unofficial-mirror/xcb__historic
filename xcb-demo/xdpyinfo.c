@@ -41,25 +41,25 @@ int main(int argc, char **argv)
 
 void print_setup()
 {
-    printf("version number:    %d.%d", c->setup->protocol_major_version, c->setup->protocol_minor_version);
+    printf("version number:    %d.%d", XCBGetSetup(c)->protocol_major_version, XCBGetSetup(c)->protocol_minor_version);
     fputs("\n" "vendor string:    ", stdout);
-    fwrite(XCBConnSetupSuccessRepVendor(c->setup), 1, XCBConnSetupSuccessRepVendorLength(c->setup), stdout);
-    printf("\n" "vendor release number:    %d", (int) c->setup->release_number);
+    fwrite(XCBConnSetupSuccessRepVendor(XCBGetSetup(c)), 1, XCBConnSetupSuccessRepVendorLength(XCBGetSetup(c)), stdout);
+    printf("\n" "vendor release number:    %d", (int) XCBGetSetup(c)->release_number);
     // "\n" "XFree86 version: %d.%d.%d.%d"
-    printf("\n" "maximum request size:  %d bytes", c->setup->maximum_request_length * 4);
-    printf("\n" "motion buffer size:  %d", (int)c->setup->motion_buffer_size);
-    printf("\n" "bitmap unit, bit order, padding:    %d, %s, %d", c->setup->bitmap_format_scanline_unit, (c->setup->bitmap_format_bit_order == LSBFirst) ? "LSBFirst" : "MSBFirst", c->setup->bitmap_format_scanline_pad);
-    printf("\n" "image byte order:    %s", (c->setup->image_byte_order == LSBFirst) ? "LSBFirst" : "MSBFirst");
+    printf("\n" "maximum request size:  %d bytes", XCBGetSetup(c)->maximum_request_length * 4);
+    printf("\n" "motion buffer size:  %d", (int)XCBGetSetup(c)->motion_buffer_size);
+    printf("\n" "bitmap unit, bit order, padding:    %d, %s, %d", XCBGetSetup(c)->bitmap_format_scanline_unit, (XCBGetSetup(c)->bitmap_format_bit_order == LSBFirst) ? "LSBFirst" : "MSBFirst", XCBGetSetup(c)->bitmap_format_scanline_pad);
+    printf("\n" "image byte order:    %s", (XCBGetSetup(c)->image_byte_order == LSBFirst) ? "LSBFirst" : "MSBFirst");
 
     print_formats();
 
-    printf("\n" "keycode range:    minimum %d, maximum %d", c->setup->min_keycode.id, c->setup->max_keycode.id);
+    printf("\n" "keycode range:    minimum %d, maximum %d", XCBGetSetup(c)->min_keycode.id, XCBGetSetup(c)->max_keycode.id);
 }
 
 void print_formats()
 {
-    int i = XCBConnSetupSuccessRepPixmapFormatsLength(c->setup);
-    FORMAT *p = XCBConnSetupSuccessRepPixmapFormats(c->setup);
+    int i = XCBConnSetupSuccessRepPixmapFormatsLength(XCBGetSetup(c));
+    FORMAT *p = XCBConnSetupSuccessRepPixmapFormats(XCBGetSetup(c));
     printf("\n" "number of supported pixmap formats:    %d", i);
     fputs("\n" "supported pixmap formats:", stdout);
     for(--i; i >= 0; --i, ++p)
@@ -132,7 +132,7 @@ void list_screens()
     SCREENIter i;
     int cur;
 
-    i = XCBConnSetupSuccessRepRoots(c->setup);
+    i = XCBConnSetupSuccessRepRoots(XCBGetSetup(c));
     printf("\n" "number of screens:    %d" "\n", i.rem);
     for(cur = 1; i.rem; SCREENNext(&i), ++cur)
     {

@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef VERBOSE
-    if(XCBListLength(c->reply_data) > 0)
+    if(_xcb_list_length(c->in.replies) > 0)
         printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 
