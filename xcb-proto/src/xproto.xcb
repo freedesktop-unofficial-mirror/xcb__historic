@@ -768,8 +768,7 @@ REQUEST(QueryTextExtents, `
     OPCODE(48)
     EXPRFIELD(BOOL, `odd_length', `string_len & 1')
     PARAM(FONTABLE, `font')
-    LOCALPARAM(CARD32, `string_len')
-    LISTPARAM(CHAR2B, `string', `string_len')
+    LISTPARAM(CHAR2B, `string')
 ', `
     FIELD(BYTE, `draw_direction')
     FIELD(INT16, `font_ascent')
@@ -803,8 +802,7 @@ VOIDREQUEST(SetFontPath, `
     OPCODE(51)
     PAD(1)
     PARAM(CARD16, `font_qty')
-    LOCALPARAM(CARD32, `path_len')
-    LISTPARAM(char, `path', `path_len')
+    LISTPARAM(char, `path')
 ')
 
 REQUEST(GetFontPath, `
@@ -869,8 +867,7 @@ VOIDREQUEST(SetClipRectangles, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `clip_x_origin')
     PARAM(INT16, `clip_y_origin')
-    LOCALPARAM(CARD32, `rectangles_len')
-    LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
+    LISTPARAM(RECTANGLE, `rectangles')
 ')
 
 VOIDREQUEST(FreeGC, `
@@ -924,8 +921,7 @@ VOIDREQUEST(PolyPoint, `
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `points_len')
-    LISTPARAM(POINT, `points', `points_len')
+    LISTPARAM(POINT, `points')
 ')
 
 VOIDREQUEST(PolyLine, `
@@ -934,8 +930,7 @@ VOIDREQUEST(PolyLine, `
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `points_len')
-    LISTPARAM(POINT, `points', `points_len')
+    LISTPARAM(POINT, `points')
 ')
 
 STRUCT(SEGMENT, `
@@ -951,8 +946,7 @@ VOIDREQUEST(PolySegment, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `segments_len')
-    LISTPARAM(SEGMENT, `segments', `segments_len')
+    LISTPARAM(SEGMENT, `segments')
 ')
 
 VOIDREQUEST(PolyRectangle, `
@@ -961,8 +955,7 @@ VOIDREQUEST(PolyRectangle, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `rectangles_len')
-    LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
+    LISTPARAM(RECTANGLE, `rectangles')
 ')
 
 dnl The semantics of PolyArc change after the first arc: the GC's
@@ -973,8 +966,7 @@ VOIDREQUEST(PolyArc, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `arcs_len')
-    LISTPARAM(ARC, `arcs', `arcs_len')
+    LISTPARAM(ARC, `arcs')
 ')
 
 VOIDREQUEST(FillPoly, `
@@ -984,8 +976,7 @@ VOIDREQUEST(FillPoly, `
     PARAM(GCONTEXT, `gc')
     PARAM(CARD8, `shape')
     PARAM(CARD8, `coordinate_mode')
-    LOCALPARAM(CARD32, `points_len')
-    LISTPARAM(POINT, `points', `points_len')
+    LISTPARAM(POINT, `points')
 ')
 
 VOIDREQUEST(PolyFillRectangle, `
@@ -994,8 +985,7 @@ VOIDREQUEST(PolyFillRectangle, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `rectangles_len')
-    LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
+    LISTPARAM(RECTANGLE, `rectangles')
 ')
 
 VOIDREQUEST(PolyFillArc, `
@@ -1004,8 +994,7 @@ VOIDREQUEST(PolyFillArc, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD32, `arcs_len')
-    LISTPARAM(ARC, `arcs', `arcs_len')
+    LISTPARAM(ARC, `arcs')
 ')
 
 VOIDREQUEST(PutImage, `
@@ -1019,8 +1008,7 @@ VOIDREQUEST(PutImage, `
     PARAM(INT16, `dst_y')
     PARAM(CARD8, `left_pad')
     PARAM(CARD8, `depth')
-    LOCALPARAM(CARD32, `data_len')
-    LISTPARAM(BYTE, `data', `data_len')
+    LISTPARAM(BYTE, `data')
 ')
 
 dnl FIXME: data array in reply will include padding, but ought not to.
@@ -1047,8 +1035,7 @@ VOIDREQUEST(PolyText8, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD32, `items_len')
-    LISTPARAM(BYTE, `items', `items_len')
+    LISTPARAM(BYTE, `items')
 ')
 
 VOIDREQUEST(PolyText16, `
@@ -1058,8 +1045,7 @@ VOIDREQUEST(PolyText16, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD32, `items_len')
-    LISTPARAM(BYTE, `items', `items_len')
+    LISTPARAM(BYTE, `items')
 ')
 
 VOIDREQUEST(ImageText8, `
@@ -1198,8 +1184,7 @@ VOIDREQUEST(FreeColors, `
     PAD(1)
     PARAM(COLORMAP, `cmap')
     PARAM(CARD32, `plane_mask')
-    LOCALPARAM(CARD32, `pixels_len')
-    LISTPARAM(CARD32, `pixels', `pixels_len')
+    LISTPARAM(CARD32, `pixels')
 ')
 
 STRUCT(COLORITEM, `
@@ -1216,8 +1201,7 @@ VOIDREQUEST(StoreColors, `
     OPCODE(89)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    LOCALPARAM(CARD32, `items_len')
-    LISTPARAM(COLORITEM, `items', `items_len')
+    LISTPARAM(COLORITEM, `items')
 ')
 
 VOIDREQUEST(StoreNamedColor, `
@@ -1240,8 +1224,7 @@ REQUEST(QueryColors, `
     OPCODE(91)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    LOCALPARAM(CARD32, `pixels_len')
-    LISTPARAM(CARD32, `pixels', `pixels_len')
+    LISTPARAM(CARD32, `pixels')
 ', `
     PAD(1)
     FIELD(CARD16, `colors_len')

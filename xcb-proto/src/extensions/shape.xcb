@@ -37,8 +37,7 @@ VOIDREQUEST(Rectangles, `
     PARAM(WINDOW, `destination_window')
     PARAM(INT16, `x_offset')
     PARAM(INT16, `y_offset')
-    LOCALPARAM(CARD32, `rectangles_len')
-    LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
+    LISTPARAM(RECTANGLE, `rectangles')
 ')
 
 VOIDREQUEST(Mask, `

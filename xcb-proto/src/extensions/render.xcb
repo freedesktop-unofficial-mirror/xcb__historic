@@ -250,8 +250,7 @@ VOIDREQUEST(`SetPictureClipRectangles', `
     PARAM(PICTURE, `picture')
     PARAM(INT16, `clip_x_origin')
     PARAM(INT16, `clip_y_origin')
-    LOCALPARAM(CARD16, `rectangles_len')
-    LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
+    LISTPARAM(RECTANGLE, `rectangles')
 ')
 
 VOIDREQUEST(`FreePicture', `
@@ -287,8 +286,7 @@ VOIDREQUEST(`Trapezoids', `
     PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    LOCALPARAM(CARD16, `traps_len')
-    LISTPARAM(TRAP, `traps', `traps_len')
+    LISTPARAM(TRAP, `traps')
 ')
 
 VOIDREQUEST(`Triangles', `
@@ -300,8 +298,7 @@ VOIDREQUEST(`Triangles', `
     PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    LOCALPARAM(CARD16, `triangles_len')
-    LISTPARAM(TRIANGLE, `triangles', `triangles_len')
+    LISTPARAM(TRIANGLE, `triangles')
 ')
 
 VOIDREQUEST(`TriStrip', `
@@ -313,8 +310,7 @@ VOIDREQUEST(`TriStrip', `
     PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    LOCALPARAM(CARD16, `points_len')
-    LISTPARAM(POINTFIX, `points', `points_len')
+    LISTPARAM(POINTFIX, `points')
 ')
 
 VOIDREQUEST(`TriFan', `
@@ -326,8 +322,7 @@ VOIDREQUEST(`TriFan', `
     PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    LOCALPARAM(CARD16, `points_len')
-    LISTPARAM(POINTFIX, `points', `points_len')
+    LISTPARAM(POINTFIX, `points')
 ')
 
 dnl opcode 14 reserved for ColorTrapezoids
@@ -357,10 +352,9 @@ VOIDREQUEST(`AddGlyphs', `
     OPCODE(20)
     PARAM(GLYPHSET, `glyphset')
     PARAM(CARD32, `glyphs_len')
-    LOCALPARAM(CARD16, `data_len')
     LISTPARAM(CARD32, `glyphids', `glyphs_len')
     LISTPARAM(GLYPHINFO, `glyphs', `glyphs_len')
-    LISTPARAM(BYTE, `data', `data_len')
+    LISTPARAM(BYTE, `data')
 ')
 
 dnl opcode 21 reserved for AddGlyphsFromPicture
@@ -368,8 +362,7 @@ dnl opcode 21 reserved for AddGlyphsFromPicture
 VOIDREQUEST(`FreeGlyphs', `
     OPCODE(22)
     PARAM(GLYPHSET, `glyphset')
-    LOCALPARAM(CARD16, `glyphs_len')
-    LISTPARAM(GLYPH, `glyphs', `glyphs_len')
+    LISTPARAM(GLYPH, `glyphs')
 ')
 
 STRUCT(GLYPHSETELT, `
@@ -404,8 +397,7 @@ VOIDREQUEST(`CompositeGlyphs$1', `
     PARAM(GLYPHSET, `glyphset')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    LOCALPARAM(CARD16, `glyphcmds_len')
-    LISTPARAM(GLYPHITEM$1, `glyphcmds', `glyphcmds_len')
+    LISTPARAM(GLYPHITEM$1, `glyphcmds')
 ')
 ')
 
@@ -423,8 +415,7 @@ VOIDREQUEST(`FillRectangles', `
     PAD(3)
     PARAM(PICTURE, `dst')
     PARAM(COLOR, `color')
-    LOCALPARAM(CARD16, `rects_len')
-    LISTPARAM(RECTANGLE, `rects', `rects_len')
+    LISTPARAM(RECTANGLE, `rects')
 ')
 
 dnl new in version 0.5
@@ -473,9 +464,8 @@ VOIDREQUEST(`SetPictureFilter', `
     OPCODE(30)
     PARAM(PICTURE, `picture')
     PARAM(CARD16, `filter_len')
-    LOCALPARAM(CARD16, `values_len')
     LISTPARAM(char, `filter', `filter_len')
-    LISTPARAM(FIXED, `values', `values_len')
+    LISTPARAM(FIXED, `values')
 ')
 
 dnl new in version 0.8
@@ -488,8 +478,7 @@ STRUCT(ANIMCURSORELT, `
 VOIDREQUEST(`CreateAnimCursor', `
     OPCODE(31)
     PARAM(CURSOR, `cid')
-    LOCALPARAM(CARD16, `cursors_len')
-    LISTPARAM(ANIMCURSORELT, `cursors', `cursors_len')
+    LISTPARAM(ANIMCURSORELT, `cursors')
 ')
 
 POPDIV()

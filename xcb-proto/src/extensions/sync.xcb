@@ -101,8 +101,7 @@ REQUEST(QueryCounter, `
 
 VOIDREQUEST(Await, `
     OPCODE(7)
-    LOCALPARAM(CARD16, `wait_list_len')
-    LISTPARAM(WAITCONDITION, `wait_list', `wait_list_len')
+    LISTPARAM(WAITCONDITION, `wait_list')
 ')
 
 VOIDREQUEST(ChangeCounter, `
