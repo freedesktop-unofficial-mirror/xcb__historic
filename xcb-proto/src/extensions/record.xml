@@ -156,7 +156,7 @@ authorization from the authors.
 	    <pad bytes="2" />
 	    <field type="CARD32" name="xid_base" />
 	    <field type="CARD32" name="server_time" />
-	    <field type="CARD32" name="rec_seq_num" />
+	    <field type="CARD32" name="rec_sequence_num" />
 	    <pad bytes="8" />
 	    <list type="BYTE" name="data" />
 	</reply>
