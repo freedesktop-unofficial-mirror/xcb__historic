@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xcb header="dpms">
 <!--
 Copyright (C) 2001-2004 Bart Massey, Jamey Sharp, and Josh Triplett.
 All Rights Reserved.
@@ -26,55 +25,52 @@ institutions shall not be used in advertising or otherwise to promote the
 sale, use or other dealings in this Software without prior written
 authorization from the authors.
 -->
-  <extension xname="DPMS" name="DPMS">
+<xcb header="dpms" extension-xname="DPMS" extension-name="DPMS">
+  <request name="GetVersion" opcode="0">
+    <field type="CARD16" name="client_major_version" />
+    <field type="CARD16" name="client_minor_version" />
+    <reply>
+      <pad bytes="1" />
+      <field type="CARD16" name="server_major_version" />
+      <field type="CARD16" name="server_minor_version" />
+    </reply>
+  </request>
 
-    <request name="GetVersion" opcode="0">
-      <field type="CARD16" name="client_major_version" />
-      <field type="CARD16" name="client_minor_version" />
-      <reply>
-        <pad bytes="1" />
-        <field type="CARD16" name="server_major_version" />
-        <field type="CARD16" name="server_minor_version" />
-      </reply>
-    </request>
-    
-    <request name="Capable" opcode="1">
-      <reply>
-        <pad bytes="1" />
-        <field type="BOOL" name="capable" />
-      </reply>
-    </request>
-    
-    <request name="GetTimeouts" opcode="2">
-      <reply>
-        <pad bytes="1" />
-        <field type="CARD16" name="standby_timeout" />
-        <field type="CARD16" name="suspend_timeout" />
-        <field type="CARD16" name="off_timeout" />
-      </reply>
-    </request>
-    
-    <request name="SetTimeouts" opcode="3">
+  <request name="Capable" opcode="1">
+    <reply>
+      <pad bytes="1" />
+      <field type="BOOL" name="capable" />
+    </reply>
+  </request>
+
+  <request name="GetTimeouts" opcode="2">
+    <reply>
+      <pad bytes="1" />
       <field type="CARD16" name="standby_timeout" />
       <field type="CARD16" name="suspend_timeout" />
       <field type="CARD16" name="off_timeout" />
-    </request>
-    
-    <request name="Enable" opcode="4" />
-    
-    <request name="Disable" opcode="5" />
-    
-    <request name="ForceLevel" opcode="6">
-      <field type="CARD16" name="power_level" />
-    </request>
-    
-    <request name="Info" opcode="7">
-      <reply>
-        <pad bytes="1" />
-        <field type="CARD16" name="power_level" />
-        <field type="BOOL" name="state" />
-      </reply>
-    </request>
+    </reply>
+  </request>
 
-  </extension>
+  <request name="SetTimeouts" opcode="3">
+    <field type="CARD16" name="standby_timeout" />
+    <field type="CARD16" name="suspend_timeout" />
+    <field type="CARD16" name="off_timeout" />
+  </request>
+
+  <request name="Enable" opcode="4" />
+
+  <request name="Disable" opcode="5" />
+
+  <request name="ForceLevel" opcode="6">
+    <field type="CARD16" name="power_level" />
+  </request>
+
+  <request name="Info" opcode="7">
+    <reply>
+      <pad bytes="1" />
+      <field type="CARD16" name="power_level" />
+      <field type="BOOL" name="state" />
+    </reply>
+  </request>
 </xcb>

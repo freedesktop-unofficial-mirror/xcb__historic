@@ -29,26 +29,13 @@ authorization from the authors.
   <!-- The root element -->
   <xsd:element name="xcb">
     <xsd:complexType>
-      <xsd:sequence>
-        <xsd:choice minOccurs="0" maxOccurs="unbounded">
-          <xsd:group ref="macro" minOccurs="0" maxOccurs="unbounded" />
-          <xsd:element ref="extension" />
-        </xsd:choice>
-      </xsd:sequence>
+      <xsd:group ref="macro" minOccurs="0" maxOccurs="unbounded" />
       <xsd:attribute name="header" type="xsd:string" />
+      <xsd:attribute name="extension-xname" type="xsd:string" use="optional" />
+      <xsd:attribute name="extension-name"  type="xsd:string" use="optional" />
     </xsd:complexType>
   </xsd:element>
 
-  <!-- An extension.  Protocol descriptions not within an extension tag are
-       part of the core protocol. -->
-  <xsd:element name="extension">
-    <xsd:complexType>
-      <xsd:group ref="macro" minOccurs="0" maxOccurs="unbounded" />
-      <xsd:attribute name="xname" type="xsd:string" />
-      <xsd:attribute name="name" type="xsd:string" />
-    </xsd:complexType>
-  </xsd:element>
-  
   <!-- Padding -->
   <xsd:element name="pad">
     <xsd:complexType>

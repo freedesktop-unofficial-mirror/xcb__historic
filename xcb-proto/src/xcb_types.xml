@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xcb header="xcb_types">
 <!--
 Copyright (C) 2001-2004 Bart Massey, Jamey Sharp, and Josh Triplett.
 All Rights Reserved.
@@ -26,7 +25,7 @@ institutions shall not be used in advertising or otherwise to promote the
 sale, use or other dealings in this Software without prior written
 authorization from the authors.
 -->
-
+<xcb header="xcb_types">
   <!-- Core protocol types -->
   
   <struct name="CHAR2B">

@@ -25,57 +25,54 @@ sale, use or other dealings in this Software without prior written
 authorization from the authors.
 -->
 <!-- This file describes version 1 of DAMAGE. -->
-<xcb header="damage">
-  <extension xname="DAMAGE" name="Damage">
-    <import>xfixes</import>
+<xcb header="damage" extension-xname="DAMAGE" extension-name="Damage">
+  <import>xfixes</import>
 
-    <typedef oldname="CARD32" newname="DAMAGE" />
+  <typedef oldname="CARD32" newname="DAMAGE" />
 
-    <enum name="ReportLevel">
-      <item name="RawRectangles" />
-      <item name="DeltaRectangles" />
-      <item name="BoundingBox" />
-      <item name="NonEmpty" />
-    </enum>
+  <enum name="ReportLevel">
+    <item name="RawRectangles" />
+    <item name="DeltaRectangles" />
+    <item name="BoundingBox" />
+    <item name="NonEmpty" />
+  </enum>
 
-    <error name="BadDamage" number="0" />
+  <error name="BadDamage" number="0" />
 
-    <request name="QueryVersion" opcode="0">
-      <field type="CARD32" name="client_major_version" />
-      <field type="CARD32" name="client_minor_version" />
-      <reply>
-        <pad bytes="1" />
-        <field type="CARD32" name="major_version" />
-        <field type="CARD32" name="minor_version" />
-        <pad bytes="16" />
-      </reply>
-    </request>
+  <request name="QueryVersion" opcode="0">
+    <field type="CARD32" name="client_major_version" />
+    <field type="CARD32" name="client_minor_version" />
+    <reply>
+      <pad bytes="1" />
+      <field type="CARD32" name="major_version" />
+      <field type="CARD32" name="minor_version" />
+      <pad bytes="16" />
+    </reply>
+  </request>
 
-    <request name="Create" opcode="1">
-      <field type="DAMAGE"   name="damage" />
-      <field type="DRAWABLE" name="drawable" />
-      <field type="CARD8"    name="level" /> <!-- ReportLevel -->
-      <pad bytes="3" />
-    </request>
+  <request name="Create" opcode="1">
+    <field type="DAMAGE"   name="damage" />
+    <field type="DRAWABLE" name="drawable" />
+    <field type="CARD8"    name="level" /> <!-- ReportLevel -->
+    <pad bytes="3" />
+  </request>
 
-    <request name="Destroy" opcode="2">
-      <field type="DAMAGE" name="damage" />
-    </request>
+  <request name="Destroy" opcode="2">
+    <field type="DAMAGE" name="damage" />
+  </request>
 
-    <request name="Subtract" opcode="3">
-      <field type="DAMAGE" name="damage" />
-      <field type="REGION" name="repair" />
-      <field type="REGION" name="parts" />
-    </request>
+  <request name="Subtract" opcode="3">
+    <field type="DAMAGE" name="damage" />
+    <field type="REGION" name="repair" />
+    <field type="REGION" name="parts" />
+  </request>
 
-    <event name="Notify" number="0">
-      <field type="CARD8"     name="level" /> <!-- ReportLevel -->
-      <field type="DRAWABLE"  name="drawable" />
-      <field type="DAMAGE"    name="damage" />
-      <field type="TIMESTAMP" name="timestamp" />
-      <field type="RECTANGLE" name="area" />
-      <field type="RECTANGLE" name="geometry" />
-    </event>
-
-  </extension>
+  <event name="Notify" number="0">
+    <field type="CARD8"     name="level" /> <!-- ReportLevel -->
+    <field type="DRAWABLE"  name="drawable" />
+    <field type="DAMAGE"    name="damage" />
+    <field type="TIMESTAMP" name="timestamp" />
+    <field type="RECTANGLE" name="area" />
+    <field type="RECTANGLE" name="geometry" />
+  </event>
 </xcb>

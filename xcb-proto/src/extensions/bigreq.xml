@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xcb header="bigreq">
 <!--
 Copyright (C) 2001-2004 Bart Massey, Jamey Sharp, and Josh Triplett.
 All Rights Reserved.
@@ -26,14 +25,12 @@ institutions shall not be used in advertising or otherwise to promote the
 sale, use or other dealings in this Software without prior written
 authorization from the authors.
 -->
-  <extension xname="BIG-REQUESTS" name="BigRequests">
-
-    <request name="Enable" opcode="0">
-      <reply>
-        <pad bytes="1" />
-        <field type="CARD32" name="maximum_request_length" />
-      </reply>
-    </request>
-
-  </extension>
+<xcb header="bigreq" extension-xname="BIG-REQUESTS"
+                     extension-name="BigRequests">
+  <request name="Enable" opcode="0">
+    <reply>
+      <pad bytes="1" />
+      <field type="CARD32" name="maximum_request_length" />
+    </reply>
+  </request>
 </xcb>
