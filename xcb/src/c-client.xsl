@@ -120,21 +120,7 @@
     <struct name="XCB{$ext}{@name}Req">
       <field type="CARD8" name="major_opcode" />
       <xsl:if test="$ext"><field type="CARD8" name="minor_opcode" /></xsl:if>
-      <xsl:for-each select="field|pad">
-        <xsl:if test="self::pad">
-          <xsl:copy-of select="." />
-        </xsl:if>
-        <xsl:if test="self::field">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name" />
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name" />
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-      </xsl:for-each>
+      <xsl:apply-templates select="*[not(self::reply)]" mode="field" />
       <middle>
         <field type="CARD16" name="length" />
       </middle>
@@ -144,51 +130,7 @@
         <xsl:call-template name="cookie-type" />
       </xsl:attribute>
       <field type="XCBConnection *" name="c" />
-      <xsl:for-each select="field|list|localfield|valueparam">
-        <xsl:if test="self::field|self::localfield">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name" />
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name" />
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-        <xsl:if test="self::list">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:text>const </xsl:text>
-              <xsl:call-template name="canonical-type-name" />
-              <xsl:text> *</xsl:text>
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name" />
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-        <xsl:if test="self::valueparam">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@value-mask-type" />
-              </xsl:call-template>
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name">
-                <xsl:with-param name="name" select="@value-mask-name" />
-              </xsl:call-template>
-            </xsl:attribute>
-          </field>
-          <field type="const CARD32 *">
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name">
-                <xsl:with-param name="name" select="@value-list-name" />
-              </xsl:call-template>
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-      </xsl:for-each>
+      <xsl:apply-templates select="*[not(self::reply)]" mode="param" />
       <do-request ref="XCB{$ext}{@name}Req" opcode="{@opcode}">
         <xsl:if test="reply">
           <xsl:attribute name="has-reply">yes</xsl:attribute>
@@ -198,21 +140,7 @@
     <xsl:if test="reply">
       <struct name="XCB{$ext}{@name}Rep">
         <field type="BYTE" name="response_type" />
-        <xsl:for-each select="reply/field | reply/pad">
-          <xsl:if test="self::pad">
-            <xsl:copy-of select="." />
-          </xsl:if>
-          <xsl:if test="self::field">
-            <field>
-              <xsl:attribute name="type">
-                <xsl:call-template name="canonical-type-name" />
-              </xsl:attribute>
-              <xsl:attribute name="name">
-                <xsl:call-template name="canonical-var-name" />
-              </xsl:attribute>
-            </field>
-          </xsl:if>
-        </xsl:for-each>
+        <xsl:apply-templates select="reply/*" mode="field" />
         <middle>
           <field type="CARD16" name="sequence" />
           <field type="CARD32" name="length" />
@@ -271,21 +199,7 @@
       <xsl:if test="self::union">
         <xsl:attribute name="kind">union</xsl:attribute>
       </xsl:if>
-      <xsl:for-each select="field|pad">
-        <xsl:if test="self::pad">
-          <xsl:copy-of select="." />
-        </xsl:if>
-        <xsl:if test="self::field">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name" />
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name" />
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-      </xsl:for-each>
+      <xsl:apply-templates select="*" mode="field" />
     </struct>
     <xsl:call-template name="make-iterator" />
   </xsl:template>
@@ -306,21 +220,7 @@
       <xsl:if test="self::error">
         <field type="BYTE" name="error_code" />
       </xsl:if>
-      <xsl:for-each select="field|pad">
-        <xsl:if test="self::pad">
-          <xsl:copy-of select="." />
-        </xsl:if>
-        <xsl:if test="self::field">
-          <field>
-            <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name" />
-            </xsl:attribute>
-            <xsl:attribute name="name">
-              <xsl:call-template name="canonical-var-name" />
-            </xsl:attribute>
-          </field>
-        </xsl:if>
-      </xsl:for-each>
+      <xsl:apply-templates select="*" mode="field" />
       <middle>
         <field type="CARD16" name="sequence" />
       </middle>
@@ -340,6 +240,71 @@
         </xsl:call-template>
       </xsl:attribute>
     </typedef>
+  </xsl:template>
+
+  <!--
+    Templates for processing fields.
+  -->
+
+  <xsl:template match="pad" mode="field">
+    <xsl:copy-of select="." />
+  </xsl:template>
+  
+  <xsl:template match="field" mode="field">
+    <field>
+      <xsl:attribute name="type">
+        <xsl:call-template name="canonical-type-name" />
+      </xsl:attribute>
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name" />
+      </xsl:attribute>
+    </field>
+  </xsl:template>
+
+  <xsl:template match="field|localfield" mode="param">
+    <field>
+      <xsl:attribute name="type">
+        <xsl:call-template name="canonical-type-name" />
+      </xsl:attribute>
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name" />
+      </xsl:attribute>
+    </field>
+  </xsl:template>
+
+  <xsl:template match="list" mode="param">
+    <field>
+      <xsl:attribute name="type">
+        <xsl:text>const </xsl:text>
+        <xsl:call-template name="canonical-type-name" />
+        <xsl:text> *</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name" />
+      </xsl:attribute>
+    </field>
+  </xsl:template>
+
+  <xsl:template match="valueparam" mode="param">
+    <field>
+      <xsl:attribute name="type">
+        <xsl:call-template name="canonical-type-name">
+          <xsl:with-param name="type" select="@value-mask-type" />
+        </xsl:call-template>
+      </xsl:attribute>
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name">
+          <xsl:with-param name="name" select="@value-mask-name" />
+        </xsl:call-template>
+      </xsl:attribute>
+    </field>
+    <field type="const CARD32 *">
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name">
+          <xsl:with-param name="name" select="@value-list-name" />
+        </xsl:call-template>
+      </xsl:attribute>
+    </field>
   </xsl:template>
 
   <xsl:template match="/">
