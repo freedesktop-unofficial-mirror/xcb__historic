@@ -262,7 +262,7 @@ _C
 define(`_outdiv',0)dnl
 FUNCTION(`', `XCB_Connection *XCB_Connect', `int fd', `
 dnl using calloc to make gdb use less painful
-    XCB_Connection* c = (XCB_Connection*) calloc(sizeof(XCB_Connection));
+    XCB_Connection* c = (XCB_Connection*) calloc(1, sizeof(XCB_Connection));
     int i, j, k, vendor_length, additional_data_length;
     unsigned char *tmp, *buf;
     assert(c);
