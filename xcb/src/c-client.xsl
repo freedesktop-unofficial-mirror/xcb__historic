@@ -336,6 +336,22 @@ See the file COPYING in this package for licensing information.
         </xsl:call-template>
       </xsl:attribute>
     </field>
+    <list type="CARD32">
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name">
+          <xsl:with-param name="name" select="@value-list-name" />
+        </xsl:call-template>
+      </xsl:attribute>
+      <function-call name="XCBOnes">
+        <param>
+          <fieldref>
+            <xsl:call-template name="canonical-var-name">
+              <xsl:with-param name="name" select="@value-mask-name" />
+            </xsl:call-template>
+          </fieldref>
+        </param>
+      </function-call>
+    </list>
   </xsl:template>
 
   <xsl:template match="field|localfield" mode="param">
@@ -674,6 +690,20 @@ See the file COPYING in this package for licensing information.
     <xsl:apply-templates select="node()[1]" mode="output-expression" />
     <xsl:value-of select="@op" />
     <xsl:apply-templates select="node()[2]" mode="output-expression" />
+    <xsl:text>)</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="function-call" mode="output-expression">
+    <xsl:value-of select="@name" />
+    <xsl:text>(</xsl:text>
+    <xsl:call-template name="list">
+      <xsl:with-param name="separator" select="', '" />
+      <xsl:with-param name="items">
+        <xsl:for-each select="param">
+          <item><xsl:apply-templates mode="output-expression" /></item>
+        </xsl:for-each>
+      </xsl:with-param>
+    </xsl:call-template>
     <xsl:text>)</xsl:text>
   </xsl:template>
 
