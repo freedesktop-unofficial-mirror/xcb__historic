@@ -290,9 +290,7 @@ for licensing information.
       <field type="PICTURE" name="picture" />
       <field type="INT16" name="clip_x_origin" />
       <field type="INT16" name="clip_y_origin" />
-      <list type="RECTANGLE" name="rectangles">
-        <fieldref>rectangles_len</fieldref>
-      </list>
+      <list type="RECTANGLE" name="rectangles" />
     </request>
 
     <request name="FreePicture" opcode="7">
@@ -325,9 +323,7 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="TRAP" name="traps">
-        <fieldref>traps_len</fieldref>
-      </list>
+      <list type="TRAP" name="traps" />
     </request>
 
     <request name="Triangles" opcode="11">
@@ -338,9 +334,7 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="TRIANGLE" name="triangles">
-        <fieldref>triangles_len</fieldref>
-      </list>
+      <list type="TRIANGLE" name="triangles" />
     </request>
 
     <request name="TriStrip" opcode="12">
@@ -351,9 +345,7 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="POINTFIX" name="points">
-        <fieldref>points_len</fieldref>
-      </list>
+      <list type="POINTFIX" name="points" />
     </request>
 
     <request name="TriFan" opcode="13">
@@ -364,9 +356,7 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="POINTFIX" name="points">
-        <fieldref>points_len</fieldref>
-      </list>
+      <list type="POINTFIX" name="points" />
     </request>
 
     <!-- opcode 14 reserved for ColorTrapezoids -->
@@ -398,18 +388,14 @@ for licensing information.
       <list type="GLYPHINFO" name="glyphs">
         <fieldref>glyphs_len</fieldref>
       </list>
-      <list type="BYTE" name="data">
-        <fieldref>data_len</fieldref>
-      </list>
+      <list type="BYTE" name="data" />
     </request>
 
     <!-- opcode 21 reserved for AddGlyphsFromPicture -->
 
     <request name="FreeGlyphs" opcode="22">
       <field type="GLYPHSET" name="glyphset" />
-      <list type="GLYPH" name="glyphs">
-        <fieldref>glyphs_len</fieldref>
-      </list>
+      <list type="GLYPH" name="glyphs" />
     </request>
 
     <struct name="GLYPHSETELT">
@@ -446,9 +432,7 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="GLYPHITEM8" name="glyphcmds">
-        <fieldref>glyphcmds_len</fieldref>
-      </list>
+      <list type="GLYPHITEM8" name="glyphcmds" />
     </request>
 
     <!-- CompositeGlyphs16 -->
@@ -477,9 +461,7 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="GLYPHITEM16" name="glyphcmds">
-        <fieldref>glyphcmds_len</fieldref>
-      </list>
+      <list type="GLYPHITEM16" name="glyphcmds" />
     </request>
 
     <!-- CompositeGlyphs32 -->
@@ -508,9 +490,7 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <list type="GLYPHITEM32" name="glyphcmds">
-        <fieldref>glyphcmds_len</fieldref>
-      </list>
+      <list type="GLYPHITEM32" name="glyphcmds" />
     </request>
 
     <!-- new in version 0.1 -->
@@ -520,9 +500,7 @@ for licensing information.
       <pad bytes="3" />
       <field type="PICTURE" name="dst" />
       <field type="COLOR" name="color" />
-      <list type="RECTANGLE" name="rects">
-        <fieldref>rects_len</fieldref>
-      </list>
+      <list type="RECTANGLE" name="rects" />
     </request>
 
     <!-- new in version 0.5 -->
@@ -575,9 +553,7 @@ for licensing information.
       <list type="char" name="filter">
         <fieldref>filter_len</fieldref>
       </list>
-      <list type="FIXED" name="values">
-        <fieldref>values_len</fieldref>
-      </list>
+      <list type="FIXED" name="values" />
     </request>
 
     <!-- new in version 0.8 -->
@@ -589,9 +565,7 @@ for licensing information.
 
     <request name="CreateAnimCursor" opcode="31">
       <field type="CURSOR" name="cid" />
-      <list type="ANIMCURSORELT" name="cursors">
-        <fieldref>cursors_len</fieldref>
-      </list>
+      <list type="ANIMCURSORELT" name="cursors" />
     </request>
 
   </extension>
