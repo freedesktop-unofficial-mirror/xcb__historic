@@ -5,17 +5,9 @@
  */
 
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/socket.h>
-#include <sys/fcntl.h>
-#include <sys/un.h>
 #include <netinet/in.h>
-#include <X11/Xauth.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -23,22 +15,6 @@
 #include "xcbint.h"
 
 #undef USENONBLOCKING
-
-/* Maximum size of authentication names and data */
-#define AUTHNAME_MAX 256
-#define AUTHDATA_MAX 256
-
-#define XA1 "XDM-AUTHORIZATION-1"
-#define MC1 "MIT-MAGIC-COOKIE-1"
-static char *authtypes[] = { /* XA1, */ MC1 };
-static int authtypelens[] = { /* sizeof(XA1)-1, */ sizeof(MC1)-1 };
-
-struct XCBAuthInfo {
-    int namelen;
-    char name[AUTHNAME_MAX];
-    int datalen;
-    char data[AUTHDATA_MAX];
-};
 
 typedef struct XCBReplyData {
     int pending;
@@ -82,6 +58,12 @@ void XCBAddReplyData(XCBConnection *c, int seqnum)
     data->data = 0;
 
     XCBListAppend(c->reply_data, data);
+}
+
+static void free_reply_data(XCBReplyData *data)
+{
+    free(data->data);
+    free(data);
 }
 
 static int match_reply_seqnum16(const void *seqnum, const void *data)
@@ -135,11 +117,13 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
 
     if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
     {
+        int ret = -1;
         if(c->unexpected_reply_handler && c->unexpected_reply_handler(c->unexpected_reply_data, (XCBGenericRep *) buf))
-            return 1;
-        fprintf(stderr, "No reply record found for reply %d.\n", ((XCBGenericRep *) buf)->seqnum);
+            ret = 1;
+        if(ret < 0)
+            fprintf(stderr, "No reply record found for reply %d.\n", ((XCBGenericRep *) buf)->seqnum);
         free(buf);
-        return -1;
+        return ret;
     }
 
     if(rep) /* reply or error with a reply record. */
@@ -265,124 +249,7 @@ int XCBFlush(XCBConnection *c)
     return ret;
 }
 
-XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
-{
-    /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
-       xtrans/Xtransutils.c */
-    char sockbuf[sizeof(struct sockaddr) + MAXPATHLEN];
-    int socknamelen = sizeof(sockbuf);   /* need extra space */
-    struct sockaddr *sockname = (struct sockaddr *) &sockbuf;
-    char *addr;
-    int addrlen;
-    unsigned short family;
-    char hostnamebuf[256];   /* big enough for max hostname */
-    char dispbuf[40];   /* big enough to hold more than 2^64 base 10 */
-    char *display;
-    Xauth *authptr = 0;
-
-    if (getpeername(fd, (struct sockaddr *) sockname, &socknamelen) == -1)
-    	return 0;  /* can only authenticate sockets */
-    family = FamilyLocal; /* 256 */
-    if (sockname->sa_family == AF_INET) {
-        struct sockaddr_in *si = (struct sockaddr_in *) sockname;
-	assert(sizeof(*si) == socknamelen);
-        addr = (char *) &si->sin_addr;
-        addrlen = 4;
-        family = FamilyInternet; /* 0 */
-        if (ntohl(si->sin_addr.s_addr) == 0x7f000001)
-	    family = FamilyLocal; /* 256 */
-	(void) sprintf(dispbuf, "%d", ntohs(si->sin_port) - X_TCP_PORT);
-        display = dispbuf;
-    } else if (sockname->sa_family == AF_UNIX) {
-        struct sockaddr_un *su = (struct sockaddr_un *) sockname;
-	assert(sizeof(*su) >= socknamelen);
-        display = strrchr(su->sun_path, 'X');
-	if (display == 0)
-	    return 0;   /* sockname is mangled somehow */
-        display++;
-    } else {
-    	return 0;   /* cannot authenticate this family */
-    }
-    if (family == FamilyLocal) {
-    	if (gethostname(hostnamebuf, sizeof(hostnamebuf)) == -1)
-	    return 0;   /* do not know own hostname */
-	addr = hostnamebuf;
-        addrlen = strlen(addr);
-    }
-    authptr = XauGetBestAuthByAddr (family,
-                                    (unsigned short) addrlen, addr,
-                                    (unsigned short) strlen(display), display,
-				    sizeof(authtypes)/sizeof(authtypes[0]),
-				    authtypes, authtypelens);
-    if (authptr == 0)
-        return 0;   /* cannot find good auth data */
-    if (sizeof(MC1)-1 == authptr->name_length &&
-        !memcmp(MC1, authptr->name, authptr->name_length)) {
-	(void)memcpy(info->name,
-                     authptr->name,
-                     authptr->name_length);
-	info->namelen = authptr->name_length;
-	(void)memcpy(info->data,
-                     authptr->data,
-                     authptr->data_length);
-	info->datalen = authptr->data_length;
-        XauDisposeAuth(authptr);
-        return info;
-    }
-    if (sizeof(XA1)-1 == authptr->name_length &&
-        !memcmp(XA1, authptr->name, authptr->name_length)) {
-	int j;
-	long now;
-
-	(void)memcpy(info->name,
-                     authptr->name,
-                     authptr->name_length);
-	info->namelen = authptr->name_length;
-	for (j = 0; j < 8; j++)
-            info->data[j] = authptr->data[j];
-	XauDisposeAuth(authptr);
-	if (sockname->sa_family == AF_INET) {
-            struct sockaddr_in *si =
-              (struct sockaddr_in *) sockname;
-            (void)memcpy(info->data + j,
-                         &si->sin_addr.s_addr,
-                         sizeof(si->sin_addr.s_addr));
-            j += sizeof(si->sin_addr.s_addr);
-            (void)memcpy(info->data + j,
-                         &si->sin_port,
-                         sizeof(si->sin_port));
-            j += sizeof(si->sin_port);
-        } else if (sockname->sa_family == AF_UNIX) {
-            long fakeaddr = htonl(0xffffffff - nonce);
-	    short fakeport = htons(getpid());
-            (void)memcpy(info->data + j, &fakeaddr, sizeof(long));
-            j += sizeof(long);
-            (void)memcpy(info->data + j, &fakeport, sizeof(short));
-            j += sizeof(short);
-        } else {
-            return 0;   /* do not know how to build this */
-        }
-        (void)time(&now);
-        now = htonl(now);
-        memcpy(info->data + j, &now, sizeof(long));
-	j += sizeof(long);
-        while (j < 192 / 8)
-            info->data[j++] = 0;
-	info->datalen = j;
-        return info;
-    }
-    XauDisposeAuth(authptr);
-    return 0;   /* Unknown authorization type */
-}
-
-XCBConnection *XCBConnect(int fd, int screen, int nonce)
-{
-    XCBAuthInfo info, *infop;
-    infop = XCBGetAuthInfo(fd, nonce, &info);
-    return XCBConnectAuth(fd, infop);
-}
-
-XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
+XCBConnection *XCBConnect(int fd, int nonce)
 {
     XCBConnection* c;
 
@@ -393,12 +260,11 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
     pthread_mutex_lock(&c->locked);
 
     c->handle = XCBIOFdOpen(fd, &c->locked);
-    if(!c->handle)
-        goto error;
-
     c->reply_data = XCBListNew();
     c->event_data = XCBListNew();
     c->extension_cache = XCBListNew();
+    if(!(c->handle && c->reply_data && c->event_data && c->extension_cache))
+        goto error;
 
     c->last_request = 0;
     c->seqnum = 0;
@@ -410,14 +276,21 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
 
     /* Write the connection setup request. */
     {
-        XCBConnSetupReq *out = (XCBConnSetupReq *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(XCBConnSetupReq)));
+        XCBConnSetupReq *out = XCBAllocOut(c->handle, XCB_CEIL(sizeof(XCBConnSetupReq)));
+        XCBAuthInfo auth, *auth_info;
+        int endian = 0x01020304;
 
         /* B = 0x42 = MSB first, l = 0x6c = LSB first */
-        out->byte_order = 0x6c;
+        if(htonl(endian) == endian)
+            out->byte_order = 0x42;
+        else
+            out->byte_order = 0x6c;
         out->protocol_major_version = X_PROTOCOL;
         out->protocol_minor_version = X_PROTOCOL_REVISION;
         out->authorization_protocol_name_len = 0;
         out->authorization_protocol_data_len = 0;
+
+        auth_info = XCBGetAuthInfo(fd, nonce, &auth);
         if (auth_info) {
             struct iovec parts[2];
             parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
@@ -449,7 +322,7 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
     case 0: /* failed */
         {
             XCBConnSetupFailedRep *setup = (XCBConnSetupFailedRep *) c->setup;
-            write(STDERR_FILENO, XCBConnSetupFailedRepreason(setup), XCBConnSetupFailedRepreasonLength(setup));
+            write(STDERR_FILENO, XCBConnSetupFailedRepReason(setup), XCBConnSetupFailedRepReasonLength(setup));
             write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
@@ -458,7 +331,7 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
     case 2: /* authenticate */
         {
             XCBConnSetupAuthenticateRep *setup = (XCBConnSetupAuthenticateRep *) c->setup;
-            write(STDERR_FILENO, XCBConnSetupAuthenticateRepreason(setup), XCBConnSetupAuthenticateRepreasonLength(setup));
+            write(STDERR_FILENO, XCBConnSetupAuthenticateRepReason(setup), XCBConnSetupAuthenticateRepReasonLength(setup));
             write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
@@ -470,29 +343,30 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
     return c;
 
 error:
-    if(c)
-        free(c->handle);
-    free(c);
+    XCBDisconnect(c);
     return 0;
 }
 
 XCBConnection *XCBConnectBasic()
 {
-    static int nonce = 0;
-    static pthread_mutex_t nonce_mutex = PTHREAD_MUTEX_INITIALIZER;
-    int fd, screen;
+    int fd, display = 0, screen = 0;
+    char *host;
     XCBConnection *c;
-    fd = XCBOpen(getenv("DISPLAY"), &screen);
+
+    if(!XCBParseDisplay(0, &host, &display, &screen))
+    {
+        fprintf(stderr, "Invalid DISPLAY\n");
+        abort();
+    }
+    fd = XCBOpen(host, display);
+    free(host);
     if(fd == -1)
     {
         perror("XCBOpen");
         abort();
     }
 
-    pthread_mutex_lock(&nonce_mutex);
-    c = XCBConnect(fd, screen, nonce);
-    nonce++;
-    pthread_mutex_unlock(&nonce_mutex);
+    c = XCBConnect(fd, XCBNextNonce());
     if(!c)
     {
         perror("XCBConnect");
@@ -500,6 +374,25 @@ XCBConnection *XCBConnectBasic()
     }
 
     return c;
+}
+
+int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
+{
+    char *colon;
+    *host = 0;
+    if(!name || !*name)
+        name = getenv("DISPLAY");
+    if(!name)
+        return 0;
+    colon = strchr(name, ':');
+    if(!colon)
+        return 0;
+    *colon = '\0';
+    ++colon;
+    *host = strdup(name);
+    if(!*host)
+        return 0;
+    return sscanf(colon, "%d.%d", display, screen);
 }
 
 int XCBSync(XCBConnection *c, XCBGenericEvent **e)
@@ -540,4 +433,22 @@ const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char
 
     pthread_mutex_unlock(&c->locked);
     return data->info;
+}
+
+static void free_extension_record(XCBExtensionRecord *data)
+{
+    free(data->info);
+    free(data);
+}
+
+void XCBDisconnect(XCBConnection *c)
+{
+    if(!c)
+        return;
+    XCBListDelete(c->reply_data, (XCBListFreeFunc) free_reply_data);
+    XCBListDelete(c->event_data, free);
+    XCBListDelete(c->extension_cache, (XCBListFreeFunc) free_extension_record);
+    free(c->handle);
+    free(c->setup);
+    free(c);
 }

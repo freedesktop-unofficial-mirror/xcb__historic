@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libXCB.la libXCBext.la
+lib_LTLIBRARIES = libXCB.la
 
 M4FLAGS = $(XCBPROTO_CFLAGS)
 
@@ -6,16 +6,12 @@ COREPROTO = xcb.h xproto.c xcb_types.c
 
 xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb
 
-libXCB_la_CFLAGS = $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
+AM_CFLAGS = $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
 libXCB_la_LIBADD = $(XCBPROTO_LIBS) $(XPROTO_LIBS) $(XAU_LIBS)
 libXCB_la_SOURCES = \
-		xcb_conn.c xcb_io.c \
+		xcb_conn.c xcb_auth.c xcb_io.c \
 		xcb_list.c xcb_event.c \
-		$(COREPROTO)
-
-libXCBext_la_CFLAGS = $(XCBPROTO_CFLAGS)
-libXCBext_la_LIBADD = $(XCBPROTO_LIBS)
-libXCBext_la_SOURCES = \
+		$(COREPROTO) \
 		extensions/shm.c extensions/shm.h \
 		extensions/shape.c extensions/shape.h \
 		extensions/render.c extensions/render.h \

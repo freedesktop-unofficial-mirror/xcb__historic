@@ -7,6 +7,22 @@
 #ifndef __XCBINT_H
 #define __XCBINT_H
 
+/* xcb_auth.c */
+
+/* Maximum size of authentication names and data */
+#define AUTHNAME_MAX 256
+#define AUTHDATA_MAX 256
+
+struct XCBAuthInfo {
+    int namelen;
+    char name[AUTHNAME_MAX];
+    int datalen;
+    char data[AUTHDATA_MAX];
+};
+
+XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
+
+
 /* xcb_io.c */
 
 /* Index of nearest 4-byte boundary following E. */
@@ -32,7 +48,11 @@ int XCBIOReadable(XCBIOHandle *h);
 
 /* xcb_list.c */
 
+typedef void (*XCBListFreeFunc)(void *);
+
 XCBList *XCBListNew(void);
+void XCBListClear(XCBList *list, XCBListFreeFunc do_free);
+void XCBListDelete(XCBList *list, XCBListFreeFunc do_free);
 void XCBListInsert(XCBList *list, void *data);
 void XCBListAppend(XCBList *list, void *data);
 void *XCBListRemoveHead(XCBList *list);

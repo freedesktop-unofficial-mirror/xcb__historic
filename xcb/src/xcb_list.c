@@ -34,6 +34,20 @@ XCBList *XCBListNew()
     return list;
 }
 
+void XCBListClear(XCBList *list, XCBListFreeFunc do_free)
+{
+    void *tmp;
+    while((tmp = XCBListRemoveHead(list)))
+        if(do_free)
+            do_free(tmp);
+}
+
+void XCBListDelete(XCBList *list, XCBListFreeFunc do_free)
+{
+    XCBListClear(list, do_free);
+    free(list);
+}
+
 void XCBListInsert(XCBList *list, void *data)
 {
     XCBListNode *node;

@@ -4,6 +4,8 @@
  * for licensing information.
  */
 
+#define _GNU_SOURCE /* for asprintf */
+
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -259,68 +261,37 @@ int XCBIOReadable(XCBIOHandle *h)
     return h->n_inqueue;
 }
 
-int XCBOpen(const char *display, int *screen)
+int XCBOpen(const char *host, int display)
 {
-    int fd = -1;
-    char *buf, *colon, *dot;
+    int fd;
 
-    if(!display)
-    {
-        fputs("XCB error: display not set\n", stderr);
-        return -1;
-    }
-
-    buf = (char *) malloc((strlen(display) + 1) * sizeof(char));
-    if(!buf)
-        return -1;
-    strcpy(buf, display);
-
-    colon = strchr(buf, ':');
-    if(!colon)
-    {
-        fprintf(stderr, "XCB error: invalid display: \"%s\"\n", buf);
-        return -1;
-    }
-    *colon = '\0';
-    ++colon;
-
-    dot = strchr(colon, '.');
-    if(dot)
-    {
-        *dot = '\0';
-        ++dot;
-        if(screen)
-            *screen = atoi(dot);
-    }
-    else
-        if(screen)
-            *screen = 0;
-
-    if(*buf)
+    if(*host)
     {
         /* display specifies TCP */
-        unsigned short port = X_TCP_PORT + atoi(colon);
-        fd = XCBOpenTCP(buf, port);
+        unsigned short port = X_TCP_PORT + display;
+        fd = XCBOpenTCP(host, port);
     }
     else
     {
         /* display specifies Unix socket */
-        char file[] = "/tmp/.X11-unix/X\0\0";
-        strcat(file, colon);
+        char *file;
+        asprintf(&file, "/tmp/.X11-unix/X%d", display);
         fd = XCBOpenUnix(file);
+        free(file);
     }
 
-    free(buf);
     return fd;
 }
 
 int XCBOpenTCP(const char *host, unsigned short port)
 {
     int fd;
-    struct sockaddr_in addr = { AF_INET, htons(port) };
+    struct sockaddr_in addr;
     struct hostent *hostaddr = gethostbyname(host);
     if(!hostaddr)
         return -1;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
     memcpy(&addr.sin_addr, hostaddr->h_addr_list[0], sizeof(addr.sin_addr));
 
     fd = socket(PF_INET, SOCK_STREAM, 0);

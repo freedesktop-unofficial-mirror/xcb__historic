@@ -8,11 +8,11 @@ divert(-1) dnl Discard any text until a divert(0).
 dnl -- Implementations of macros specified in global macros.m4
 
 dnl ENUM(type name, name list)
-define(`ENUM', `pushdef(`ENUMNAME', `$1')TYPEDEF(`enum $1 {
-ENUMLOOP(shift($@))dnl
-}', `$1')popdef(`ENUMNAME')')
-define(`ENUMLOOP', `ifelse($1, , , `    ENUMNAME`$1',
-ENUMLOOP(shift($@))')')
+define(`ENUM', `pushdef(`ENUMNAME', `$1')TYPEDEF(`enum $1 {INDENT()
+TAB()ENUMNAME`$2'ENUMLOOP(shift(shift($@)))
+UNINDENT()}', `$1')popdef(`ENUMNAME')')
+define(`ENUMLOOP', `ifelse($1, , , `,
+TAB()ENUMNAME`$1'ENUMLOOP(shift($@))')')
 
 dnl PAD(bytes)
 define(`PAD', `FIELD(`CARD8', `pad'PADQTY`'ifelse($1, 1, , `[$1]'))
@@ -107,36 +107,76 @@ $3}UNINDENT()
 ')POPDIV()')
 
 
-dnl Allocate a block or array of storage with a given name.
-dnl There is no FREE() macro: just call free().
-dnl ALLOC(type, result name, count)
-define(`ALLOC', `dnl
-TAB()$2 = ($1 *) malloc(($3) * sizeof($1));
-TAB()assert($2);')
-
-dnl REALLOC(type, result name, count)
-define(`REALLOC', `dnl
-TAB()$2 = ($1 *) realloc($2, ($3) * sizeof($1));
-TAB()assert($2);')
-
-
 dnl -- Type macros
 
 dnl TYPEDEF(old name, new name)
 define(`TYPEDEF', `PUSHDIV(TYPEDIV)HEADERONLY(`typedef $1 $2;
+
 ')POPDIV()')
+
+dnl NEXTFIELD must be defined, and must evaluate to the address of the
+dnl byte following an instance of $1. When NEXTFIELD is evaluated, a
+dnl variable named R of type `pointer to $1' points to the current
+dnl instance of $1.
+dnl
+dnl NEXTFIELD must string-match `R + 1' to generate efficient code for
+dnl iterating over fixed-length fields.
+dnl
+dnl ITERATOR(base type name)
+define(`ITERATOR', `
+TYPEDEF(`struct `$1'Iter {INDENT()
+TAB()`$1' *data;
+TAB()int rem;
+UNINDENT()}', ``$1'Iter')
+
+ifelse(NEXTFIELD, `R + 1',
+`dnl Iterate over a fixed-length object.
+FUNCTION(`void `$1'Next', ``$1'Iter *i', `
+TAB()--i->rem;
+TAB()++i->data;
+')
+
+FUNCTION(`void *`$1'End', ``$1'Iter i', `
+TAB()return (void *) (i.data + i.rem);
+')
+',
+`dnl Iterate over a variable-length object.
+FUNCTION(`void `$1'Next', ``$1'Iter *i', `
+TAB()$1 *R = i->data;
+TAB()--i->rem;
+TAB()i->data = ($1 *) (NEXTFIELD());
+')
+
+FUNCTION(`void *`$1'End', ``$1'Iter i', `
+TAB()while(i.rem > 0)INDENT()
+TAB()`$1'Next(&i);UNINDENT()
+TAB()return (void *) i.data;
+')
+')
+')
+
+define(`COMPOUND',
+`PUSHDIV(-1)
+define(`NEXTFIELD', `R + 1')
+pushdef(`LENGTHFIELD')pushdef(`REQ', $1)pushdef(`KIND')
+$2
+TYPEDEF(``$3' `$1' {
+undivert(STRUCTDIV)dnl
+}', `$1')
+ifelse(`$3', `union', `
+dnl UNIONs must be fixed length.
+ifelse(NEXTFIELD, `R + 1', , `errprint(__file__:__line__: Illegal variable-length UNION `$1'.
+)')')
+ITERATOR(`$1')
+popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')
+define(`FIELDQTY', 0)define(`PADQTY', 0)
+POPDIV()')
 
 dnl UNION(name, 1 or more FIELDs)
-define(`UNION', `PUSHDIV(-1)
-pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
-$2
-popdef(`PADQTY') popdef(`FIELDQTY')
-divert(TYPEDIV)HEADERONLY(`dnl
-typedef union $1 {
-undivert(STRUCTDIV)dnl
-} $1;
+define(`UNION', `COMPOUND($@, `union')')
 
-')POPDIV()')
+dnl STRUCT(name, 1 or more FIELDs)
+define(`STRUCT', `COMPOUND($@, `struct')')
 
 dnl CHAR(char-literal)
 changequote([,])
@@ -313,29 +353,35 @@ dnl involving the fixed-length portion of the structure, which evaluates
 dnl at run-time to the number of elements in this array.
 dnl ARRAYFIELD(field type, field name, list length expr)
 define(`ARRAYFIELD', `
-INLINEFUNCTION(`$1 *'REQ`$2', REQ`'KIND` *R', `
+pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
+INLINEFUNCTION(`$1 *'REQ`'NAME, REQ`'KIND` *R', `
     return (`$1' *) (NEXTFIELD);
 ')
 
-INLINEFUNCTION(`int 'REQ`$2'Length, REQ`'KIND` *R', `
+INLINEFUNCTION(`int 'REQ`'NAME`'Length, REQ`'KIND` *R', `
     return `$3';
 ')
 
-define(`NEXTFIELD', REQ`$2'`(R) + (`$3')')')
+define(`NEXTFIELD', REQ`'NAME`(R) + (`$3')')
+popdef(`NAME')
+')
 
 define(`ARRAYREPLY', `ARRAYFIELD($@)')
 
 dnl Generates an iterator for the variable-length portion of a structure.
 dnl LISTFIELD(field type, field name, list length expr)
 define(`LISTFIELD', `
-FUNCTION(`$1Iter 'REQ`$2', REQ`'KIND` *R', `
+pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
+FUNCTION(`$1Iter 'REQ`'NAME, REQ`'KIND` *R', `
 TAB()$1Iter i;
 TAB()i.data = (`$1' *) (NEXTFIELD);
 TAB()i.rem = (`$3');
 TAB()return i;
 ')
 
-define(`NEXTFIELD', `$1AfterIter(REQ`$2'((REQ`'KIND *) R))')')
+define(`NEXTFIELD', `$1End'(REQ`'NAME`'((REQ`'KIND *) R)))
+popdef(`NAME')
+')
 
 
 dnl Creates a function named XCB<name> returning XCBVoidCookie and
@@ -415,7 +461,8 @@ dnl instances of this struct.
 dnl XIDTYPE(name)
 define(`XIDTYPE', `STRUCT(`$1', `FIELD(`CARD32', `xid')')
 FUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
-    `$1' ret = { XCBGenerateID(c) };
+    `$1' ret;
+    ret.xid = XCBGenerateID(c);
     return ret;
 ')')
 
@@ -465,40 +512,6 @@ define(`REQMIDDLE', `FIELD(CARD16, `length')
 PUSHDIV(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
 TAB()out->length = XCB_CEIL(sizeof(*out)) >> 2;
 ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()')
-
-dnl STRUCT(name, 1 or more FIELDs)
-define(`STRUCT', `PUSHDIV(-1)
-define(`NEXTFIELD', `R + 1')
-define(`REQ', $1)
-define(`KIND')
-$2
-divert(TYPEDIV)HEADERONLY(`dnl
-typedef struct `$1' {
-undivert(STRUCTDIV)dnl
-} `$1';
-
-typedef struct `$1'Iter {INDENT()
-TAB()`$1' *data;
-TAB()int rem;
-UNINDENT()} `$1'Iter;
-
-')divert(-1)
-
-FUNCTION(`void `$1'Next', ``$1'Iter *i', `
-TAB()$1 *R = i->data;
-TAB()--i->rem;
-TAB()i->data = ($1 *) (NEXTFIELD());
-')
-
-FUNCTION(`void *`$1'AfterIter', ``$1'Iter i', `
-TAB()while(i.rem > 0)INDENT()
-TAB()`$1'Next(&i);UNINDENT()
-TAB()return (void *) i.data;
-')
-
-popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')
-define(`FIELDQTY', 0)define(`PADQTY', 0)
-POPDIV()')
 
 dnl for kind in (Event, Error, Rep, Req)
 dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)

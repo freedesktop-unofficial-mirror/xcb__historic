@@ -66,6 +66,11 @@ include(`xproto.xcb')
 divert(0)dnl
 undivert(TYPEDIV)dnl
 
+/* xcb_auth.c */
+
+int XCBNextNonce(void);
+
+
 /* xcb_conn.c */
 
 typedef int (*XCBUnexpectedReplyFunc)(void *unexpected_reply_data, XCBGenericRep *buf);
@@ -95,10 +100,10 @@ void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollEvent(XCBConnection *c);
 int XCBFlush(XCBConnection *c);
-XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
-XCBConnection *XCBConnect(int fd, int screen, int nonce);
-XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info);
+XCBConnection *XCBConnect(int fd, int nonce);
 XCBConnection *XCBConnectBasic(void);
+void XCBDisconnect(XCBConnection *c);
+int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
 
 
 /* xcb_event.c */
@@ -115,7 +120,7 @@ void XCBEventQueueClear(struct XCBConnection *c);
 
 /* xcb_io.c */
 
-int XCBOpen(const char *display, int *screen);
+int XCBOpen(const char *host, int display);
 int XCBOpenTCP(const char *host, unsigned short port);
 int XCBOpenUnix(const char *file);
 

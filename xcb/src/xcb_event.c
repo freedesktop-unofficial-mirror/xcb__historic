@@ -49,7 +49,6 @@ void XCBEventQueueClear(struct XCBConnection *c)
 {
     void *tmp;
     pthread_mutex_lock(&c->locked);
-    while((tmp = XCBListRemoveHead(c->event_data)))
-        free(tmp);
+    XCBListClear(c->event_data, free);
     pthread_mutex_unlock(&c->locked);
 }
