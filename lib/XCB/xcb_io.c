@@ -82,46 +82,14 @@ void *XCBAllocOut(XCBIOHandle *c, int size)
     return out;
 }
 
-static int XCBWriteInternal(XCBIOHandle *h, void *buf, int nwrite)
-{
-#ifdef USENONBLOCKING
-    int count = 0;
-    int n;
-    while(nwrite > 0)
-    {
-        n = write(h->fd, buf, nwrite);
-        if(n == -1)
-        {
-            if (errno != EAGAIN)
-                return -1;
-            n = 0; /* errno == EAGAIN: force select and re-write */
-        }
-        if(n == 0)
-        {
-            fd_set wfds;
-            FD_ZERO(&wfds);
-            FD_SET(h->fd, &wfds);
-            if(select(h->fd + 1, 0, &wfds, 0, 0) == -1)
-                return -1;
-        }
-        nwrite -= n;
-        buf += n;
-        count += n;
-    }
-    return count;
-#else
-    return write(h->fd, buf, nwrite);
-#endif
-}
-
 static int XCBWriteBuffer(XCBIOHandle *c)
 {
-    int ret;
-    ret = XCBWriteInternal(c, c->outqueue, c->n_outqueue);
-    if(ret != c->n_outqueue)
-        return (ret <= 0) ? ret : -1;
+    int n;
+    n = write(c->fd, c->outqueue, c->n_outqueue);
+    c->n_outqueue -= n;
+    if(c->n_outqueue)
+        memmove(c->outqueue, c->outqueue + n, c->n_outqueue);
 
-    c->n_outqueue = 0;
     if(c->n_outvec)
     {
         if(USEOUTVEC)
