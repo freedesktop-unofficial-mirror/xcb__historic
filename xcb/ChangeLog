@@ -1,3 +1,9 @@
+2005-03-24  Josh Triplett  <josh@freedesktop.org>
+
+	* configure.ac:
+	Change pdx.freedesktop.org to lists.freedesktop.org in package
+	email address.
+
 2005-03-23  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_conn.c, src/xcb_in.c:
