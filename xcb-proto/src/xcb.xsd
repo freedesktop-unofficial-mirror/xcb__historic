@@ -159,9 +159,18 @@
           </xsd:sequence>
           <xsd:attribute name="name" type="xsd:string" />
           <xsd:attribute name="opcode" type="xsd:integer" />
+          <xsd:attribute name="combine-adjacent" type="xsd:boolean" />
         </xsd:complexType>
       </xsd:element>
-      <xsd:element name="event" type="packet-struct" />
+      <xsd:element name="event">
+        <xsd:complexType>
+          <xsd:complexContent>
+            <xsd:extension base="packet-struct">
+              <xsd:attribute name="no-sequence-number" type="xsd:boolean" />
+            </xsd:extension>
+          </xsd:complexContent>
+        </xsd:complexType>
+      </xsd:element>
       <xsd:element name="eventcopy" type="packet-struct-copy" />
       <xsd:element name="error" type="packet-struct" />
       <xsd:element name="errorcopy" type="packet-struct-copy" />
