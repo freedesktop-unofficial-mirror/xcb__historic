@@ -49,10 +49,8 @@ main (int argc, char *argv[])
   XCBDRAWABLE      rect;
   XCBRECTANGLE     rect_coord = { 0, 0, W_W, W_H};
   XCBGCONTEXT      bgcolor, fgcolor;
-  XCBGCONTEXT      black;
   XCBPOINT         points[2];
   CARD32           mask;
-  CARD32           value[1];
   CARD32           valgc[2];
   CARD32           valwin[3];
   int              depth;
@@ -80,7 +78,7 @@ main (int argc, char *argv[])
 
   /* Shm test */
   printf ("shm test begin\n");
-  XCBImage *img;
+  XCBImage *img = 0;
   XCBShmQueryVersionRep *rep;
   XCBShmSegmentInfo shminfo;
 
