@@ -17,6 +17,11 @@ PICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, PICTFORMINFO
 XCBConnection   *c;
 PICTFORMAT pf;
 
+inline FIXED make_fixed(INT16 i, INT16 f)
+{
+    return (i << 16) | (f & 0xffff);
+}
+
 void print_version_info(XCBRenderQueryVersionRep *reply)
 {
     
