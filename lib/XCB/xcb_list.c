@@ -1,42 +1,53 @@
-XCBGEN(xcb_list, `
-Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
-All Rights Reserved.  See the file COPYING in this directory
-for licensing information.
-')
-SOURCEONLY(`
-REQUIRE(stdlib)
-')HEADERONLY(`
-STRUCT(XCBListNode, `
-    POINTERFIELD(struct XCBListNode, `next')
-    POINTERFIELD(void, `data')
-')
+/*
+ * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
 
-STRUCT(XCBList, `
-    POINTERFIELD(XCBListNode, `head')
-    POINTERFIELD(XCBListNode, `tail')
-')
-')dnl end HEADERONLY
+#include <assert.h>
+#include <xcb_list.h>
+
+#include <stdlib.h>
+
+typedef struct XCBListNode {
+    struct XCBListNode *next;
+    void *data;
+} XCBListNode;
+
+struct XCBList {
+    XCBListNode *head;
+    XCBListNode *tail;
+};
 
 /* Linked list functions */
 
-FUNCTION(`void XCBListInit', `XCBList *list', `
+XCBList *XCBListNew()
+{
+    XCBList *list;
+    list = (XCBList *) malloc(sizeof(XCBList));
+    assert(list);
     list->head = list->tail = 0;
-')
-_C
-FUNCTION(`void XCBListInsert', `XCBList *list, void *data', `
+    return list;
+}
+
+void XCBListInsert(XCBList *list, void *data)
+{
     XCBListNode *node;
-ALLOC(XCBListNode, `node', 1)
+    node = (XCBListNode *) malloc(sizeof(XCBListNode));
+    assert(node);
     node->data = data;
 
     node->next = list->head;
     list->head = node;
     if(!list->tail)
         list->tail = node;
-')
-_C
-FUNCTION(`void XCBListAppend', `XCBList *list, void *data', `
+}
+
+void XCBListAppend(XCBList *list, void *data)
+{
     XCBListNode *node;
-ALLOC(XCBListNode, `node', 1)
+    node = (XCBListNode *) malloc(sizeof(XCBListNode));
+    assert(node);
     node->data = data;
     node->next = 0;
 
@@ -46,9 +57,10 @@ ALLOC(XCBListNode, `node', 1)
         list->head = node;
 
     list->tail = node;
-')
-_C
-FUNCTION(`void *XCBListRemoveHead', `XCBList *list', `
+}
+
+void *XCBListRemoveHead(XCBList *list)
+{
     void *ret;
     XCBListNode *tmp = list->head;
     if(!tmp)
@@ -59,9 +71,10 @@ FUNCTION(`void *XCBListRemoveHead', `XCBList *list', `
         list->tail = 0;
     free(tmp);
     return ret;
-')
-_C
-FUNCTION(`void *XCBListRemove', `XCBList *list, int (*cmp)(const void *, const void *), const void *data', `
+}
+
+void *XCBListRemove(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
+{
     XCBListNode *prev = 0, *cur = list->head;
     void *tmp;
 
@@ -85,9 +98,10 @@ FUNCTION(`void *XCBListRemove', `XCBList *list, int (*cmp)(const void *, const v
     tmp = cur->data;
     free(cur);
     return tmp;
-')
-_C
-FUNCTION(`void *XCBListFind', `XCBList *list, int (*cmp)(const void *, const void *), const void *data', `
+}
+
+void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
+{
     XCBListNode *cur = list->head;
     while(cur)
     {
@@ -96,9 +110,9 @@ FUNCTION(`void *XCBListFind', `XCBList *list, int (*cmp)(const void *, const voi
         cur = cur->next;
     }
     return 0;
-')
-_C
-FUNCTION(`int XCBListIsEmpty', `XCBList *list', `
+}
+
+int XCBListIsEmpty(XCBList *list)
+{
     return (list->head == 0);
-')
-ENDXCBGEN
+}

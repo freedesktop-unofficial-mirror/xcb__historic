@@ -1550,7 +1550,7 @@ FUNCTION(`const XCBQueryExtensionRep *XCBQueryExtensionCached',
         *e = 0;
     pthread_mutex_lock(&c->locked);
 
-    data = (XCBExtensionRecord *) XCBListRemove(&c->extension_cache, match_extension_string, name);
+    data = (XCBExtensionRecord *) XCBListRemove(c->extension_cache, match_extension_string, name);
 
     if(data)
         goto done; /* cache hit: return from the cache */
@@ -1563,7 +1563,7 @@ ALLOC(XCBExtensionRecord, `data', 1)
     pthread_mutex_lock(&c->locked);
 
 done:
-    XCBListInsert(&c->extension_cache, data);
+    XCBListInsert(c->extension_cache, data);
 
     pthread_mutex_unlock(&c->locked);
     return data->info;

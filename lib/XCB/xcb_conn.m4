@@ -66,9 +66,9 @@ STRUCT(XCBConnection, `
 
     POINTERFIELD(XCBIOHandle, `handle')
 
-    FIELD(XCBList, `reply_data')
-    FIELD(XCBList, `event_data')
-    FIELD(XCBList, `extension_cache')
+    POINTERFIELD(XCBList, `reply_data')
+    POINTERFIELD(XCBList, `event_data')
+    POINTERFIELD(XCBList, `extension_cache')
 
     FIELD(int, `seqnum')
     FIELD(CARD32, `last_xid')
@@ -111,11 +111,11 @@ ALLOC(XCBReplyData, `data', 1)
     data->seqnum = seqnum;
     data->data = 0;
 
-    XCBListAppend(&c->reply_data, data);
+    XCBListAppend(c->reply_data, data);
 ')
 
 FUNCTION(`int XCBEventQueueIsEmpty', `XCBConnection *c', `
-    return XCBListIsEmpty(&c->event_data);
+    return XCBListIsEmpty(c->event_data);
 ')
 SOURCEONLY(`
 STATICFUNCTION(`int match_reply_seqnum16', `const void *seqnum, const void *data', `
@@ -152,7 +152,7 @@ REALLOC(unsigned char, buf, 32 + length * 4)
 
     /* Only compare the low 16 bits of the seqnum of the packet. */
     if(!(buf[0] & ~1)) /* reply or error packet */
-        rep = (XCBReplyData *) XCBListFind(&c->reply_data, match_reply_seqnum16, &((XCBGenericRep *) buf)->seqnum);
+        rep = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum16, &((XCBGenericRep *) buf)->seqnum);
 
     if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
     {
@@ -168,7 +168,7 @@ REALLOC(unsigned char, buf, 32 + length * 4)
         rep->data = buf;
     }
     else /* event or error without a reply record */
-        XCBListAppend(&c->event_data, (XCBGenericEvent *) buf);
+        XCBListAppend(c->event_data, (XCBGenericEvent *) buf);
 
     return 1; /* I have something for you... */
 ')
@@ -183,7 +183,7 @@ FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, int seqnum, XCBGenericEvent *
 
     pthread_mutex_lock(&c->locked);
     /* Compare the sequence number as a full int. */
-    cur = (XCBReplyData *) XCBListFind(&c->reply_data, match_reply_seqnum32, &seqnum);
+    cur = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum32, &seqnum);
 
     if(!cur || cur->pending || XCBFlushLocked(c->handle) <= 0) /* error */
         goto done;
@@ -203,7 +203,7 @@ FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, int seqnum, XCBGenericEvent *
     if(cur->error)
     {
         if(!e)
-            XCBListAppend(&c->event_data, (XCBGenericEvent *) cur->data);
+            XCBListAppend(c->event_data, (XCBGenericEvent *) cur->data);
         else
             *e = (XCBGenericEvent *) cur->data;
     }
@@ -211,7 +211,7 @@ FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, int seqnum, XCBGenericEvent *
         ret = cur->data;
 
     /* Compare the sequence number as a full int. */
-    XCBListRemove(&c->reply_data, match_reply_seqnum32, &seqnum);
+    XCBListRemove(c->reply_data, match_reply_seqnum32, &seqnum);
     free(cur);
 
 done:
@@ -227,10 +227,10 @@ FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
 #endif
 
     pthread_mutex_lock(&c->locked);
-    while(XCBListIsEmpty(&c->event_data))
+    while(XCBListIsEmpty(c->event_data))
         if(XCBWait(c->handle, /*should_write*/ 0) <= 0)
             break;
-    ret = (XCBGenericEvent *) XCBListRemoveHead(&c->event_data);
+    ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
 
     pthread_mutex_unlock(&c->locked);
 
@@ -380,9 +380,9 @@ ALLOC(XCBConnection, c, 1)
     if(!c->handle)
         goto error;
 
-    XCBListInit(&c->reply_data);
-    XCBListInit(&c->event_data);
-    XCBListInit(&c->extension_cache);
+    c->reply_data = XCBListNew();
+    c->event_data = XCBListNew();
+    c->extension_cache = XCBListNew();
 
     c->seqnum = 0;
     c->last_xid = 0;
