@@ -13,12 +13,13 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 /* FIXME: outvec support should be enabled */
 #define USEOUTVEC 0
-#undef USENONBLOCKING
+#define USENONBLOCKING
 
 struct XCBIOHandle {
     int fd;
@@ -26,15 +27,17 @@ struct XCBIOHandle {
     pthread_cond_t waiting_threads;
     int reading;
     int writing;
+    char inqueue[1 << 18];
+    int n_inqueue;
     char outqueue[1 << 18];
     int n_outqueue;
     struct iovec *outvec;
     int n_outvec;
-    int (*reader)(void *);
+    int (*reader)(void *, XCBIOHandle *);
     void *readerdata;
 };
 
-XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *), void *readerdata)
+XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, XCBIOHandle *), void *readerdata)
 {
     XCBIOHandle *h;
     h = (XCBIOHandle *) malloc((1) * sizeof(XCBIOHandle));
@@ -172,8 +175,15 @@ int XCBWait(XCBIOHandle *c, const int should_write)
         goto done;
 
     if(FD_ISSET(c->fd, &rfds))
-        if((ret = c->reader(c->readerdata)) <= 0)
+    {
+        ret = read(c->fd, c->inqueue + c->n_inqueue, sizeof(c->inqueue) - c->n_inqueue);
+        if(ret < 0)
             goto done;
+        c->n_inqueue += ret;
+        while(ret > 0)
+            ret = c->reader(c->readerdata, c);
+        ret = 1;
+    }
 
     if(FD_ISSET(c->fd, &wfds))
         if((ret = XCBWriteBuffer(c)) <= 0)
@@ -234,34 +244,30 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
 
 int XCBRead(XCBIOHandle *h, void *buf, int nread)
 {
-#ifdef USENONBLOCKING
-    int count = 0;
-    int n;
-    while(nread > 0)
-    {
-        n = read(h->fd, buf, nread);
-        if(n == -1)
-        {
-            if (errno != EAGAIN)
-                return -1;
-            n = 0;
-        }
-        if(n == 0)
-        {
-            fd_set rfds;
-            FD_ZERO(&rfds);
-            FD_SET(h->fd, &rfds);
-            if(select(h->fd + 1, &rfds, 0, 0, 0) == -1)
-                return -1;
-        }
-        nread -= n;
-        buf += n;
-        count += n;
-    }
-    return count;
-#else
-    return read(h->fd, buf, nread);
-#endif
+    assert(nread <= sizeof(h->inqueue));
+    while(h->n_inqueue < nread)
+        XCBWait(h, /* should_write */ 0);
+    memcpy(buf, h->inqueue, nread);
+    h->n_inqueue -= nread;
+    if(h->n_inqueue)
+        memmove(h->inqueue, h->inqueue + nread, h->n_inqueue);
+    return nread;
+}
+
+int XCBIOPeek(XCBIOHandle *h, void *buf, int nread)
+{
+    assert(nread <= sizeof(h->inqueue));
+    if(nread > h->n_inqueue)
+        nread = h->n_inqueue;
+    if(!nread)
+        return 0;
+    memcpy(buf, h->inqueue, nread);
+    return nread;
+}
+
+int XCBIOReadable(XCBIOHandle *h)
+{
+    return h->n_inqueue;
 }
 
 int XCBOpen(const char *display, int *screen)

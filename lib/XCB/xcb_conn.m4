@@ -126,29 +126,29 @@ STATICFUNCTION(`int match_reply_seqnum32', `const void *seqnum, const void *data
     return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
 ')
 
-STATICFUNCTION(`int XCBReadPacket', `void *readerdata', `
+STATICFUNCTION(`int XCBReadPacket', `void *readerdata, XCBIOHandle *h', `
     XCBConnection *c = (XCBConnection *) readerdata;
     int ret;
+    int length = 32;
+    XCBGenericRep genrep;
     XCBReplyData *rep = 0;
     unsigned char *buf;
-ALLOC(unsigned char, buf, 32)
 
-    ret = XCBRead(c->handle, buf, 32);
-    if(ret != 32)
-        return (ret <= 0) ? ret : -1;
+    /* Wait for there to be enough data for us to read a whole packet */
+    if(XCBIOReadable(h) < length)
+        return 0;
 
-    if(buf[0] == 1) /* get the payload for a reply packet */
-    {INDENT()
-        CARD32 length = ((XCBGenericRep *) buf)->length;
-        if(length)
-        {INDENT()
-REALLOC(unsigned char, buf, 32 + length * 4)
+    XCBIOPeek(h, &genrep, sizeof(genrep));
+    /* For reply packets, check that the entire packet is available. */
+    if(genrep.response_type == 1)
+    {
+        length += genrep.length * 4;
+        if(XCBIOReadable(h) < length)
+            return 0;
+    }
 
-            ret = XCBRead(c->handle, buf + 32, length * 4);
-            if(ret != length * 4)
-                return (ret <= 0) ? ret : -1;
-        }UNINDENT()
-    }UNINDENT()
+ALLOC(unsigned char, buf, length)
+    ret = XCBRead(h, buf, length);
 
     /* Only compare the low 16 bits of the seqnum of the packet. */
     if(!(buf[0] & ~1)) /* reply or error packet */

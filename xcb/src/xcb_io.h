@@ -19,7 +19,7 @@
 
 typedef struct XCBIOHandle XCBIOHandle;
 
-XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *), void *readerdata);
+XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, XCBIOHandle *), void *readerdata);
 
 void *XCBAllocOut(XCBIOHandle *c, int size);
 
@@ -28,6 +28,8 @@ int XCBFlushLocked(XCBIOHandle *c);
 
 int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count);
 int XCBRead(XCBIOHandle *h, void *buf, int nread);
+int XCBIOPeek(XCBIOHandle *h, void *buf, int nread);
+int XCBIOReadable(XCBIOHandle *h);
 
 int XCBOpen(const char *display, int *screen);
 int XCBOpenTCP(const char *host, unsigned short port);
