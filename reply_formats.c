@@ -293,6 +293,7 @@ static const char *labelSendEvent[] = {
 int formatEvent(XCB_Event *e)
 {
     BYTE sendEvent;
+    CARD16 seqnum;
 
     if(!e)
     {
@@ -300,26 +301,27 @@ int formatEvent(XCB_Event *e)
         return 0;
     }
 
-    sendEvent = (e->type & 0x80) ? 1 : 0;
-    e->type &= ~0x80;
+    sendEvent = (e->response_type & 0x80) ? 1 : 0;
+    e->response_type &= ~0x80;
+    seqnum = *((CARD16 *) e + 1);
 
-    switch(e->type)
+    switch(e->response_type)
     {
     case 0:
-        printf("%s on seqnum %d (%s).\n",
-            labelError[e->error.errorCode],
-            e->error.sequenceNumber,
-            labelRequest[e->error.majorCode]);
+        printf("Error %s on seqnum %d (%s).\n",
+            labelError[*((BYTE *) e + 1)],
+            seqnum,
+            labelRequest[*((CARD8 *) e + 10)]);
         break;
     default:
-        printf("%s following seqnum %d%s.\n",
-            labelEvent[e->event.u.u.type],
-            e->event.u.u.sequenceNumber,
+        printf("Event %s following seqnum %d%s.\n",
+            labelEvent[e->response_type],
+            seqnum,
             labelSendEvent[sendEvent]);
         break;
     case KeymapNotify:
-        printf("%s%s.\n",
-            labelEvent[e->keymapEvent.type],
+        printf("Event %s%s.\n",
+            labelEvent[e->response_type],
             labelSendEvent[sendEvent]);
         break;
     }

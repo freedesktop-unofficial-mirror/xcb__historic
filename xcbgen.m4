@@ -55,8 +55,12 @@ dnl prefixed with _H, stuff that belongs in .c files only should
 dnl be prefixed with _C.
 dnl Note that the define()s are in the else part of the ifdef.
 dnl Do not make the obvious change without careful thought.
-ifdef(`_H', , `define(`_H', `dnl')')
-ifdef(`_C', , `define(`_C', `dnl')')
+define(`HEADERONLY', `PUSHDIV(-1) $1
+POPDIV()')
+ifdef(`_H', `define(`HEADERONLY', `$1')', `define(`_H', `dnl')')
+define(`SOURCEONLY', `PUSHDIV(-1) $1
+POPDIV()')
+ifdef(`_C', `define(`SOURCEONLY', `$1')', `define(`_C', `dnl')')
 
 
 dnl Declare a C function.
@@ -64,36 +68,26 @@ dnl Note that this macro also sticks a declaration
 dnl in the header file.
 dnl FUNCTION(return type and function name, params, body)
 define(`FUNCTION', `dnl
-$1`('$2`)'_H;
-_C
-_H`'PUSHDIV(-1)
+$1($2)HEADERONLY(;)SOURCEONLY(`
 {INDENT()dnl
-'$3`dnl
-}UNINDENT()
-_H`'POPDIV()dnl')
+$3}UNINDENT()')')
 
 dnl Declare a C function local to the .c file.
 dnl The header file is not affected.
 dnl STATICFUNCTION(return type and function name, params, body)
-define(`STATICFUNCTION', `dnl
-_C`'static $1`('$2`)'
-_H`'PUSHDIV(-1)
+define(`STATICFUNCTION', `SOURCEONLY(
+`static $1($2)
 {INDENT()dnl
-'$3`dnl
-}UNINDENT()
-_H`'POPDIV()dnl')
+$3}UNINDENT()')')
 
 dnl Declare a C function which should be compiled inline if possible.
 dnl TODO: fallback to a regular function if inline is not supported by
 dnl       the compiler.
 dnl INLINEFUNCTION(return type and function name, params, body)
-define(`INLINEFUNCTION', `dnl
-_C`'PUSHDIV(-1)
-static inline $1`('$2`)'
+define(`INLINEFUNCTION', `HEADERONLY(
+`static inline $1($2)
 {INDENT()dnl
-'$3`dnl
-}UNINDENT()
-_C`'POPDIV()dnl')
+$3}UNINDENT()')')
 
 
 dnl Allocate a block or array of storage with a given name.
@@ -142,8 +136,8 @@ dnl The C name should be a valid C identifier which can be guessed easily
 dnl from the X name, as it will appear in programmer-visible names.
 dnl BEGINEXTENSION(X name, C name)
 define(`BEGINEXTENSION', `define(`EXTENSION', `XCB_`'$2`'_id')dnl
-_H`'extern const char *EXTENSION;
-_C`'const char *EXTENSION = "`$1'";
+_H`'extern const char EXTENSION[];
+_C`'const char EXTENSION[] = "`$1'";
 FUNCTION(`const XCB_QueryExtension_Rep *XCB_`'$2`'_Init', `XCB_Connection *c', `
     return XCB_QueryExtension_Cached(c, EXTENSION, 0);
 ')')
@@ -158,7 +152,7 @@ dnl probably be either CARD16 or CARD32, depending on the specified width
 dnl of the bitmask. The value array must be given to the generated
 dnl function in the order the X server expects.
 dnl VALUEPARAM(bitmask type, bitmask name, value array name)
-define(`VALUEPARAM', `FIELD($1, `$2')`'dnl
+define(`VALUEPARAM', `FIELD(`$1', `$2')
 PUSHDIV(OUTDIV)
 TAB()out->`$2' = `$2';
 TAB()out->length += XCB_Ones(`$2');
@@ -166,8 +160,7 @@ TAB()parts[PARTQTY].iov_base = `$3';
 TAB()parts[PARTQTY].iov_len = XCB_Ones(`$2') * 4;
 define(`PARTQTY', eval(1+PARTQTY))dnl
 divert(PARMDIV), $1 `$2', CARD32 *`$3'dnl
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
-POPDIV()')
+POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
@@ -178,20 +171,18 @@ divert(OUTDIV)
 TAB()out->length += (`$3') * sizeof(`$1') / 4;
 TAB()parts[PARTQTY].iov_base = (`$1' *) `$2';
 TAB()parts[PARTQTY].iov_len = (`$3') * sizeof(`$1');
-define(`PARTQTY', eval(1+PARTQTY))dnl
-POPDIV()')
+POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
 
 dnl Defines a field which should be filled in with the given expression.
 dnl The field name is available for use in the expression of a LISTPARAM
 dnl or a following EXPRFIELD.
 dnl EXPRFIELD(field type, field name, expression)
-define(`EXPRFIELD', `FIELD($1, `$2')`'dnl
+define(`EXPRFIELD', `FIELD(`$1', `$2')
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
 divert(OUTDIV)dnl
 TAB()out->`$2' = `$2';
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
-POPDIV()')
+POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Defines a parameter with no associated field. The name can be used in
 dnl expressions.
@@ -200,13 +191,12 @@ define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
 
 dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
-define(`PARAM', `FIELD($1, `$2')`'dnl
+define(`PARAM', `FIELD($1, `$2')
 PUSHDIV(PARMDIV), $1 `$2'`'dnl
 divert(OUTDIV)dnl
 TAB()out->`$2' = `$2';
-define(`PARAMQTY', eval(1+PARAMQTY))dnl
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
-POPDIV()')
+POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Sets the major number for all instances of this request to the given code.
 dnl OPCODE(number)
@@ -231,19 +221,13 @@ POPDIV()
 ')')
 
 dnl PAD(bytes)
-define(`PAD', `ARRAYFIELD(CARD8, `pad'PADQTY, $1)`'dnl
-define(`PADQTY', eval(1+PADQTY))dnl
+define(`PAD', `ARRAYFIELD(`CARD8', `pad'PADQTY, `$1')
+define(`PADQTY', eval(1+PADQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
-dnl LENGTHFIELD()
-define(`LENGTHFIELD', `FIELD(CARD16, `length')`'dnl
-PUSHDIV(OUTDIV)dnl
-TAB()out->length = (sizeof(*out) + XCB_PAD(sizeof(*out))) / 4;
-POPDIV()')
-
 dnl REPLY(type, name)
-define(`REPLY', `FIELD($1, `$2')`'dnl
-ifelse(FIELDQTY, 2, `LENGTHREPLY()')')
+define(`REPLY', `FIELD(`$1', `$2')
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Generates a C pre-processor macro providing access to a variable-length
 dnl portion of a reply. If another reply field follows, the length name
@@ -251,20 +235,15 @@ dnl must be provided. The length name is the name of a field in the
 dnl fixed-length portion of the response which contains the number of
 dnl elements in this section.
 dnl ARRAYREPLY(field type, field name, opt length name)
-define(`ARRAYREPLY', `PUSHDIV(OUTDIV)dnl
-_H`'#define `XCB_'REQ`_'TOUPPER($2)`(reply) (($1 *) ('ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')`))'
-POPDIV()define(`LASTFIELD', TOUPPER($2))ifelse($#, 3, `define(`LASTLEN', $3)')')
+define(`ARRAYREPLY', `PUSHDIV(OUTDIV)HEADERONLY(
+#define `XCB_'REQ`_'TOUPPER($2)`(reply) (($1 *) ('ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')`))'
+)POPDIV()
+define(`LASTFIELD', TOUPPER($2))ifelse($#, 3, `define(`LASTLEN', $3)')')
 
 dnl Generates an iterator for the variable-length portion of a reply.
 dnl TODO: um, write this.
 dnl LISTREPLY(???)
 define(`LISTREPLY', `')
-
-dnl LENGTHREPLY()
-define(`LENGTHREPLY', `
-    FIELD(CARD16, `seqnum')
-    FIELD(CARD32, `length')
-')
 
 
 
@@ -272,7 +251,7 @@ dnl Creates a function named XCB_<name> returning XCB_void_cookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
 dnl and FIELDs to the X server.
 dnl VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
-define(`VOIDREQUEST', `REQUESTFUNCTION(void, $1, `$2')')
+define(`VOIDREQUEST', `REQUESTFUNCTION(`void', `$1', `$2')')
 
 dnl Creates a function named XCB_<name> returning XCB_<name>_cookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
@@ -282,42 +261,23 @@ dnl XCB_<name>_Rep which forces a cookie returned from XCB_<name>, waiting
 dnl for the response from the server if necessary. Declares the struct
 dnl XCB_<name>_Rep. The three parameters must be quoted.
 dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYs)
-define(`REQUEST',`REQUESTFUNCTION($1, $1, `$2')
-
-INDENT()dnl
-pushdef(`REQ', TOUPPER($1))dnl
-pushdef(`LENGTHFIELD', defn(`LENGTHREPLY'))dnl So that PAD works right
-STRUCT(XCB_`$1'_Rep, `
-    FIELD(BYTE, `response_type') dnl always 1 -> reply
-    $3
-    ifelse(FIELDQTY, 1, `PAD(1)') dnl ensure a length field is included
-')
-define(`PADQTY', 0)dnl
-popdef(`LENGTHFIELD')dnl
-popdef(`REQ')dnl
-UNINDENT()dnl
-undivert(OUTDIV)`'dnl
+define(`REQUEST',`REQUESTFUNCTION(`$1', `$1', `$2')
 _H
+PACKETSTRUCT(`$1', `Rep', `$3')
+undivert(OUTDIV)`'dnl
 INLINEFUNCTION(`XCB_'$1`_Rep *XCB_'$1`_Reply',
-`XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
+`XCB_Connection *c, XCB_'$1`_cookie cookie, XCB_Event **e', `
     return (XCB_'$1`_Rep *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
-')`'dnl
-undefine(`LASTFIELD')undefine(`LASTLEN')dnl')
+')undefine(`LASTFIELD')undefine(`LASTLEN')')
 
 
 dnl Internal function shared by REQUEST and VOIDREQUEST, implementing the
 dnl common portions of those macros.
 dnl REQUESTFUNCTION(return type, request name, parameters)
 define(`REQUESTFUNCTION',`dnl
-ifelse($1, void, `dnl', `COOKIETYPE($1)')
-INDENT()dnl
-STATICSTRUCT(XCB_`$2'_Req, `
-    $3
-    ifelse(FIELDQTY, 1, `PAD(1)') dnl ensure a length field is included
-')
-define(`PADQTY', 0)dnl
-UNINDENT()dnl
-_C
+ifelse($1, void, `dnl', `COOKIETYPE($1)
+_H')
+PACKETSTRUCT(`$2', `Req', `$3')
 FUNCTION(`XCB_'$1`_cookie XCB_'$2, `XCB_Connection *c`'undivert(PARMDIV)', `
     XCB_`$1'_cookie ret;
     XCB_`$2'_Req *out;
@@ -338,7 +298,7 @@ ifelse($1, void, `dnl', `    XCB_Add_Reply_Data(c, ret.seqnum);')
 define(`PARTQTY', 0)define(`PARAMQTY', 0)')')
 
 
-dnl --- Structure macros ------------------------------------------------------
+dnl -- Type macros
 
 dnl FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
 dnl UNION definitions.
@@ -347,58 +307,116 @@ dnl Declares a field of the given type with the given name.
 dnl FIELD(type, name)
 define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
     `$1' `$2';
-define(`FIELDQTY', eval(1+FIELDQTY))dnl
-POPDIV()dnl')
+POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
 
 dnl Declares an array field with the given quantity of elements of the
 dnl given type.
 dnl ARRAYFIELD(type, name, quantity)
 define(`ARRAYFIELD', `PUSHDIV(STRUCTDIV)dnl
     `$1' `$2'[`$3'];
-define(`FIELDQTY', eval(1+FIELDQTY))dnl
-POPDIV()dnl')
+POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
 
 dnl Declares a field with the given name which is a pointer to the given type.
 dnl POINTERFIELD(type, name)
 define(`POINTERFIELD', `PUSHDIV(STRUCTDIV)dnl
     `$1' *`$2';
-define(`FIELDQTY', eval(1+FIELDQTY))dnl
-POPDIV()dnl')
+POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
 
 dnl STRUCT(name, 1 or more FIELDs)
 define(`STRUCT', `PUSHDIV(-1)
 $2
 define(`FIELDQTY',0)
-POPDIV()dnl
-_H`'typedef struct $1 {
-_H`'undivert(STRUCTDIV)dnl
-_H`'} $1;
-_C`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_H')
+POPDIV()HEADERONLY(`typedef struct `$1' {
+undivert(STRUCTDIV)dnl
+} `$1';')')
 
 dnl STATICSTRUCT(name, 1 or more FIELDs)
 define(`STATICSTRUCT', `PUSHDIV(-1)
 $2
 define(`FIELDQTY',0)
-POPDIV()dnl
-_C`'typedef struct $1 {
-_C`'undivert(STRUCTDIV)dnl
-_C`'} $1;
-_H`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_C')
+POPDIV()SOURCEONLY(`typedef struct `$1' {
+undivert(STRUCTDIV)dnl
+} `$1';')')
 
 dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)
 $2
 define(`FIELDQTY',0)
-POPDIV()dnl
-_H`'typedef union $1 {
-_H`'undivert(STRUCTDIV)dnl
-_H`'} $1;
-_C`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_H')
+POPDIV()HEADERONLY(`typedef union `$1' {
+undivert(STRUCTDIV)dnl
+} `$1';')')
+
 
 dnl Declares a struct named XCB_<name>_cookie with a single "int seqnum"
 dnl field.
 dnl COOKIETYPE(name)
 define(`COOKIETYPE', `STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')')
+
+
+dnl EVENT(name, number, 1 or more FIELDs)
+define(`EVENT', `dnl
+_H`'#define XCB_`$1' `$2'
+PACKETSTRUCT(`$1', `Event', `$3')')
+
+dnl EVENTCOPY(new name, new number, old name)
+define(`EVENTCOPY', `HEADERONLY(
+#define XCB_`$1' `$2'
+typedef XCB_`$3'_Event XCB_`$1'_Event;
+)')
+
+dnl ERROR(name, number, 1 or more FIELDs)
+define(`ERROR', `dnl
+_H`'#define XCB_`$1' `$2'
+PACKETSTRUCT(`$1', `Error', `$3')')
+
+dnl ERRORCOPY(new name, new number, old name)
+define(`ERRORCOPY', `HEADERONLY(
+#define XCB_`$1' `$2'
+typedef XCB_`$3'_Error XCB_`$1'_Error;
+)')
+
+
+dnl EVENTMIDDLE()
+define(`EVENTMIDDLE', `FIELD(CARD16, `seqnum')')
+
+dnl ERRORMIDDLE()
+define(`ERRORMIDDLE', `FIELD(CARD16, `seqnum')')
+
+dnl REPMIDDLE()
+define(`REPMIDDLE', `
+    FIELD(CARD16, `seqnum')
+    FIELD(CARD32, `length')
+')
+
+dnl REQMIDDLE()
+define(`REQMIDDLE', `FIELD(CARD16, `length')
+PUSHDIV(OUTDIV)dnl
+TAB()out->length = (sizeof(*out) + XCB_PAD(sizeof(*out))) / 4;
+POPDIV()')
+
+dnl for kind in (Event, Error, Rep, Req)
+dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)
+define(`PACKETSTRUCT', `dnl
+pushdef(`REQ', `TOUPPER($1)')dnl
+pushdef(`LENGTHFIELD', `TOUPPER($2)MIDDLE')dnl
+INDENT()dnl
+STRUCT(XCB_`$1'_`$2', `
+dnl Everything except requests has a response type.
+ifelse(`$2', `Req', , `REPLY(BYTE, `response_type')')
+dnl Only errors have an error code.
+ifelse(`$2', `Error', `REPLY(BYTE, `error_code')')
+$3
+dnl Requests and replies always have length fields.
+ifelse(FIELDQTY, 1,
+    `ifelse(`$2', `Req', `PAD(1)',
+    `ifelse(`$2', `Rep', `PAD(1)')')')
+')_H
+UNINDENT()dnl
+define(`PADQTY', 0)dnl
+popdef(`LENGTHFIELD')popdef(`REQ')_H')
+
+
+dnl -- Other macros
 
 dnl XCBGEN(header name)
 define(`XCBGEN', `dnl

@@ -1,5 +1,7 @@
 #include "xcb_dpms.h"
 #include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 void check_dpms_version(XCB_Connection *);
 void check_dpms_capable(XCB_Connection *);

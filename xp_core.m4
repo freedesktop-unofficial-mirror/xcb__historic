@@ -1,12 +1,275 @@
 XCBGEN(XP_CORE)
-_C`'#include <assert.h>
-_C`'#include <stdlib.h>
-_C`'#include <stdio.h> /* for perror */
-_C`'#include <string.h>
-_H`'#include "xcb_conn.h"
-_H
-_H`'typedef char CHAR2B[2];
+SOURCEONLY(`dnl
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h> /* for perror */
+#include <string.h>
+dnl')
+HEADERONLY(`dnl
+#include "xcb_conn.h"
 
+typedef char CHAR2B[2];
+
+
+/* Core event and error types */
+
+EVENT(KeyPress, 2, `
+    REPLY(KeyCode, `detail')
+    REPLY(Time, `time')
+    REPLY(Window, `root')
+    REPLY(Window, `event')
+    REPLY(Window, `child')
+    REPLY(INT16, `root_x')
+    REPLY(INT16, `root_y')
+    REPLY(INT16, `event_x')
+    REPLY(INT16, `event_y')
+    REPLY(CARD16, `state')
+    REPLY(BOOL, `same_screen')
+')
+EVENTCOPY(KeyRelease, 3, KeyPress)
+EVENT(ButtonPress, 4, `
+    REPLY(CARD8, `detail')
+    REPLY(Time, `time')
+    REPLY(Window, `root')
+    REPLY(Window, `event')
+    REPLY(Window, `child')
+    REPLY(INT16, `root_x')
+    REPLY(INT16, `root_y')
+    REPLY(INT16, `event_x')
+    REPLY(INT16, `event_y')
+    REPLY(CARD16, `state')
+    REPLY(BOOL, `same_screen')
+')
+EVENTCOPY(ButtonRelease, 5, ButtonPress)
+EVENT(MotionNotify, 6, `
+    REPLY(BYTE, `detail')
+    REPLY(Time, `time')
+    REPLY(Window, `root')
+    REPLY(Window, `event')
+    REPLY(Window, `child')
+    REPLY(INT16, `root_x')
+    REPLY(INT16, `root_y')
+    REPLY(INT16, `event_x')
+    REPLY(INT16, `event_y')
+    REPLY(CARD16, `state')
+    REPLY(BOOL, `same_screen')
+')
+EVENT(EnterNotify, 7, `
+    REPLY(BYTE, `detail')
+    REPLY(Time, `time')
+    REPLY(Window, `root')
+    REPLY(Window, `event')
+    REPLY(Window, `child')
+    REPLY(INT16, `root_x')
+    REPLY(INT16, `root_y')
+    REPLY(INT16, `event_x')
+    REPLY(INT16, `event_y')
+    REPLY(CARD16, `state')
+    REPLY(BYTE, `mode')
+    REPLY(BYTE, `same_screen_focus')
+')
+EVENTCOPY(LeaveNotify, 8, EnterNotify)
+EVENT(FocusIn, 9, `
+    REPLY(BYTE, `detail')
+    REPLY(Window, `event')
+    REPLY(BYTE, `mode')
+')
+EVENTCOPY(FocusOut, 10, FocusIn)
+EVENT(KeymapNotify, 11, `
+    ARRAYFIELD(CARD8, `keys', 31)
+')
+EVENT(Expose, 12, `
+    PAD(1)
+    REPLY(Window, `window')
+    REPLY(CARD16, `x')
+    REPLY(CARD16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `count')
+')
+EVENT(GraphicsExposure, 13, `
+    PAD(1)
+    REPLY(Drawable, `drawable')
+    REPLY(CARD16, `x')
+    REPLY(CARD16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `minor_opcode')
+    REPLY(CARD16, `count')
+    REPLY(CARD8, `major_opcode')
+')
+EVENT(NoExposure, 14, `
+    PAD(1)
+    REPLY(Drawable, `drawable')
+    REPLY(CARD16, `minor_opcode')
+    REPLY(CARD8, `major_opcode')
+')
+EVENT(VisibilityNotify, 15, `
+    PAD(1)
+    REPLY(Window, `window')
+    REPLY(BYTE, `state')
+')
+EVENT(CreateNotify, 16, `
+    PAD(1)
+    REPLY(Window, `parent')
+    REPLY(Window, `window')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `border_width')
+    REPLY(BOOL, `override_redirect')
+')
+EVENT(DestroyNotify, 17, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+')
+EVENT(UnmapNotify, 18, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    REPLY(BOOL, `from_configure')
+')
+EVENT(MapNotify, 19, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    REPLY(BOOL, `override_redirect')
+')
+EVENT(MapRequest, 20, `
+    PAD(1)
+    REPLY(Window, `parent')
+    REPLY(Window, `window')
+')
+EVENT(ReparentNotify, 21, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    REPLY(Window, `parent')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+    REPLY(BOOL, `override_redirect')
+')
+EVENT(ConfigureNotify, 22, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    REPLY(Window, `above_sibling')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `border_width')
+    REPLY(BOOL, `override_redirect')
+')
+EVENT(ConfigureRequest, 23, `
+    REPLY(BYTE, `stack_mode')
+    REPLY(Window, `parent')
+    REPLY(Window, `window')
+    REPLY(Window, `sibling')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `border_width')
+    REPLY(CARD16, `value_mask')
+')
+EVENT(GravityNotify, 24, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+')
+EVENT(ResizeRequest, 25, `
+    PAD(1)
+    REPLY(Window, `window')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+')
+EVENT(CirculateNotify, 26, `
+    PAD(1)
+    REPLY(Window, `event')
+    REPLY(Window, `window')
+    PAD(4)
+    REPLY(BYTE, `place')
+')
+EVENTCOPY(CirculateRequest, 27, CirculateNotify)
+EVENT(PropertyNotify, 28, `
+    PAD(1)
+    REPLY(Window, `window')
+    REPLY(Atom, `atom')
+    REPLY(Time, `time')
+    REPLY(BYTE, `state')
+')
+EVENT(SelectionClear, 29, `
+    PAD(1)
+    REPLY(Time, `time')
+    REPLY(Window, `owner')
+    REPLY(Atom, `selection')
+')
+EVENT(SelectionRequest, 30, `
+    PAD(1)
+    REPLY(Time, `time')
+    REPLY(Window, `owner')
+    REPLY(Window, `requestor')
+    REPLY(Atom, `selection')
+    REPLY(Atom, `target')
+    REPLY(Atom, `property')
+')
+EVENT(SelectionNotify, 31, `
+    PAD(1)
+    REPLY(Time, `time')
+    REPLY(Window, `requestor')
+    REPLY(Atom, `selection')
+    REPLY(Atom, `target')
+    REPLY(Atom, `property')
+')
+EVENT(ColormapNotify, 32, `
+    PAD(1)
+    REPLY(Window, `window')
+    REPLY(Colormap, `colormap')
+    REPLY(BOOL, `_new')
+    REPLY(BYTE, `state')
+')
+EVENT(ClientMessage, 33, `
+    REPLY(CARD8, `format')
+    REPLY(Window, `window')
+    REPLY(Atom, `type')
+')
+EVENT(MappingNotify, 34, `
+    PAD(1)
+    REPLY(BYTE, `request')
+    REPLY(KeyCode, `first_keycode')
+    REPLY(CARD8, `count')
+')
+ERROR(Request, 1, `
+    REPLY(CARD32, `bad_value')
+    REPLY(CARD16, `minor_opcode')
+    REPLY(CARD8, `major_opcode')
+')
+ERROR(Value, 2, `
+    REPLY(CARD32, `bad_value')
+    REPLY(CARD16, `minor_opcode')
+    REPLY(CARD8, `major_opcode')
+')
+ERRORCOPY(Window, 3, Value)
+ERRORCOPY(Pixmap, 4, Value)
+ERRORCOPY(Atom, 5, Value)
+ERRORCOPY(Cursor, 6, Value)
+ERRORCOPY(Font, 7, Value)
+ERRORCOPY(Match, 8, Request)
+ERRORCOPY(Drawable, 9, Value)
+ERRORCOPY(Access, 10, Request)
+ERRORCOPY(Alloc, 11, Request)
+ERRORCOPY(Colormap, 12, Value)
+ERRORCOPY(GContext, 13, Value)
+ERRORCOPY(IDChoice, 14, Value)
+ERRORCOPY(Name, 15, Request)
+ERRORCOPY(Length, 16, Request)
+ERRORCOPY(Implementation, 17, Request)
+')dnl end HEADERONLY
 
 /* The requests, in major number order. */
 /* It is the caller's responsibility to free returned XCB_*_Rep objects. */
@@ -244,7 +507,7 @@ VOIDREQUEST(SendEvent, `
     PARAM(BOOL, `propagate')
     PARAM(Window, `destination')
     PARAM(CARD32, `event_mask')
-    PARAM(xEvent, `event')
+    PARAM(xEvent, `event') dnl FIXME: Use of Xproto.h in XCB is deprecated.
 ')
 
 REQUEST(GrabPointer, `
@@ -1026,7 +1289,7 @@ VOIDREQUEST(NoOperation, `
  * but depend on requests in the core protocol, so they're here. */
 
 /* Returns true iff the sync was sucessful. */
-FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
+FUNCTION(`int XCB_Sync', `XCB_Connection *c, XCB_Event **e', `
     XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
     XCB_GetInputFocus_Rep *reply = XCB_GetInputFocus_Reply(c, cookie, e);
     free(reply);
@@ -1037,15 +1300,15 @@ STATICSTRUCT(XCB_ExtensionRecord, `
     POINTERFIELD(char, `name')
     POINTERFIELD(XCB_QueryExtension_Rep, `info')
 ')
-
+_C
 STATICFUNCTION(`int match_extension_string', `const void *name, const void *data', `
     return (((XCB_ExtensionRecord *) data)->name == name);
 ')
-
+_C
 /* Do not free the returned XCB_QueryExtension_Rep - on return, it's aliased
  * from the cache. */
 FUNCTION(`const XCB_QueryExtension_Rep *XCB_QueryExtension_Cached',
-`XCB_Connection *c, const char *name, xError **e', `
+`XCB_Connection *c, const char *name, XCB_Event **e', `
     XCB_ExtensionRecord *data = 0;
     if(e)
         *e = 0;
@@ -1072,5 +1335,4 @@ done:
     pthread_mutex_unlock(&c->locked);
     return data->info;
 ')
-_H
 ENDXCBGEN

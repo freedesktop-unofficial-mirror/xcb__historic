@@ -176,7 +176,7 @@ int wait_event(XCB_Connection *c)
     if(!formatEvent(e))
         return 0;
 
-    if(e->type == ButtonRelease)
+    if(e->response_type == ButtonRelease)
         ret = 0; /* They clicked, therefore, we're done. */
     free(e);
     return ret;

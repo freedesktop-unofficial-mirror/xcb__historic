@@ -3,29 +3,32 @@
  */
 
 XCBGEN(XCB_CONN)
-_H`'#include <sys/uio.h>
-_C`'#include <sys/types.h>
-_C`'#include <sys/socket.h>
-_C`'#include <sys/fcntl.h>
-_C`'#include <sys/un.h>
-_C`'#include <netinet/in.h>
-_C`'#include <netdb.h>
-_C`'#include <assert.h>
-_C`'#include <stdio.h>
-_C`'#include <unistd.h>
-_C`'#include <stdlib.h>
-_C`'#include <errno.h>
-_H`'#include <pthread.h>
-_H
-_H`'#define NEED_EVENTS
-_H`'#define NEED_REPLIES
-_H`'#define ANSICPP
-_H`'#include <X11/X.h>
-_H`'#include <X11/Xproto.h>
+SOURCEONLY(`dnl
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/fcntl.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <assert.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
 
-_C`'#undef USENONBLOCKING
-_H`'#define XCB_PAD(E) ((4-((E)%4))%4)
-_H`'#define X_TCP_PORT 6000	/* add display number */
+#undef USENONBLOCKING
+')HEADERONLY(`dnl
+#include <sys/uio.h>
+#include <pthread.h>
+
+#define NEED_EVENTS
+#define NEED_REPLIES
+#define ANSICPP
+#include <X11/X.h>
+#include <X11/Xproto.h>
+
+#define XCB_PAD(E) ((4-((E)%4))%4)
+#define X_TCP_PORT 6000	/* add display number */
 
 STRUCT(XCB_ListNode, `
     POINTERFIELD(struct XCB_ListNode, `next')
@@ -42,24 +45,21 @@ STRUCT(XCB_Reply_Data, `
     FIELD(int, `seqnum')
     POINTERFIELD(void, `data')
 ')
-_H
-UNION(XCB_Event, `
-    FIELD(BYTE, `type')
-    FIELD(xError, `error')
-    FIELD(xEvent, `event')
-    FIELD(xKeymapEvent, `keymapEvent')
+
+STRUCT(XCB_Event, `
+    FIELD(BYTE, `response_type')
 ')
-_H
+
 STRUCT(XCB_Depth, `
     POINTERFIELD(xDepth, `data')
     POINTERFIELD(xVisualType, `visuals')
 ')
-_H
+
 STRUCT(XCB_WindowRoot, `
     POINTERFIELD(xWindowRoot, `data')
     POINTERFIELD(XCB_Depth, `depths')
 ')
-_H
+
 STRUCT(XCB_Connection, `
     FIELD(int, `fd')
     FIELD(pthread_mutex_t, `locked')
@@ -87,8 +87,9 @@ STRUCT(XCB_Connection, `
     FIELD(xConnSetupPrefix, `setup_prefix')
     FIELD(xConnSetup, `setup')
 ')
-_H
+
 COOKIETYPE(`void')
+')dnl end HEADERONLY
 
 /* Utility functions */
 
@@ -111,7 +112,10 @@ _C
 FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
     void *out;
     if(c->n_outvec || c->n_outqueue + size > sizeof(c->outqueue))
-        assert(XCB_Flush_locked(c) > 0);
+    {
+        int ret = XCB_Flush_locked(c);
+        assert(ret > 0);
+    }
 
     out = c->outqueue + c->n_outqueue;
     c->n_outqueue += size;
@@ -124,7 +128,7 @@ FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
 FUNCTION(`void XCB_List_init', `XCB_List *list', `
     list->head = list->tail = 0;
 ')
-
+_C
 FUNCTION(`void XCB_List_insert', `XCB_List *list, void *data', `
     XCB_ListNode *node;
 ALLOC(XCB_ListNode, `node', 1)
@@ -135,7 +139,7 @@ ALLOC(XCB_ListNode, `node', 1)
     if(!list->tail)
         list->tail = node;
 ')
-
+_C
 FUNCTION(`void XCB_List_append', `XCB_List *list, void *data', `
     XCB_ListNode *node;
 ALLOC(XCB_ListNode, `node', 1)
@@ -149,7 +153,7 @@ ALLOC(XCB_ListNode, `node', 1)
 
     list->tail = node;
 ')
-
+_C
 FUNCTION(`void *XCB_List_remove_head', `XCB_List *list', `
     void *ret;
     XCB_ListNode *tmp = list->head;
@@ -162,7 +166,7 @@ FUNCTION(`void *XCB_List_remove_head', `XCB_List *list', `
     free(tmp);
     return ret;
 ')
-
+_C
 FUNCTION(`void *XCB_List_remove', `XCB_List *list, int (*cmp)(const void *, const void *), const void *data', `
     XCB_ListNode *prev = 0, *cur = list->head;
     void *tmp;
@@ -188,7 +192,7 @@ FUNCTION(`void *XCB_List_remove', `XCB_List *list, int (*cmp)(const void *, cons
     free(cur);
     return tmp;
 ')
-
+_C
 FUNCTION(`void *XCB_List_find', `XCB_List *list, int (*cmp)(const void *, const void *), const void *data', `
     XCB_ListNode *cur = list->head;
     while(cur)
@@ -199,7 +203,7 @@ FUNCTION(`void *XCB_List_find', `XCB_List *list, int (*cmp)(const void *, const 
     }
     return 0;
 ')
-
+_C
 FUNCTION(`int XCB_List_is_empty', `XCB_List *list', `
     return (list->head == 0);
 ')
@@ -219,7 +223,7 @@ ALLOC(XCB_Reply_Data, `data', 1)
 
     XCB_List_append(&c->reply_data, data);
 ')
-
+SOURCEONLY(`
 STATICFUNCTION(`int match_reply_seqnum', `const void *seqnum, const void *data', `
     return (((XCB_Reply_Data *) data)->seqnum == *(int *) seqnum);
 ')
@@ -230,11 +234,12 @@ STATICFUNCTION(`int match_reply_seqnum', `const void *seqnum, const void *data',
 STATICFUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
     return (XCB_Reply_Data *) XCB_List_find(&c->reply_data, match_reply_seqnum, &seqnum);
 ')
+')dnl end SOURCEONLY
 
 FUNCTION(`int XCB_EventQueueIsEmpty', `XCB_Connection *c', `
     return XCB_List_is_empty(&c->event_data);
 ')
-
+SOURCEONLY(`
 /* read(2)/write(2) wrapper functions */
 
 STATICFUNCTION(`int XCB_read_internal', `XCB_Connection *c, void *buf, int nread',`
@@ -267,7 +272,7 @@ STATICFUNCTION(`int XCB_read_internal', `XCB_Connection *c, void *buf, int nread
     return read(c->fd, buf, nread);
 #endif
 ')
-_C
+
 STATICFUNCTION(`int XCB_write_internal', `XCB_Connection *c, void *buf, int nwrite',`
 #ifdef USENONBLOCKING
     int count = 0;
@@ -298,7 +303,7 @@ STATICFUNCTION(`int XCB_write_internal', `XCB_Connection *c, void *buf, int nwri
     return write(c->fd, buf, nwrite);
 #endif
 ')
-_C
+
 STATICFUNCTION(`int XCB_read_packet', `XCB_Connection *c', `
     int ret;
     XCB_Reply_Data *rep = 0;
@@ -343,7 +348,7 @@ REALLOC(unsigned char, buf, 32 + length * 4)
 
     return 1; /* I have something for you... */
 ')
-_C
+
 STATICFUNCTION(`int XCB_write_buffer', `XCB_Connection *c', `
     int ret;
     ret = XCB_write_internal(c, c->outqueue, c->n_outqueue);
@@ -360,7 +365,7 @@ STATICFUNCTION(`int XCB_write_buffer', `XCB_Connection *c', `
 
     return 1;
 ')
-_C
+
 STATICFUNCTION(`int XCB_Wait', `XCB_Connection *c, const int should_write', `
     int ret = 1, should_read;
     fd_set rfds, wfds;
@@ -407,8 +412,9 @@ done:
 
     return ret;
 ')
+')dnl end SOURCEONLY
 
-FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
+FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, XCB_Event **e', `
     void *ret = 0;
     XCB_Reply_Data *cur;
     if(e)
@@ -417,12 +423,11 @@ FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
     pthread_mutex_lock(&c->locked);
     cur = XCB_Find_Reply_Data(c, seqnum);
 
-    if(!cur || cur->pending) /* error */
+    if(!cur || cur->pending || XCB_Flush_locked(c) <= 0) /* error */
         goto done;
 
     ++cur->pending;
 
-    assert(XCB_Flush_locked(c) > 0);
     while(!cur->data)
     {
         if(c->reading)
@@ -439,7 +444,7 @@ FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
         if(!e)
             XCB_List_append(&c->event_data, (XCB_Event *) cur->data);
         else
-            *e = (xError *) cur->data;
+            *e = (XCB_Event *) cur->data;
     }
     else
         ret = cur->data;
@@ -509,14 +514,16 @@ FUNCTION(`void XCB_Write', `XCB_Connection *c, struct iovec *vector, size_t coun
             memcpy(c->outqueue + c->n_outqueue, vector[i].iov_base, vector[i].iov_len);
             c->n_outqueue += vector[i].iov_len;
         }
-        assert(XCB_Flush_locked(c) > 0);
+        i = XCB_Flush_locked(c);
+        assert(i > 0);
         return;
     }
 
     assert(0);  /* FIXME: turning off outvec support */
     c->outvec = vector;
     c->n_outvec = count;
-    assert(XCB_Flush_locked(c) > 0);
+    i = XCB_Flush_locked(c);
+    assert(i > 0);
 ')
 
 FUNCTION(`int XCB_Open', `const char *display, int *screen', `
@@ -532,19 +539,21 @@ FUNCTION(`int XCB_Open', `const char *display, int *screen', `
 ALLOC(char, buf, strlen(display) + 1)
     strcpy(buf, display);
 
-    colon = strchr(buf, '':'`);
+dnl Dereferencing a string literal gives a character constant without
+dnl pesky interference from m4 quote characters. Boy, this sucks.
+    colon = strchr(buf, *":");
     if(!colon)
     {
         printf("Error: invalid display: \"%s\"\n", buf);
         return -1;
     }
-    *colon = ''\0'`;
+    *colon = *"";
     ++colon;
 
-    dot = strchr(colon, ''.'`);
+    dot = strchr(colon, *".");
     if(dot)
     {
-        *dot = ''\0'`;
+        *dot = *"";
         ++dot;
         if(screen)
             *screen = atoi(dot);
@@ -638,17 +647,18 @@ ALLOC(XCB_Connection, c, 1)
         out->nbytesAuthProto = 0;
         out->nbytesAuthString = 0;
     }
-    assert(XCB_Flush(c) > 0);
+    if(XCB_Flush(c) <= 0)
+        goto error;
 
     /* Read the server response */
-    assert(XCB_read_internal(c, &c->setup_prefix, SIZEOF(xConnSetupPrefix))
-      == SIZEOF(xConnSetupPrefix));
+    if(XCB_read_internal(c, &c->setup_prefix, SIZEOF(xConnSetupPrefix)) != SIZEOF(xConnSetupPrefix))
+        goto error;
 
     clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
     c = (XCB_Connection *) realloc(c, clen);
     assert(c);
-    assert(XCB_read_internal(c, &c->setup, c->setup_prefix.length * 4)
-      == c->setup_prefix.length * 4);
+    if(XCB_read_internal(c, &c->setup, c->setup_prefix.length * 4) != c->setup_prefix.length * 4)
+        goto error;
 
     /* 0 = failed, 2 = authenticate, 1 = success */
     switch(c->setup_prefix.success)
@@ -657,10 +667,10 @@ ALLOC(XCB_Connection, c, 1)
         fflush(stderr);
         write(STDERR_FILENO, &c->setup, c->setup_prefix.lengthReason);
         write(STDERR_FILENO, "\n", sizeof("\n"));
-        /*FALLTHROUGH*/
+        goto error;
+
     case 2: /* authenticate */
-        free(c);
-        return 0;
+        goto error;
     }
 
     /* Set up a collection of convenience pointers. */
@@ -722,6 +732,10 @@ ALLOC(XCB_Connection, c, 1)
     }
 
     return c;
+
+error:
+    free(c);
+    return 0;
 ')
 _C
 FUNCTION(`XCB_Connection *XCB_Connect_Basic', `', `
@@ -743,5 +757,4 @@ FUNCTION(`XCB_Connection *XCB_Connect_Basic', `', `
 
     return c;
 ')
-_H
 ENDXCBGEN
