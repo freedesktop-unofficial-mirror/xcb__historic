@@ -72,23 +72,23 @@ int main(int argc, char **argv)
     window = 0; /* should be an invalid ID */
 #endif
 
-    mask |= CWBackPixel;
+    mask |= XCBCWBackPixel;
     values[0] = c->roots[0].data->white_pixel;
 
-    mask |= CWBorderPixel;
+    mask |= XCBCWBorderPixel;
     values[1] = c->roots[0].data->black_pixel;
 
-    mask |= CWBackingStore;
+    mask |= XCBCWBackingStore;
     values[2] = Always;
 
-    mask |= CWOverrideRedirect;
+    mask |= XCBCWOverrideRedirect;
     values[3] = FALSE;
 
-    mask |= CWEventMask;
+    mask |= XCBCWEventMask;
     values[4] = ButtonReleaseMask | ExposureMask | StructureNotifyMask
         | EnterWindowMask | LeaveWindowMask;
 
-    mask |= CWDontPropagate;
+    mask |= XCBCWDontPropagate;
     values[5] = ButtonPressMask;
 
     XCBCreateWindow(c, c->roots[0].depths[0].data->depth,
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef VERBOSE
-    if(!XCBListIsEmpty(&c->reply_data))
+    if(!XCBListIsEmpty(c->reply_data))
         printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 

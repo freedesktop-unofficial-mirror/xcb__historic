@@ -375,6 +375,7 @@ FUNCTION(`XCBConnection *XCBConnectAuth', `int fd, XCBAuthInfo *auth_info', `
 ALLOC(XCBConnection, c, 1)
 
     pthread_mutex_init(&c->locked, 0);
+    pthread_mutex_lock(&c->locked);
 
     c->handle = XCBIOFdOpen(fd, &c->locked, XCBReadPacket, c);
     if(!c->handle)
@@ -406,7 +407,7 @@ ALLOC(XCBConnection, c, 1)
             XCBWrite(c->handle, parts, 2);
         }
     }
-    if(XCBFlush(c) <= 0)
+    if(XCBFlushLocked(c) <= 0)
         goto error;
 
     /* Read the server response */
@@ -474,6 +475,7 @@ ALLOC(XCBDepth, c->roots[i].depths, root->allowed_depths_len)
         }UNINDENT()
     }UNINDENT()
 
+    pthread_mutex_unlock(&c->locked);
     return c;
 
 error:

@@ -100,7 +100,7 @@ void *run(void *param)
 	}
 
 	{
-		CARD32 mask = CWBackPixel | CWEventMask | CWDontPropagate;
+		CARD32 mask = XCBCWBackPixel | XCBCWEventMask | XCBCWDontPropagate;
 		CARD32 values[3];
 		values[0] = c->roots[0].data->white_pixel;
 		values[1] = ButtonReleaseMask | ExposureMask;
