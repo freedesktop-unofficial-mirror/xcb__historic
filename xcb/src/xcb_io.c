@@ -62,6 +62,8 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, 
     pthread_cond_init(&h->waiting_threads, 0);
     h->reading = 0;
     h->writing = 0;
+    /* h->inqueue does not need initialization */
+    h->n_inqueue = 0;
     /* h->outqueue does not need initialization */
     h->n_outqueue = 0;
     /* h->outvec does not need initialization */
@@ -122,7 +124,7 @@ static int XCBFillBuffer(XCBIOHandle *h)
 {
     int ret;
     ret = read(h->fd, h->inqueue + h->n_inqueue, sizeof(h->inqueue) - h->n_inqueue);
-    if(ret < 0 && errno != EAGAIN)
+    if(ret < 0)
         return errno == EAGAIN ? 1 : -1;
     h->n_inqueue += ret;
     while(ret > 0)
