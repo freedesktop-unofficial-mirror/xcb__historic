@@ -5,7 +5,8 @@
  */
 
 #include <assert.h>
-#include <X11/XCB/xcb_conn.h>
+#include "xcb.h"
+#include "xcbint.h"
 
 #include <sys/types.h>
 #include <sys/param.h>
@@ -17,36 +18,32 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
 
 #undef USENONBLOCKING
+
+/* Maximum size of authentication names and data */
+#define AUTHNAME_MAX 256
+#define AUTHDATA_MAX 256
 
 #define XA1 "XDM-AUTHORIZATION-1"
 #define MC1 "MIT-MAGIC-COOKIE-1"
 static char *authtypes[] = { /* XA1, */ MC1 };
 static int authtypelens[] = { /* sizeof(XA1)-1, */ sizeof(MC1)-1 };
 
-void *XCBReplyDataAfterIter(XCBReplyDataIter i)
-{
-    while(i.rem > 0)
-        XCBReplyDataNext(&i);
-    return (void *) i.data;
-}
+struct XCBAuthInfo {
+    int namelen;
+    char name[AUTHNAME_MAX];
+    int datalen;
+    char data[AUTHDATA_MAX];
+};
 
-void *XCBAuthInfoAfterIter(XCBAuthInfoIter i)
-{
-    while(i.rem > 0)
-        XCBAuthInfoNext(&i);
-    return (void *) i.data;
-}
-
-void *XCBConnectionAfterIter(XCBConnectionIter i)
-{
-    while(i.rem > 0)
-        XCBConnectionNext(&i);
-    return (void *) i.data;
-}
+typedef struct XCBReplyData {
+    int pending;
+    int error;
+    int seqnum;
+    void *data;
+} XCBReplyData;
 
 int XCBOnes(unsigned long mask)
 {

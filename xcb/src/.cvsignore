@@ -6,9 +6,11 @@ config.h
 config.h.in
 stamp-h1
 *.lo
+*.loT
 *.la
-xcb.c
 xcb.h
+xproto.c
+xproto.h
 xcb_types.c
 xcb_types.h
 extensions

@@ -5,9 +5,8 @@
  */
 
 #include <assert.h>
-#include <X11/XCB/xcb_list.h>
-
-#include <stdlib.h>
+#include "xcb.h"
+#include "xcbint.h"
 
 typedef struct XCBListNode {
     struct XCBListNode *next;

@@ -1,15 +1,13 @@
 /*
- * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
  * All Rights Reserved.  See the file COPYING in this directory
  * for licensing information.
  */
 
 #include <assert.h>
-#include <X11/XCB/xcb_event.h>
 
-#include <stdlib.h>
-#include <X11/XCB/xcb_conn.h>
-#include <X11/XCB/xcb_list.h>
+#include "xcb.h"
+#include "xcbint.h"
 
 int XCBEventQueueIsEmpty(struct XCBConnection *c)
 {

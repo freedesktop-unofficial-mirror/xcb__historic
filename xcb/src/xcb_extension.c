@@ -1,10 +1,14 @@
 /*
- * This file generated automatically from xcb_extension.m4 by macros-xcb.m4 using m4.
- * Edit at your peril.
+ * Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 #include <assert.h>
-#include <X11/XCB/xcb_extension.h>
+#include <string.h>
+
+#include "xcb.h"
+#include "xcbint.h"
 
 typedef struct XCBExtensionRecord {
     char *name;
@@ -27,18 +31,17 @@ const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char
 
     data = (XCBExtensionRecord *) XCBListRemove(c->extension_cache, match_extension_string, name);
 
-    if(data)
-        goto done; /* cache hit: return from the cache */
+    if(!data)
+    {
+	/* cache miss: query the server */
+	pthread_mutex_unlock(&c->locked);
+	data = (XCBExtensionRecord *) malloc((1) * sizeof(XCBExtensionRecord));
+	assert(data);
+	data->name = (char *) name;
+	data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
+	pthread_mutex_lock(&c->locked);
+    }
 
-    /* cache miss: query the server */
-    pthread_mutex_unlock(&c->locked);
-    data = (XCBExtensionRecord *) malloc((1) * sizeof(XCBExtensionRecord));
-    assert(data);
-    data->name = (char *) name;
-    data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
-    pthread_mutex_lock(&c->locked);
-
-done:
     XCBListInsert(c->extension_cache, data);
 
     pthread_mutex_unlock(&c->locked);

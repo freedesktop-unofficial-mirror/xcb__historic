@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
  * All Rights Reserved.  See the file COPYING in this directory
  * for licensing information.
  */
 
 #include <assert.h>
-#include <X11/XCB/xcb_io.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/fcntl.h>
@@ -15,9 +13,11 @@
 #include <netdb.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
+#include "xcb.h"
+#include "xcbint.h"
 
 /* FIXME: outvec support should be enabled */
 #define USEOUTVEC 0
