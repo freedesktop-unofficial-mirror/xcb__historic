@@ -70,6 +70,7 @@ STRUCT(XCBConnection, `
     POINTERFIELD(XCBList, `event_data')
     POINTERFIELD(XCBList, `extension_cache')
 
+    POINTERFIELD(void, `last_request')
     FIELD(unsigned int, `seqnum')
     FIELD(unsigned int, `seqnum_written')
     FIELD(CARD32, `last_xid')
@@ -182,6 +183,7 @@ FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, unsigned int seqnum, XCBGener
     {
         if(XCBFlushLocked(c->handle) <= 0)
             goto done; /* error */
+        c->last_request = 0;
         c->seqnum_written = c->seqnum;
     }
 
@@ -248,6 +250,7 @@ FUNCTION(`int XCBFlush', `XCBConnection *c', `
     int ret;
     pthread_mutex_lock(&c->locked);
     ret = XCBFlushLocked(c->handle);
+    c->last_request = 0;
     c->seqnum_written = c->seqnum;
     pthread_mutex_unlock(&c->locked);
     return ret;
@@ -389,6 +392,7 @@ ALLOC(XCBConnection, c, 1)
     c->event_data = XCBListNew();
     c->extension_cache = XCBListNew();
 
+    c->last_request = 0;
     c->seqnum = 0;
     c->seqnum_written = 0;
     c->last_xid = 0;

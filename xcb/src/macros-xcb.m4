@@ -11,8 +11,12 @@ dnl List of parameters in a REQUEST
 define(`PARMDIV', ALLOCDIV)
 dnl Structure assignment code for binding out->* in REQUEST
 define(`OUTDIV', ALLOCDIV)
+dnl Variable-length list construction code in REQUEST
+define(`LISTDIV', ALLOCDIV)
 dnl Variable declarations for REQUEST bodies
 define(`VARDIV', ALLOCDIV)
+dnl List of values to check to ensure marshaling is OK in REQUEST
+define(`MARSHALDIV', ALLOCDIV)
 
 
 dnl -- Counters for various internal values
@@ -69,7 +73,7 @@ dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
 dnl request.
 dnl LISTPARAM(element type, list name, length expression)
-define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(OUTDIV)
+define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)
 TAB()parts[PARTQTY].iov_base = (`$1' *) `$2';
 TAB()parts[PARTQTY].iov_len = (`$3') * sizeof(`$1');
 TAB()out->length += (parts[PARTQTY].iov_len + 3) >> 2;
@@ -107,20 +111,49 @@ define(`OPCODE', `ifdef(`EXTENSION', `
     FIELD(CARD8, `minor_opcode')
 PUSHDIV(VARDIV)dnl
 TAB()const XCBQueryExtensionRep *extension = XCBQueryExtensionCached(c, EXTENSION, 0);
+TAB()const CARD8 major_opcode = extension->major_opcode;
+TAB()const CARD8 minor_opcode = `$1';
 divert(OUTDIV)dnl
 dnl TODO: better error handling here, please!
 TAB()assert(extension && extension->present);
 
-TAB()out->major_opcode = extension->major_opcode;
-TAB()out->minor_opcode = `$1';
+TAB()out->major_opcode = major_opcode;
+TAB()out->minor_opcode = minor_opcode;
 POPDIV()
     ifelse(FIELDQTY, 2, `LENGTHFIELD()')
 ', `
     FIELD(CARD8, `major_opcode')
-PUSHDIV(OUTDIV)dnl
-TAB()out->major_opcode = `$1';
+PUSHDIV(VARDIV)dnl
+TAB()const CARD8 major_opcode = `$1';
+divert(OUTDIV)dnl
+TAB()out->major_opcode = major_opcode;
 POPDIV()
 ')')
+
+
+dnl Form of a request function with marshaling:
+dnl if !last || last->major_opcode != major_opcode
+dnl    do not marshal
+dnl if defined(EXTENSION) && last->minor_opcode != minor_opcode
+dnl    do not marshal
+dnl foreach i in $@: if last->i != i
+dnl    do not marshal
+dnl if !marshaling
+dnl    out = alloc out buffer
+dnl    set all fields in out
+dnl else
+dnl    out = last
+dnl set up parts array, update out->length
+dnl write parts
+dnl MARSHAL(param name ...)
+define(`MARSHAL', `
+define(`MARSHALABLE')
+ifelse($1, , , `
+    PUSHDIV(MARSHALDIV) || out->`$1' != `$1'POPDIV()
+    MARSHAL(shift($@))
+')
+')
+
 
 dnl REPLY(type, name)
 define(`REPLY', `FIELD(`$1', `$2')
@@ -185,19 +218,37 @@ FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
 undivert(VARDIV)`'dnl
 ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
 
-    XCBREQTRACER("$2");
     pthread_mutex_lock(&c->locked);
-    out = (XCB`$2'Req *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(*out)));
+ifdef(`MARSHALABLE', `dnl
+    out = (XCB`$2'Req *) c->last_request;
+    if(!out || out->major_opcode != major_opcode`'dnl
+ifdef(`EXTENSION', ` || out->minor_opcode != minor_opcode')`'dnl
+undivert(MARSHALDIV))
+    {INDENT()
+')dnl
+TAB()out = (XCB`$2'Req *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(*out)));
+TAB()c->last_request = out;
+TAB()XCBREQTRACER("$2");
 
 undivert(OUTDIV)`'dnl
 
-    ret.seqnum = ++c->seqnum;
-ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c->handle, parts, PARTQTY);')
+TAB()ret.seqnum = ++c->seqnum;
 ifelse($1, Void, `dnl', `    XCBAddReplyData(c, ret.seqnum);')
+ifdef(`MARSHALABLE', `dnl
+    }UNINDENT()
+    else
+    {
+        XCBMARSHALTRACER("$2");
+dnl XXX: it seems bad to return the same seqnum, but I see no other choice.
+        ret.seqnum = c->seqnum;
+    }
+')dnl
+undivert(LISTDIV)`'dnl
+ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c->handle, parts, PARTQTY);')
     pthread_mutex_unlock(&c->locked);
 
     return ret;
-')popdef(`PARAMQTY')popdef(`PARTQTY')')
+')popdef(`PARAMQTY')popdef(`PARTQTY')undefine(`MARSHALABLE')')
 
 
 dnl Declares a struct holding an XID, and a function to allocate new

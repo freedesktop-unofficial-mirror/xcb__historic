@@ -935,6 +935,7 @@ VOIDREQUEST(CopyPlane, `
 ')
 
 VOIDREQUEST(PolyPoint, `
+    MARSHAL(drawable.window.xid, gc.xid, coordinate_mode)
     OPCODE(64)
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
@@ -944,6 +945,7 @@ VOIDREQUEST(PolyPoint, `
 ')
 
 VOIDREQUEST(PolyLine, `
+    MARSHAL(drawable.window.xid, gc.xid, coordinate_mode)
     OPCODE(65)
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
@@ -960,6 +962,7 @@ STRUCT(SEGMENT, `
 ')
 
 VOIDREQUEST(PolySegment, `
+    MARSHAL(drawable.window.xid, gc.xid)
     OPCODE(66)
     PAD(1)
     PARAM(DRAWABLE, `drawable')
@@ -969,6 +972,7 @@ VOIDREQUEST(PolySegment, `
 ')
 
 VOIDREQUEST(PolyRectangle, `
+    MARSHAL(drawable.window.xid, gc.xid)
     OPCODE(67)
     PAD(1)
     PARAM(DRAWABLE, `drawable')
@@ -977,6 +981,9 @@ VOIDREQUEST(PolyRectangle, `
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
+dnl The semantics of PolyArc change after the first arc: the GC's
+dnl join style may be applied to successive arcs under some circumstances.
+dnl So marshaling here is bad.
 VOIDREQUEST(PolyArc, `
     OPCODE(68)
     PAD(1)
@@ -998,6 +1005,7 @@ VOIDREQUEST(FillPoly, `
 ')
 
 VOIDREQUEST(PolyFillRectangle, `
+    MARSHAL(drawable.window.xid, gc.xid)
     OPCODE(70)
     PAD(1)
     PARAM(DRAWABLE, `drawable')
@@ -1007,6 +1015,7 @@ VOIDREQUEST(PolyFillRectangle, `
 ')
 
 VOIDREQUEST(PolyFillArc, `
+    MARSHAL(drawable.window.xid, gc.xid)
     OPCODE(71)
     PAD(1)
     PARAM(DRAWABLE, `drawable')
@@ -1219,6 +1228,7 @@ STRUCT(COLORITEM, `
 ')
     
 VOIDREQUEST(StoreColors, `
+    MARSHAL(cmap.xid)
     OPCODE(89)
     PAD(1)
     PARAM(COLORMAP, `cmap')

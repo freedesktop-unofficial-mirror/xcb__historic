@@ -5,6 +5,10 @@
 #define XCBTRACEREQ 0
 #endif
 
+#ifndef XCBTRACEMARSHAL
+#define XCBTRACEMARSHAL 0
+#endif
+
 #ifndef XCBTRACEREP
 #define XCBTRACEREP 0
 #endif
@@ -13,7 +17,7 @@
 #define XCBTRACEEVENT 0
 #endif
 
-#if XCBTRACEREQ || XCBTRACEREP || XCBTRACEEVENT
+#if XCBTRACEREQ || XCBTRACEMARSHAL || XCBTRACEREP || XCBTRACEEVENT
 #include <stdio.h>
 #endif
 
@@ -27,6 +31,12 @@
 #define XCBREQTRACER(id) fputs(id " request send\n", stderr);
 #else
 #define XCBREQTRACER(id)
+#endif
+
+#if XCBTRACEMARSHAL
+#define XCBMARSHALTRACER(id) fputs(id " request marshaled\n", stderr);
+#else
+#define XCBMARSHALTRACER(id)
 #endif
 
 #endif
