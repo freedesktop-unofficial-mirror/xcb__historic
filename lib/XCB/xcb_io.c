@@ -44,14 +44,19 @@ struct XCBIOHandle {
 XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, XCBIOHandle *), void *readerdata)
 {
     XCBIOHandle *h;
+    long flags;
+
     h = (XCBIOHandle *) malloc((1) * sizeof(XCBIOHandle));
     if(!h)
         return 0;
 
-#ifdef USENONBLOCKING
-    if (fcntl(fd, F_SETFL, (long)O_NONBLOCK) == -1)
-        return 0;
-#endif
+    flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1)
+	return 0;
+    flags |= O_NONBLOCK;
+    if (fcntl(fd, F_SETFL, flags) == -1)
+	return 0;
+
     h->fd = fd;
     h->locked = locked;
     pthread_cond_init(&h->waiting_threads, 0);
