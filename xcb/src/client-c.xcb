@@ -403,7 +403,7 @@ _H
 pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
 FUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
-`XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericEvent **e', `
+`XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericError **e', `
     XCBREPTRACER("$1");
     return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
 ')popdef(`NEXTFIELD')')

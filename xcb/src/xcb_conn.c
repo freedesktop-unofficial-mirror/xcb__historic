@@ -134,7 +134,7 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
     return 1; /* I have something for you... */
 }
 
-void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e)
+void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e)
 {
     void *ret = 0;
     XCBReplyData *cur;
@@ -174,7 +174,7 @@ void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e)
         if(!e)
             XCBListAppend(c->event_data, (XCBGenericEvent *) cur->data);
         else
-            *e = (XCBGenericEvent *) cur->data;
+            *e = (XCBGenericError *) cur->data;
     }
     else
         ret = cur->data;
@@ -375,23 +375,26 @@ XCBConnection *XCBConnectBasic()
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
 {
     char *colon;
-    *host = 0;
     if(!name || !*name)
         name = getenv("DISPLAY");
     if(!name)
         return 0;
-    colon = strchr(name, ':');
-    if(!colon)
-        return 0;
-    *colon = '\0';
-    ++colon;
     *host = strdup(name);
     if(!*host)
         return 0;
+    colon = strchr(*host, ':');
+    if(!colon)
+    {
+        free(*host);
+        *host = 0;
+        return 0;
+    }
+    *colon = '\0';
+    ++colon;
     return sscanf(colon, "%d.%d", display, screen);
 }
 
-int XCBSync(XCBConnection *c, XCBGenericEvent **e)
+int XCBSync(XCBConnection *c, XCBGenericError **e)
 {
     XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
     free(reply);
@@ -405,7 +408,7 @@ static int match_extension_string(const void *name, const void *data)
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericEvent **e)
+const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e)
 {
     XCBExtensionRecord *data = 0;
     if(e)

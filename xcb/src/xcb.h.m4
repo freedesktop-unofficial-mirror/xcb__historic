@@ -96,7 +96,7 @@ int XCBOnes(unsigned long mask);
 CARD32 XCBGenerateID(XCBConnection *c);
 void XCBAddReplyData(XCBConnection *c, int seqnum);
 void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
-void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e);
+void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollEvent(XCBConnection *c);
 int XCBFlush(XCBConnection *c);
@@ -132,10 +132,10 @@ undivert(INLINEFUNCDIV)dnl
 
 /* xcb_conn.c */
 
-int XCBSync(XCBConnection *c, XCBGenericEvent **e);
+int XCBSync(XCBConnection *c, XCBGenericError **e);
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericEvent **e);
+const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e);
 
 #endif
