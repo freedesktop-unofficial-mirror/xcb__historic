@@ -7,10 +7,7 @@ XCOMM for licensing information.
 INCLUDES = -I. -I../../exports/include
 XCB=../../lib/XCB
 XCBLIB=-L$(XCB) -lXCB
-DEPXCBLIB=$(XCB)/libXCB.a
-
-        DEPLIBS = $(DEPXCBLIB)
-        XCBLIBS = $(XCBLIB) -L$(XLIB) -lXau
+DEPXCBLIB=$(XCB)/libXCB.so
 
 all:: main dpms xdpyinfo rendertest
 
@@ -24,12 +21,12 @@ xdpyinfo_OBJS = xdpyinfo.o
 
 rendertest_OBJS = rendertest.o
 
-NormalProgramTarget(main,$(main_OBJS),$(DEPXCBLIB),$(XCBLIBS),$(THREADS))
+NormalProgramTarget(main,$(main_OBJS),$(DEPXCBLIB),$(XCBLIB),$(THREADS))
 
-NormalProgramTarget(dpms,$(dpms_OBJS),$(DEPXCBLIB),$(XCBLIBS),)
+NormalProgramTarget(dpms,$(dpms_OBJS),$(DEPXCBLIB),$(XCBLIB),)
 
-NormalProgramTarget(xdpyinfo,$(xdpyinfo_OBJS),$(DEPXCBLIB),$(XCBLIBS),)
+NormalProgramTarget(xdpyinfo,$(xdpyinfo_OBJS),$(DEPXCBLIB),$(XCBLIB),)
 
-NormalProgramTarget(rendertest,$(rendertest_OBJS),$(DEPXCBLIB),$(XCBLIBS),)
+NormalProgramTarget(rendertest,$(rendertest_OBJS),$(DEPXCBLIB),$(XCBLIB),)
 
 DependTarget()

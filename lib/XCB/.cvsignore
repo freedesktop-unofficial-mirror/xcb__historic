@@ -11,6 +11,8 @@ xcb_dpms.c
 xcb_dpms.h
 xcb_render.c
 xcb_render.h
+xcb_shm.c
+xcb_shm.h
 xcb_shape.c
 xcb_shape.h
 xcb_types.c

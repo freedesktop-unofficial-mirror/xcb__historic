@@ -7,10 +7,7 @@ XCOMM for licensing information.
 INCLUDES = -I. -I../../exports/include -I../xcbtests
 XCB=../../lib/XCB
 XCBLIB=-L$(XCB) -lXCB
-DEPXCBLIB=$(XCB)/libXCB.a
-
-        DEPLIBS = $(DEPXCBLIB)
-        XCBLIBS = $(XCBLIB) -L$(XLIB) -lXau
+DEPXCBLIB=$(XCB)/libXCB.so
 
 all:: hypnomoire
 
@@ -18,6 +15,6 @@ THREADS = -lpthread
 
 hypnomoire_OBJS = hypnomoire.o ../xcbtests/reply_formats.o
 
-NormalProgramTarget(hypnomoire,$(hypnomoire_OBJS),$(DEPXCBLIB),$(XCBLIBS),-lm $(THREADS))
+NormalProgramTarget(hypnomoire,$(hypnomoire_OBJS),$(DEPXCBLIB),$(XCBLIB),-lm $(THREADS))
 
 DependTarget()
