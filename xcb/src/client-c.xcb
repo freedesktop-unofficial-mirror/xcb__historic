@@ -5,6 +5,13 @@ dnl
 include(`generics.xcb')dnl
 PUSHDIV(-1) dnl Discard any text until a divert(0).
 
+define(`PROTECTCXX', `ifelse(
+`$1', `new', `_new',
+`$1', `delete', `_delete',
+`$1', `class', `_class',
+`$1', `operator', `_operator',
+``$1'')')
+
 dnl -- Implementations of macros specified in global macros.m4
 
 dnl ENUM(type name, name list)
@@ -22,13 +29,7 @@ ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 dnl Declares a field of the given type with the given name.
 dnl FIELD(type, name)
 define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
-    `$1' `$2';
-POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
-
-dnl Declares a field with the given name which is a pointer to the given type.
-dnl POINTERFIELD(type, name)
-define(`POINTERFIELD', `PUSHDIV(STRUCTDIV)dnl
-    `$1' *`$2';
+    `$1' PROTECTCXX(`$2');
 POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
 
 
@@ -198,7 +199,7 @@ define(`STRUCTDIV', ALLOCDIV)
 dnl Buffers all structures until end of input
 define(`TYPEDIV', ALLOCDIV)
 
-dnl PAD, FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
+dnl PAD, FIELD, and ARRAYFIELD can be used in either STRUCT or
 dnl UNION definitions.
 define(`FIELDQTY', 0)
 define(`PADQTY', 0)
@@ -268,7 +269,7 @@ define(`EXPRFIELD', `FIELD(`$1', `$2')
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
 divert(ASSNDIV)dnl
-TAB()out.`$2' = `$2';
+TAB()out.PROTECTCXX(`$2') = `$2';
 POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Defines a parameter with no associated field. The name can be used in
@@ -279,9 +280,9 @@ define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
 dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
 define(`PARAM', `FIELD($1, `$2')
-PUSHDIV(PARMDIV), $1 `$2'`'dnl
+PUSHDIV(PARMDIV), $1 PROTECTCXX(`$2')`'dnl
 divert(ASSNDIV)dnl
-TAB()out.`$2' = `$2';
+TAB()out.PROTECTCXX(`$2') = PROTECTCXX(`$2');
 POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 

@@ -11,6 +11,9 @@
 #include <sys/uio.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Pre-defined constants */
 
@@ -130,5 +133,9 @@ int XCBOpenUnix(const char *file);
 XCBConnection *XCBConnectBasic(void);
 
 int XCBSync(XCBConnection *c, XCBGenericError **e);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
