@@ -482,7 +482,7 @@ REQUEST(GetProperty, `
     REPLY(CARD32, `bytes_after')
     REPLY(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(void, `value', `R->value_len * 8 / R->format')
+    ARRAYREPLY(void, `value', `R->value_len')
 ')
 
 REQUEST(ListProperties, `
