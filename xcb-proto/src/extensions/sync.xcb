@@ -51,8 +51,17 @@ STRUCT(WAITCONDITION, `
     FIELD(INT64, `event_threshold')
 ')
 
-ERROR(`Counter', 0)
-ERROR(`Alarm', 1)
+ERROR(`Counter', 0, `
+    FIELD(CARD32, `bad_counter')
+    FIELD(CARD16, `minor_opcode')
+    FIELD(CARD8, `major_opcode')
+')
+
+ERROR(`Alarm', 1, `
+    FIELD(CARD32, `bad_alarm')
+    FIELD(CARD16, `minor_opcode')
+    FIELD(CARD8, `major_opcode')
+')
     
 REQUEST(Initialize, `
     OPCODE(0)
