@@ -55,8 +55,17 @@ for licensing information.
       <field type="INT64" name="event_threshold" />
     </struct>
 
-    <error name="Counter" number="0" />
-    <error name="Alarm" number="1" />
+    <error name="Counter" number="0">
+      <field type="CARD32" name="bad_counter" />
+      <field type="CARD16" name="minor_opcode" />
+      <field type="CARD8" name="major_opcode" />
+    </error>
+
+    <error name="Alarm" number="1">
+      <field type="CARD32" name="bad_alarm" />
+      <field type="CARD16" name="minor_opcode" />
+      <field type="CARD8" name="major_opcode" />
+    </error>
     
     <request name="Initialize" opcode="0">
       <reply>
