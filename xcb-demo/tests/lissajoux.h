@@ -10,6 +10,7 @@ struct Data_
   XCBDRAWABLE    draw;
   XCBGCONTEXT    gc;
   CARD8          format;
+  XCBImage      *image;
 };
 
 #endif /* __TEST_H__ */
