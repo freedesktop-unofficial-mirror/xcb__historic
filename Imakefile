@@ -8,7 +8,7 @@ XCOMM for licensing information.
 #define IHaveSubdirs
 #define PassCDebugFlags
 
-SUBDIRS = lib programs doc
+SUBDIRS = lib programs
 
 MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))
