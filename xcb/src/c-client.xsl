@@ -62,11 +62,12 @@ See the file COPYING in this package for licensing information.
 
   <xsl:template match="extension" mode="pass1">
     <extension xname="{@xname}" name="{@name}">
-      <constant type="string" name="XCB{@name}Id" value="{@xname}" />
+      <constant type="XCBExtension" name="XCB{@name}Id"
+                value='{{ "{@xname}" }}' />
       <function type="const XCBQueryExtensionRep *" name="XCB{@name}Init">
         <field type="XCBConnection *" name="c" />
-        <l>return XCBQueryExtensionCached(c, XCB<!--
-        --><xsl:value-of select="@name" />Id, 0);</l>
+        <l>return XCBGetExtensionData(c, &amp;XCB<!--
+        --><xsl:value-of select="@name" />Id);</l>
       </function>
       <xsl:apply-templates mode="pass1" />
     </extension>
@@ -175,7 +176,7 @@ See the file COPYING in this package for licensing information.
         </field>
         <field type="XCBGenericError **" name="e" />
         <l>return (XCB<xsl:value-of select="concat($ext, @name)" />Rep *)<!--
-        --> XCBWaitReply(c, cookie.sequence, e);</l>
+        --> XCBWaitForReply(c, cookie.sequence, e);</l>
       </function>
     </xsl:if>
   </xsl:template>
@@ -332,7 +333,7 @@ See the file COPYING in this package for licensing information.
           <xsl:with-param name="name" select="@value-list-name" />
         </xsl:call-template>
       </xsl:attribute>
-      <function-call name="XCBOnes">
+      <function-call name="XCBPopcount">
         <param>
           <fieldref>
             <xsl:call-template name="canonical-var-name">
@@ -730,7 +731,8 @@ See the file COPYING in this package for licensing information.
 
 <xsl:if test="$c"><xsl:text>
 #include &lt;assert.h&gt;
-#include "xcb.h"</xsl:text>
+#include "xcb.h"
+#include "xcbext.h"</xsl:text>
 <xsl:for-each select="($root/xcb | $root/xcb/extension)/import">
 <xsl:text>
 #include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"</xsl:text>
@@ -750,31 +752,48 @@ See the file COPYING in this package for licensing information.
   </xsl:template>
 
   <xsl:template match="constant" mode="output">
-    <xsl:if test="(@type = 'number') and $h">
-      <xsl:text>#define </xsl:text>
-      <xsl:value-of select="@name" />
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="@value" />
-      <xsl:text>
+    <xsl:choose>
+      <xsl:when test="@type = 'number'">
+        <xsl:if test="$h">
+          <xsl:text>#define </xsl:text>
+          <xsl:value-of select="@name" />
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="@value" />
+          <xsl:text>
 
 </xsl:text>
-    </xsl:if>
-    <xsl:if test="@type = 'string'">
-      <xsl:if test="$h">
-        <xsl:text>extern </xsl:text>
-      </xsl:if>
-      <xsl:text>const char </xsl:text>
-      <xsl:value-of select="@name" />
-      <xsl:text>[]</xsl:text>
-      <xsl:if test="$c">
-        <xsl:text> = "</xsl:text>
-        <xsl:value-of select="@value" />
-        <xsl:text>"</xsl:text>
-      </xsl:if>
-      <xsl:text>;
+        </xsl:if>
+      </xsl:when>
+      <xsl:when test="@type = 'string'">
+        <xsl:if test="$h">
+          <xsl:text>extern </xsl:text>
+        </xsl:if>
+        <xsl:text>const char </xsl:text>
+        <xsl:value-of select="@name" />
+        <xsl:text>[]</xsl:text>
+        <xsl:if test="$c">
+          <xsl:text> = "</xsl:text>
+          <xsl:value-of select="@value" />
+          <xsl:text>"</xsl:text>
+        </xsl:if>
+        <xsl:text>;
 
 </xsl:text>
-    </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:if test="$h">
+          <xsl:text>extern </xsl:text>
+        </xsl:if>
+        <xsl:call-template name="type-and-name" />
+        <xsl:if test="$c">
+          <xsl:text> = </xsl:text>
+          <xsl:value-of select="@value" />
+        </xsl:if>
+        <xsl:text>;
+
+</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="typedef" mode="output">
