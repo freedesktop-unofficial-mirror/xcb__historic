@@ -58,6 +58,7 @@ _xcb_queue *_xcb_queue_new(void);
 void _xcb_queue_delete(_xcb_queue *q, XCBListFreeFunc do_free);
 int _xcb_queue_enqueue(_xcb_queue *q, void *data);
 void *_xcb_queue_dequeue(_xcb_queue *q);
+int _xcb_queue_is_empty(_xcb_queue *q);
 
 
 /* xcb_util.c */
