@@ -5,6 +5,8 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 
+Status _XEventToWire(register Display *dpy, register XEvent *re, register xEvent *event);
+
 /*
  * In order to avoid all images requiring _XEventToWire, we install the
  * event converter here if it has never been installed.

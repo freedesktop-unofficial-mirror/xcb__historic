@@ -18,6 +18,10 @@
 #define Size_t size_t
 #endif
 
+Status _XUnknownNativeEvent(register Display *dpy, register XEvent *re, register xEvent *event);
+Bool _XUnknownWireEvent(register Display *dpy, register XEvent *re, register xEvent *event);
+Bool _XWireToEvent(register Display *dpy, register XEvent *re, register xEvent *event);
+
 #define bignamelen (sizeof(XBigReqExtensionName) - 1)
 
 void _XFreeDisplayStructure(register Display *dpy);
