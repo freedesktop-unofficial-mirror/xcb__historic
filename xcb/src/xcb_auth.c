@@ -10,10 +10,20 @@
 #include "xcbint.h"
 #include "xcb_des.h"
 
-#define XA1 "XDM-AUTHORIZATION-1"
-#define MC1 "MIT-MAGIC-COOKIE-1"
-static char *authtypes[] = { XA1, MC1 };
-static int authtypelens[] = { sizeof(XA1)-1, sizeof(MC1)-1 };
+enum auth_protos {
+#ifdef HAS_AUTH_XA1
+    AUTH_XA1,
+#endif
+    AUTH_MC1,
+    N_AUTH_PROTOS
+};
+
+static char *authnames[N_AUTH_PROTOS] = {
+#ifdef HAS_AUTH_XA1
+    "XDM-AUTHORIZATION-1",
+#endif
+    "MIT-MAGIC-COOKIE-1",
+};
 
 int XCBNextNonce()
 {
@@ -26,13 +36,15 @@ int XCBNextNonce()
     return ret;
 }
 
+#ifdef HAS_AUTH_XA1
+
 /*
  * This code and the code it calls is taken from libXdmcp,
  * specifically from Wrap.c, Wrap.h, and Wraphelp.c.  The US
  * has changed, thank goodness, and it should be OK to bury
  * DES code in an open source product without a maze of
- * twisty wrapper functions stored offshore.  --Bart Massey
- * 2003/11/5
+ * twisty wrapper functions stored offshore.  Or maybe
+ * not. --Bart Massey 2003/11/5
  */
 
 static void
@@ -74,6 +86,8 @@ Wrap (
     }
 }
 
+#endif
+
 XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
 {
     /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
@@ -88,6 +102,9 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
     char dispbuf[40];   /* big enough to hold more than 2^64 base 10 */
     char *display;
     Xauth *authptr = 0;
+    int authnamelens[N_AUTH_PROTOS];
+    int i;
+
 
     if (getpeername(fd, (struct sockaddr *) sockname, &socknamelen) == -1)
         return 0;  /* can only authenticate sockets */
@@ -125,15 +142,16 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
         addr = hostnamebuf;
         addrlen = strlen(addr);
     }
+    for (i = 0; i < N_AUTH_PROTOS; i++)
+	authnamelens[i] = strlen(authnames[i]);
     authptr = XauGetBestAuthByAddr (family,
                                     (unsigned short) addrlen, addr,
                                     (unsigned short) strlen(display), display,
-                                    sizeof(authtypes)/sizeof(authtypes[0]),
-                                    authtypes, authtypelens);
+                                    N_AUTH_PROTOS, authnames, authnamelens);
     if (authptr == 0)
         return 0;   /* cannot find good auth data */
-    if (sizeof(MC1)-1 == authptr->name_length &&
-        !memcmp(MC1, authptr->name, authptr->name_length)) {
+    if (strlen(authnames[AUTH_MC1]) == authptr->name_length &&
+        !memcmp(authnames[AUTH_MC1], authptr->name, authptr->name_length)) {
         (void)memcpy(info->name,
                      authptr->name,
                      authptr->name_length);
@@ -145,8 +163,9 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
         XauDisposeAuth(authptr);
         return info;
     }
-    if (sizeof(XA1)-1 == authptr->name_length &&
-        !memcmp(XA1, authptr->name, authptr->name_length)) {
+#ifdef HAS_AUTH_XA1
+    if (strlen(authnames[AUTH_MC1]) == authptr->name_length &&
+        !memcmp(authnames[AUTH_MC1], authptr->name, authptr->name_length)) {
         int j;
         long now;
 
@@ -196,6 +215,7 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
 	XauDisposeAuth(authptr);
         return info;
     }
+#endif
     XauDisposeAuth(authptr);
     return 0;   /* Unknown authorization type */
 }
