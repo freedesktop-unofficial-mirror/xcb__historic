@@ -83,7 +83,7 @@ REQUEST(QueryTree, `PARAM(Window, `id')', `REPLYFIELD(Window, `children')')
 
 REQUEST(InternAtom, `
     PARAM(BOOL, `onlyIfExists')
-    STRLENPARAM(`name', `nbytes')
+    STRLENFIELD(`name', `nbytes')
     LISTPARAM(char, `name', `nbytes')
 ')
 
@@ -248,7 +248,7 @@ REQUEST(QueryKeymap)
 
 VOIDREQUEST(OpenFont, `
     PARAM(Font, `fid')
-    STRLENPARAM(`name', `nbytes')
+    STRLENFIELD(`name', `nbytes')
     LISTPARAM(char, `name', `nbytes')
 ')
 
@@ -262,14 +262,14 @@ REQUEST(QueryFont, `PARAM(Font, `id')', `
 REQUEST(QueryTextExtents, `
     PARAM(Font, `fid')
     LOCALPARAM(CARD16, `nchars')
-    EXPRPARAM(`oddLength', `nchars & 1')
+    EXPRFIELD(`oddLength', `nchars & 1')
     LISTPARAM(CHAR2B, `string', `nchars')
 ')
 
 dnl FIXME: ListFonts needs an iterator for the reply - a pointer won't do.
 REQUEST(ListFonts, `
     PARAM(CARD16, `maxNames')
-    STRLENPARAM(`pattern', `nbytes')
+    STRLENFIELD(`pattern', `nbytes')
     LISTPARAM(char, `pattern', `nbytes')
 ')
 
@@ -466,7 +466,7 @@ VOIDREQUEST(ImageText8, `
     PARAM(GContext, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    STRLENPARAM(`string', `nChars')
+    STRLENFIELD(`string', `nChars')
     LISTPARAM(char, `string', `nChars')
 ')
 

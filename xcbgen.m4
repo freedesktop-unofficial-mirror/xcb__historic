@@ -108,8 +108,24 @@ define(`PARAMQTY', 0)  dnl Count of parameters to request (currently tests
 
 dnl -- Request/Response macros
 
-dnl HERE
+dnl The *PARAM and *FIELD macros must always appear inside a REQUEST or
+dnl VOIDREQUEST macro call, and must be quoted.
 
+dnl VALUEPARAM and LISTPARAM fields must appear in the order the X server
+dnl expects to recieve them in; other parameter and field definitions
+dnl may be interspersed anywhere and in any order, but it's suggested for
+dnl reasons of clarity that these all be listed in the same order as
+dnl they're given in the X Protocol specification. Parameters to the
+dnl generated request functions will appear in the same order as the
+dnl PARAM macros they're related to.
+
+
+
+dnl Defines a BITMASK/LISTofVALUE parameter pair. The bitmask type should
+dnl probably be either CARD16 or CARD32, depending on the specified width
+dnl of the bitmask. The value array must be given to the generated
+dnl function in the order the X server expects.
+dnl VALUEPARAM(bitmask type, bitmask name, value array name)
 define(`VALUEPARAM', `PUSHDIV(OUTDIV)
 TAB()out->`$2' = `$2';
 TAB()out->length += XCB_Ones(`$2');
@@ -119,33 +135,55 @@ define(`PARTQTY', eval(1+PARTQTY))dnl
 divert(PARMDIV), $1 `$2', CARD32 *`$3'dnl
 POPDIV()')
 
-define(`LISTPARAM', `PUSHDIV(OUTDIV)
+dnl Defines a LISTofFOO parameter. The length of the list may be given as
+dnl any C expression and may reference any of the other fields of this
+dnl request.
+dnl LISTPARAM(element type, list name, length expression)
+define(`LISTPARAM', `PUSHDIV(PARMDIV), $1 *`$2'dnl
+divert(OUTDIV)
 TAB()out->length += (`$3') * sizeof($1) / 4;
 TAB()parts[PARTQTY].iov_base = `$2';
 TAB()parts[PARTQTY].iov_len = (`$3') * sizeof($1);
 define(`PARTQTY', eval(1+PARTQTY))dnl
-divert(PARMDIV), $1 *`$2'dnl
 POPDIV()')
 
-define(`STRLENPARAM', `PUSHDIV(OUTDIV)dnl
-TAB()out->`$2' = `$2' = strlen(`$1');
-divert(VARDIV)dnl
-TAB()int `$2';
+dnl Defines a field which should be filled in with the length of a string
+dnl parameter. The string parameter must be defined by a corresponding
+dnl LISTPARAM(char, ...), and the field name is available for use in the
+dnl expression of a LISTPARAM or EXPRFIELD.
+dnl STRLENFIELD(string name, field name)
+define(`STRLENFIELD', `PUSHDIV(VARDIV)dnl
+TAB()int `$2' = strlen(`$1');
+divert(OUTDIV)dnl
+TAB()out->`$2' = `$2';
 POPDIV()')
 
-define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
-
-define(`EXPRPARAM', `PUSHDIV(OUTDIV)dnl
+dnl Defines a field which should be filled in with the given expression.
+dnl The field name is *not* available for use in further expressions.
+dnl EXPRFIELD(field name, expression)
+define(`EXPRFIELD', `PUSHDIV(OUTDIV)dnl
 TAB()out->`$1' = `$2';
 POPDIV()')
 
-define(`PARAM', `PUSHDIV(OUTDIV)dnl
+dnl Defines a parameter with no associated field. The name can be used in
+dnl expressions.
+dnl LOCALPARAM(type, name)
+define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
+
+dnl Defines a parameter with a field of the same type.
+dnl PARAM(type, name)
+define(`PARAM', `PUSHDIV(PARMDIV), $1 `$2'`'dnl
+divert(OUTDIV)dnl
 TAB()out->`$2' = `$2';
 define(`PARAMQTY', eval(1+PARAMQTY))dnl
-divert(PARMDIV), $1 `$2'`'dnl
 POPDIV()')
 
-dnl VOIDREQUEST(name, 0 or more PARAMs)
+
+
+dnl Creates a function named XCB_<name> returning XCB_void_cookie and
+dnl accepting whatever parameters are necessary to deliver the given PARAMs
+dnl and FIELDs to the X server.
+dnl VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
 define(`VOIDREQUEST',`dnl
 PUSHDIV(-1) INDENT() $2 UNINDENT() POPDIV()dnl
 FUNCTION(`XCB_void_cookie XCB_'$1, `XCB_Connection *c`'undivert(PARMDIV)', `
@@ -179,18 +217,35 @@ define(`PARTQTY',0)dnl
 define(`PARAMQTY',0)dnl
 ')')
 
-dnl REPLYFIELD(field type, field name, opt length)
+
+
+dnl Generates a C pre-processor macro providing access to a variable-length
+dnl portion of a reply. If another reply field follows, the length name
+dnl must be provided. The length name is the name of a field in the
+dnl fixed-length portion of the response which contains the number of
+dnl elements in this section.
+dnl REPLYFIELD(field type, field name, opt length name)
 define(`REPLYFIELD', `define(`THISFIELD', translit($2,`a-z',`A-Z'))
 PUSHDIV(OUTDIV)dnl
 #define `XCB_'REQ`_'THISFIELD`(reply)' (($1 *) (dnl
 ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')))
 POPDIV()define(`LASTFIELD',THISFIELD)define(`LASTLEN',$3)')
 
+dnl Internal macro which I can't seem to get rid of. Icky.
 define(`UNWRAPREPLYFIELD', `dnl
 PUSHDIV(-1) $1 POPDIV()dnl
 _H`'undivert(OUTDIV)`'dnl
 ')
 
+
+
+dnl Creates a function named XCB_<name> returning XCB_<name>_cookie and
+dnl accepting whatever parameters are necessary to deliver the given PARAMs
+dnl and FIELDs to the X server. Declares the struct XCB_<name>_cookie.
+dnl Creates a function named XCB_<name>_Reply returning a pointer to
+dnl x<name>Reply from Xproto.h which forces a cookie returned from
+dnl XCB_<name>, waiting for the response from the server if necessary.
+dnl If any REPLYFIELDs are given, they must be quoted.
 dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYFIELDs)
 define(`REQUEST',`dnl
 PUSHDIV(-1) INDENT() $2 UNINDENT() POPDIV()dnl
@@ -247,18 +302,29 @@ undefine(`LASTFIELD')undefine(`LASTLEN')popdef(`REQ')dnl')
 
 dnl --- Structure macros ------------------------------------------------------
 
+dnl FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
+dnl UNION definitions.
+
+dnl Declares a field of the given type with the given name.
+dnl FIELD(type, name)
 define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
     $1 $2;
 POPDIV()dnl')
 
+dnl Declares an array field with the given quantity of elements of the
+dnl given type.
+dnl ARRAYFIELD(type, name, quantity)
 define(`ARRAYFIELD', `PUSHDIV(STRUCTDIV)dnl
     $1 $2[$3];
 POPDIV()dnl')
 
+dnl Declares a field with the given name which is a pointer to the given type.
+dnl POINTERFIELD(type, name)
 define(`POINTERFIELD', `PUSHDIV(STRUCTDIV)dnl
     $1 *$2;
 POPDIV()dnl')
 
+dnl STRUCT(name, 1 or more FIELDs)
 define(`STRUCT', `PUSHDIV(-1)
 $2
 POPDIV()dnl
@@ -266,6 +332,7 @@ _H`'typedef struct $1 {
 _H`'undivert(STRUCTDIV)dnl
 _H`'} $1;')
 
+dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)
 $2
 POPDIV()dnl
@@ -273,8 +340,12 @@ _H`'typedef union $1 {
 _H`'undivert(STRUCTDIV)dnl
 _H`'} $1;')
 
+dnl Declares a struct named XCB_<name>_cookie with a single "int seqnum"
+dnl field.
+dnl COOKIETYPE(name)
 define(`COOKIETYPE', `STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')')
 
+dnl XCBGEN(header name)
 define(`XCBGEN', `dnl
 `/*'
  * This file generated automatically from __file__ by xcbgen.m4 using m4.
@@ -283,6 +354,8 @@ define(`XCBGEN', `dnl
 
 _H`'#ifndef __$1_H
 _H`'#define __$1_H')
+
+dnl ENDXCBGEN()
 define(`ENDXCBGEN', `_H`'#endif')
 
 divert(0)`'dnl
