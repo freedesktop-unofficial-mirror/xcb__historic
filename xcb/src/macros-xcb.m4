@@ -96,9 +96,9 @@ dnl EXPRFIELD(field type, field name, expression)
 define(`EXPRFIELD', `FIELD(`$1', `$2')
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
-divert(ASSNDIV)dnl
+divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
 TAB()out->`$2' = `$2';
-POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Defines a parameter with no associated field. The name can be used in
 dnl expressions.
@@ -109,9 +109,9 @@ dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
 define(`PARAM', `FIELD($1, `$2')
 PUSHDIV(PARMDIV), $1 `$2'`'dnl
-divert(ASSNDIV)dnl
+divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
 TAB()out->`$2' = `$2';
-POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
+ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Sets the major number for all instances of this request to the given code.
@@ -135,9 +135,9 @@ POPDIV()
     FIELD(CARD8, `major_opcode')
 PUSHDIV(VARDIV)dnl
 TAB()const CARD8 major_opcode = `$1';
-divert(ASSNDIV)dnl
+divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
 TAB()out->major_opcode = major_opcode;
-POPDIV()
+ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()
 ')')
 
 
@@ -324,9 +324,9 @@ define(`REPMIDDLE', `
 
 dnl REQMIDDLE()
 define(`REQMIDDLE', `FIELD(CARD16, `length')
-PUSHDIV(ASSNDIV)dnl
+PUSHDIV(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
 TAB()out->length = XCB_CEIL(sizeof(*out)) >> 2;
-POPDIV()')
+ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()')
 
 dnl STRUCT(name, 1 or more FIELDs)
 define(`STRUCT', `PUSHDIV(-1)
