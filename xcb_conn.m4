@@ -179,6 +179,34 @@ FUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cur', `
     return;
 ')
 _C
+STATICFUNCTION(`int blocking_read', `int fd, char *buf, int nread',`
+    int count = nread;
+    while (count > 0) {
+	int n = read(fd, buf, count);
+	if(n == -1) {
+            if (errno == EAGAIN) {
+                n = 0;
+            } else {
+	        perror("blocking_read: read");
+	        abort();
+            }
+	}
+	count -= n;
+	buf += n;
+	if (count > 0 && n == 0) {
+            fd_set rfds;
+            FD_ZERO(&rfds);
+            FD_SET(fd, &rfds);
+	    n = select(fd + 1, &rfds, 0, 0, 0);
+	    if(n == -1) {
+		perror("blocking_read: select");
+		abort();
+	    }
+	}
+    }
+    return nread;
+')
+_C
 _C`'#define XCB_SEQ_EARLIER(a, b) ((INT16) ((CARD16)a - (CARD16)b) < 0)
 _C`'typedef enum { WAIT_SEQNUM, WAIT_EVENT, WAIT_FLUSH } wait_cmd_t;
 _C
@@ -279,9 +307,7 @@ ALLOC(unsigned char, buf, 32)
 
         if(FD_ISSET(c->fd, &rfds))
         {INDENT()
-            if(read(c->fd, buf, 32) < 32)
-                assert(0); /* FIXME: handle non-blocking I/O */
-
+            assert(blocking_read(c->fd, buf, 32) == 32);
             if(!(buf[0] & ~1)) /* reply or error packet */
             {INDENT()
                 c->recvd_seqnum = ((xGenericReply *) buf)->sequenceNumber;
@@ -294,8 +320,7 @@ ALLOC(unsigned char, buf, 32)
                     {INDENT()
 REALLOC(unsigned char, buf, 32 + length * 4)
 
-                        if(read(c->fd, buf + 32, length * 4) < length * 4)
-                            assert(0); /* FIXME: handle non-blocking I/O */
+                        assert(blocking_read(c->fd, buf + 32, length * 4) == length * 4);
                     }UNINDENT()
                 }UNINDENT()
             }UNINDENT()
@@ -335,11 +360,18 @@ ALLOC(XCB_Event_Data, event, 1)
 
         if(FD_ISSET(c->fd, &wfds))
         {INDENT()
-            /* FIXME: non-blocking semantics */
-            write(c->fd, c->outqueue, c->n_outqueue);
+            char *qp = c->outqueue;
+            int count = c->n_outqueue;
+            while (count) {
+              int n = write(c->fd, qp, count);
+              qp += n;
+              count -= n;
+              /* FIXME: this spins when n == 0 */
+            }
             c->n_outqueue = 0;
             if(c->n_outvec)
             {
+                assert(0);  /* FIXME: outvec support turned off */
                 writev(c->fd, c->outvec, c->n_outvec);
                 c->n_outvec = 0;
             }
@@ -455,9 +487,11 @@ FUNCTION(`void XCB_Write', dnl
             memcpy(c->outqueue + c->n_outqueue, vector[i].iov_base, vector[i].iov_len);
             c->n_outqueue += vector[i].iov_len;
         }
+        XCB_Flush_locked(c);
         return;
     }
 
+    assert(0);  /* FIXME: turning off outvec support */
     c->outvec = vector;
     c->n_outvec = count;
     XCB_Flush_locked(c);
@@ -589,12 +623,14 @@ ALLOC(XCB_Connection, c, 1)
     XCB_Flush(c);
 
     /* Read the server response */
-    read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix));
+    assert(blocking_read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix))
+      == SIZEOF(xConnSetupPrefix));
 
     clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
     c = (XCB_Connection *) realloc(c, clen);
     assert(c);
-    read(c->fd, &c->setup, c->setup_prefix.length * 4);
+    assert(blocking_read(c->fd, &c->setup, c->setup_prefix.length * 4)
+      == c->setup_prefix.length * 4);
 
     /* 0 = failed, 2 = authenticate, 1 = success */
     switch(c->setup_prefix.success)
