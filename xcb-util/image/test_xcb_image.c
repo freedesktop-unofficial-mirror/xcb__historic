@@ -33,7 +33,7 @@ reflect_window (XCBConnection *c,
   format = ZPixmap;
 
   printf ("get_image %d %d\n", width, height);
-  image = xcb_image_get (c, win,
+  image = XCBImageGet (c, win,
 			 0, 0, width, height,
 			 AllPlanes,
 			 format);
@@ -54,7 +54,7 @@ reflect_window (XCBConnection *c,
     {
       for (i = 0 ; i < image->width ; i++)
 	{
-	  pixel1 = xcb_image_get_pixel (image, i, j);
+	  pixel1 = XCBImageGetPixel (image, i, j);
 	  printf ("%6ld ", pixel1);
 	}
       printf ("\n");
@@ -66,14 +66,14 @@ reflect_window (XCBConnection *c,
     {
       for (y = 0 ; y < height ; y++)
 	{
-	  pixel1 = xcb_image_get_pixel (image, left_x, y);
+	  pixel1 = XCBImageGetPixel (image, left_x, y);
 	  right_x = width - left_x-1;
 	  if (left_x != right_x)
 	    {
-	      pixel2 = xcb_image_get_pixel (image, right_x, y);
-	      xcb_image_put_pixel (image, left_x, y, pixel2);
+	      pixel2 = XCBImageGetPixel (image, right_x, y);
+	      XCBImagePutPixel (image, left_x, y, pixel2);
 	    }
-	  xcb_image_put_pixel (image, right_x, y, pixel1);
+	  XCBImagePutPixel (image, right_x, y, pixel1);
 	}
       printf ("\n");
     }
@@ -82,14 +82,14 @@ reflect_window (XCBConnection *c,
     {
       for (i = 0 ; i < image->width ; i++)
 	{
-	  pixel1 = xcb_image_get_pixel (image, i, j);
+	  pixel1 = XCBImageGetPixel (image, i, j);
 	  printf ("%6ld ", pixel1);
 	}
       printf ("\n");
     }
-  xcb_image_put (c, new_win, gc, image,
+  XCBImagePut (c, new_win, gc, image,
 		 0, 0, 0, 0, width, height);
-  image = xcb_image_get (c, new_win,
+  image = XCBImageGet (c, new_win,
 			 0, 0, width, height,
 			 AllPlanes,
 			 format);
@@ -98,7 +98,7 @@ reflect_window (XCBConnection *c,
     {
       for (i = 0 ; i < image->width ; i++)
 	{
-	  pixel1 = xcb_image_get_pixel (image, i, j);
+	  pixel1 = XCBImageGetPixel (image, i, j);
 	  printf ("%6ld ", pixel1);
 	}
       printf ("\n");

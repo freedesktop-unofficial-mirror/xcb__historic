@@ -87,17 +87,17 @@ xcb_scanline_pad_get (XCBConnection *conn,
 
 
 XCBImage *
-xcb_image_create (XCBConnection *conn,
-		  CARD8          depth,
-		  CARD8          format,
-		  unsigned int   offset,
-		  BYTE          *data,
-		  CARD16         width,
-		  CARD16         height,
-		  CARD8          xpad,
-		  CARD32         bytes_per_line)
+XCBImageCreate (XCBConnection *conn,
+		CARD8          depth,
+		CARD8          format,
+		unsigned int   offset,
+		BYTE          *data,
+		CARD16         width,
+		CARD16         height,
+		CARD8          xpad,
+		CARD32         bytes_per_line)
 {
-  XCBImage      *image;
+  XCBImage               *image;
   XCBConnSetupSuccessRep *rep;
   CARD8                   bpp = 1; /* bits per pixel */
 
@@ -153,7 +153,7 @@ xcb_image_create (XCBConnection *conn,
 }
 
 int
-xcb_image_init (XCBImage *image)
+XCBImageInit (XCBImage *image)
 {
   if ((image->depth == 0 || image->depth > 32) ||
       (image->format != XYBitmap &&
@@ -186,7 +186,7 @@ xcb_image_init (XCBImage *image)
 }
 
 int
-xcb_image_destroy (XCBImage *image)
+XCBImageDestroy (XCBImage *image)
 {
   if (image->data != NULL)
     free (image->data);
@@ -196,14 +196,14 @@ xcb_image_destroy (XCBImage *image)
 }
 
 XCBImage *
-xcb_image_get (XCBConnection *conn,
-	       XCBDRAWABLE    draw,
-	       INT16          x,
-	       INT16          y,
-	       CARD16         width,
-	       CARD16         height,
-	       CARD32         plane_mask,
-	       CARD8          format)
+XCBImageGet (XCBConnection *conn,
+	     XCBDRAWABLE    draw,
+	     INT16          x,
+	     INT16          y,
+	     CARD16         width,
+	     CARD16         height,
+	     CARD32         plane_mask,
+	     CARD8          format)
 {
   XCBImage       *image;
   XCBGetImageRep *rep;
@@ -229,7 +229,7 @@ xcb_image_get (XCBConnection *conn,
 
   if (format == XYPixmap)
     {
-      image = xcb_image_create (conn,
+      image = XCBImageCreate (conn,
 				Ones (plane_mask & _lomask(rep->depth)),
 				format,
 				0,
@@ -241,7 +241,7 @@ xcb_image_get (XCBConnection *conn,
   else /* format == ZPixmap */
     {
       printf ("Format : ZPixmap %d\n", xcb_scanline_pad_get (conn, rep->depth));
-      image = xcb_image_create (conn,
+      image = XCBImageCreate (conn,
 				rep->depth,
 				ZPixmap,
 				0,
@@ -257,16 +257,16 @@ xcb_image_get (XCBConnection *conn,
 }
 
 int
-xcb_image_put (XCBConnection *conn,
-	       XCBDRAWABLE    draw,
-	       XCBGCONTEXT    gc,
-	       XCBImage      *image,
-	       INT16          x_offset,
-	       INT16          y_offset,
-	       INT16          x,
-	       INT16          y,
-	       CARD16         width,
-	       CARD16         height)
+XCBImagePut (XCBConnection *conn,
+	     XCBDRAWABLE    draw,
+	     XCBGCONTEXT    gc,
+	     XCBImage      *image,
+	     INT16          x_offset,
+	     INT16          y_offset,
+	     INT16          x,
+	     INT16          y,
+	     CARD16         width,
+	     CARD16         height)
 {
   INT32 w;
   INT32 h;
@@ -352,9 +352,9 @@ xcb_image_put (XCBConnection *conn,
 	
 	for (j = height; --j >= 0; )
 	  for (i = width; --i >= 0; )
-	    xcb_image_put_pixel(&img,
+	    XCBImagePutPixel(&img,
 				i, j,
-				xcb_image_get_pixel(image,
+				XCBImageGetPixel(image,
 						    x_offset + i,
 						    y_offset + j));
 	
@@ -384,12 +384,12 @@ xcb_image_put (XCBConnection *conn,
  */
 
 XCBImage *
-xcb_shm_image_create (XCBConnection *conn,
-		      CARD8          depth,
-		      CARD8          format,
-		      BYTE          *data,
-		      CARD16         width,
-		      CARD16         height)
+XCBImageSHMCreate (XCBConnection *conn,
+		   CARD8          depth,
+		   CARD8          format,
+		   BYTE          *data,
+		   CARD16         width,
+		   CARD16         height)
 {
   XCBImage               *image;
   XCBConnSetupSuccessRep *rep;
@@ -425,7 +425,7 @@ xcb_shm_image_create (XCBConnection *conn,
 }
 
 int
-xcb_shm_image_destroy (XCBImage *image)
+XCBImageSHMDestroy (XCBImage *image)
 {
   if (image)
     free (image);
@@ -434,18 +434,18 @@ xcb_shm_image_destroy (XCBImage *image)
 }
 
 int
-xcb_shm_image_put (XCBConnection *conn,
-		   XCBDRAWABLE    draw,
-		   XCBGCONTEXT    gc,
-		   XCBImage      *image,
-		   XCBShmSegmentInfo shminfo,
-		   INT16          src_x,
-		   INT16          src_y,
-		   INT16          dest_x,
-		   INT16          dest_y,
-		   CARD16         src_width,
-		   CARD16         src_height,
-		   CARD8          send_event)
+XCBImageSHMPut (XCBConnection *conn,
+		XCBDRAWABLE    draw,
+		XCBGCONTEXT    gc,
+		XCBImage      *image,
+		XCBShmSegmentInfo shminfo,
+		INT16          src_x,
+		INT16          src_y,
+		INT16          dest_x,
+		INT16          dest_y,
+		CARD16         src_width,
+		CARD16         src_height,
+		CARD8          send_event)
 {
   if (!shminfo.shmaddr)
     return 0;
@@ -462,13 +462,13 @@ xcb_shm_image_put (XCBConnection *conn,
 }
 
 int
-xcb_shm_image_get (XCBConnection *conn,
-		   XCBDRAWABLE    draw,
-		   XCBImage      *image,
-		   XCBShmSegmentInfo shminfo,
-		   INT16          x,
-		   INT16          y,
-		   CARD32         plane_mask)
+XCBImageSHMGet (XCBConnection *conn,
+		XCBDRAWABLE    draw,
+		XCBImage      *image,
+		XCBShmSegmentInfo shminfo,
+		INT16          x,
+		INT16          y,
+		CARD32         plane_mask)
 {
   XCBShmGetImageRep *rep;
   XCBShmGetImageCookie cookie;
@@ -519,7 +519,8 @@ static inline void set_bit (CARD8 *byte, int bit, int value)
     *byte &= ~(1 << bit);
 }
 
-int xcb_image_put_pixel (XCBImage *image, int x, int y, CARD32 pixel)
+int
+XCBImagePutPixel (XCBImage *image, int x, int y, CARD32 pixel)
 {
   register BYTE *src = image->data + (y * image->bytes_per_line);
 
@@ -576,7 +577,8 @@ int xcb_image_put_pixel (XCBImage *image, int x, int y, CARD32 pixel)
   return 1;
 }
 
-CARD32 xcb_image_get_pixel (XCBImage *image, int x, int y)
+CARD32
+XCBImageGetPixel (XCBImage *image, int x, int y)
 {
   CARD32         pixel = 0;
   register BYTE *src = image->data + (y * image->bytes_per_line);

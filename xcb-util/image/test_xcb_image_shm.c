@@ -1,5 +1,3 @@
-/* gcc -g -O2 -Wall `pkg-config --cflags --libs xcb` -o test_shm xcb_image.o test_xcb_image_shm.c */
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -93,7 +91,7 @@ main (int argc, char *argv[])
 	format = rep->pixmap_format;
       else
 	format = 0;
-      img = xcb_shm_image_create (c, depth, format, NULL, W_W, W_H);
+      img = XCBImageSHMCreate (c, depth, format, NULL, W_W, W_H);
 
       printf ("Create image summary:\n");
       printf (" * format..........: %d\n", img->format);
@@ -122,7 +120,7 @@ main (int argc, char *argv[])
 
   /* Draw in the image */
   printf ("put the pixel\n");
-  xcb_image_put_pixel (img, 20, 20, 65535);
+  XCBImagePutPixel (img, 20, 20, 65535);
   printf ("fin put pixel\n");
 
   /* Ask for our window's Id */
@@ -174,7 +172,7 @@ main (int argc, char *argv[])
 	    XCBCopyArea(c, rect, win, bgcolor,
 			0, 0, 0, 0, W_W, W_H);
 	    printf ("put image\n");
-	    xcb_shm_image_put (c, win, fgcolor,
+	    XCBImageSHMPut (c, win, fgcolor,
 			       img, shminfo,
 			       0, 0, 0, 0, W_W,W_H,
 			       0);
