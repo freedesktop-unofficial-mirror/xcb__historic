@@ -12,6 +12,7 @@ See the file COPYING in this package for licensing information.
   <xsl:strip-space elements="*" />
 
   <xsl:param name="mode" /> <!-- "header" or "source" -->
+  <xsl:param name="base-path" /> <!-- Path to the protocol descriptions. -->
 
   <xsl:variable name="h" select="$mode = 'header'" />
   <xsl:variable name="c" select="$mode = 'source'" />
@@ -89,7 +90,7 @@ See the file COPYING in this package for licensing information.
            then search xcb_types if necessary). -->
       <xsl:when test="/xcb[not(@header='xcb_types')
                            and not(@header='xproto')]">
-        <xsl:for-each select="document('xproto.xml')/xcb">
+        <xsl:for-each select="document(concat($base-path, 'xproto.xml'))/xcb">
           <xsl:call-template name="canonical-type-name">
             <xsl:with-param name="type" select="$type" />
           </xsl:call-template>
@@ -97,7 +98,8 @@ See the file COPYING in this package for licensing information.
       </xsl:when>
       <!-- If this is xproto, search xcb_types next. -->
       <xsl:when test="/xcb[@header='xproto']">
-        <xsl:for-each select="document('xcb_types.xml')/xcb">
+        <xsl:for-each select="document(concat($base-path,
+                                              'xcb_types.xml'))/xcb">
           <xsl:call-template name="canonical-type-name">
             <xsl:with-param name="type" select="$type" />
           </xsl:call-template>
@@ -565,11 +567,14 @@ See the file COPYING in this package for licensing information.
                     select="$pass1//struct[@name=current()/@type]/list
                             or (not($header='xproto')
                                 and not($header='xcb_types')
-                                and document('xproto.xml')/xcb/struct
+                                and document(concat($base-path, 'xproto.xml'))
+                                    /xcb/struct
                                     [concat('XCB', @name)=current()/@type]
                                     /*[self::valueparam or self::list])
                             or (not($header='xcb_types')
-                                and document('xcb_types.xml')/xcb/struct
+                                and document(concat($base-path,
+                                                    'xcb_types.xml'))
+                                    /xcb/struct
                                     [concat('XCB', @name)=current()/@type]
                                     /*[self::valueparam or self::list])" />
       <xsl:if test="not($is-variable)">
