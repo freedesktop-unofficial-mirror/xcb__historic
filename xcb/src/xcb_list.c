@@ -98,6 +98,13 @@ int _xcb_list_append(_xcb_list *list, void *data)
     return 1;
 }
 
+void *_xcb_list_peek_head(_xcb_list *list)
+{
+    if(!list->head)
+        return 0;
+    return list->head->data;
+}
+
 void *_xcb_list_remove_head(_xcb_list *list)
 {
     void *ret;

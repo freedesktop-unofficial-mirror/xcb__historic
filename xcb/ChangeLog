@@ -1,3 +1,20 @@
+2005-03-20  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_in.c:
+	Wait for the last known read sequence number to pass the request
+	we're waiting for, instead of checking whether data has arrived
+	for the current request. Causes null to be returned if somebody
+	screwed up by expecting a reply when none can come; relied on by
+	new Xlib/XCB bits that intentionally and routinely screw up this
+	way because the API doesn't give them enough information.
+
+	* src/xcb_list.c, src/xcbint.h:
+	Add _xcb_list_peek_head so Xlib doesn't have to repeatedly
+	remove and re-insert the item at the head of its new
+	pending_requests queue. Profiling showed that was a significant
+	performance hit for the above-mentioned patch and with this
+	three-line function apps are actually usable again.
+
 2004-11-26  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:

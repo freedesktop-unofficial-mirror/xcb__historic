@@ -95,7 +95,8 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
 
     ++cur->pending;
 
-    while(!cur->data)
+    /* If this request has not been read yet, wait for it. */
+    while((signed int) (c->in.request_read - request) < 0)
         if(_xcb_conn_wait(c, /*should_write*/ 0, &cur->cond) <= 0)
         {
             /* Do not remove the reply record on I/O error. */

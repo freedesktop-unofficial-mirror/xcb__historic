@@ -48,6 +48,7 @@ void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free);
 void _xcb_list_delete(_xcb_list *list, XCBListFreeFunc do_free);
 int _xcb_list_insert(_xcb_list *list, void *data);
 int _xcb_list_append(_xcb_list *list, void *data);
+void *_xcb_list_peek_head(_xcb_list *list);
 void *_xcb_list_remove_head(_xcb_list *list);
 void *_xcb_list_remove(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
 void *_xcb_list_find(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
