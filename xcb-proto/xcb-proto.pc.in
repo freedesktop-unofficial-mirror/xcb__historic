@@ -1,0 +1,8 @@
+prefix=@prefix@
+includedir=@includedir@
+xcbincludedir=@xcbincludedir@
+
+Name: XCBProto
+Description: X protocol descriptions for XCB
+Version: @PACKAGE_VERSION@
+Cflags: -I${xcbincludedir}
