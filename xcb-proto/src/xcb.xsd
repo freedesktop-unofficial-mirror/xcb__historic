@@ -80,7 +80,7 @@ authorization from the authors.
           <xsd:attribute name="op">
             <xsd:simpleType>
               <xsd:restriction base="xsd:string">
-                <xsd:pattern value="\*|/|&amp;|&lt;&lt;" />
+                <xsd:pattern value="\+|-|\*|/|&amp;|&lt;&lt;" />
               </xsd:restriction>
             </xsd:simpleType>
           </xsd:attribute>
