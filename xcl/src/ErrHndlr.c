@@ -147,8 +147,7 @@ int _XDefaultIOError(Display *dpy)
 #endif
                         DisplayString (dpy));
             (void) fprintf (stderr, 
-         "      after %lu requests (%lu known processed) with %d events remainin
-g.\r\n",
+         "      after %lu requests (%lu known processed) with %d events remaining.\r\n",
                         NextRequest(dpy) - 1, LastKnownRequestProcessed(dpy),
                         QLength(dpy));
 
