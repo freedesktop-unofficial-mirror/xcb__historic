@@ -65,13 +65,27 @@
     </extension>
   </xsl:template>
 
+  <!-- Modify names that conflict with C++ keywords by prefixing them with an
+       underscore.  If the name parameter is not specified, it defaults to the
+       value of the name attribute on the context node. -->
+  <xsl:template name="canonical-var-name">
+    <xsl:param name="name" select="@name" />
+    <xsl:if test="$name='new' or $name='delete'
+                  or $name='class' or $name='operator'">
+      <xsl:text>_</xsl:text>
+    </xsl:if>
+    <xsl:value-of select="$name" />
+  </xsl:template>
+
   <!--
     Output the canonical name for a type.  If the type exists in the current
     extension/top-level, then output XCB{current-extension}Type.  If this file
-    isn't xcb_types, search in xcb_types.  Otherwise, just output Type.
+    isn't xcb_types, search in xcb_types.  Otherwise, just output Type.  If
+    the type parameter is not specified, it defaults to the value of the type
+    attribute on the context node.
   -->
   <xsl:template name="canonical-type-name">
-    <xsl:param name="type" />
+    <xsl:param name="type" select="@type" />
     <xsl:variable name="ext"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
@@ -130,11 +144,12 @@
           <xsl:copy-of select="." />
         </xsl:if>
         <xsl:if test="self::field">
-          <field name="{@name}">
+          <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@type" />
-              </xsl:call-template>
+              <xsl:call-template name="canonical-type-name" />
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name" />
             </xsl:attribute>
           </field>
         </xsl:if>
@@ -150,33 +165,42 @@
       <field type="XCBConnection *" name="c" />
       <xsl:for-each select="field|list|localparam|valueparam">
         <xsl:if test="self::field|self::localparam">
-          <field name="{@name}">
+          <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@type" />
-              </xsl:call-template>
+              <xsl:call-template name="canonical-type-name" />
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name" />
             </xsl:attribute>
           </field>
         </xsl:if>
         <xsl:if test="self::list">
-          <field name="{@name}">
+          <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@type" />
-              </xsl:call-template>
+              <xsl:call-template name="canonical-type-name" />
               <xsl:text> *</xsl:text>
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name" />
             </xsl:attribute>
           </field>
         </xsl:if>
         <xsl:if test="self::valueparam">
-          <field name="{@value-mask-name}">
+          <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@value-mask-type" />
+              <xsl:call-template name="canonical-type-name" />
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name">
+                <xsl:with-param name="name" select="@value-mask-name" />
               </xsl:call-template>
             </xsl:attribute>
           </field>
-          <field type="const CARD32 *" name="{@value-list-name}" />
+          <field type="const CARD32 *">
+            <xsl:call-template name="canonical-var-name">
+              <xsl:with-param name="name" select="@value-list-name" />
+            </xsl:call-template>
+          </field>
         </xsl:if>
       </xsl:for-each>
       <do-request ref="XCB{$ext}{@name}Req" opcode="{@opcode}">
@@ -193,11 +217,12 @@
             <xsl:copy-of select="." />
           </xsl:if>
           <xsl:if test="self::field">
-            <field name="{@name}">
+            <field>
               <xsl:attribute name="type">
-                <xsl:call-template name="canonical-type-name">
-                  <xsl:with-param name="type" select="@type" />
-                </xsl:call-template>
+                <xsl:call-template name="canonical-type-name" />
+              </xsl:attribute>
+              <xsl:attribute name="name">
+                <xsl:call-template name="canonical-var-name" />
               </xsl:attribute>
             </field>
           </xsl:if>
@@ -221,13 +246,16 @@
     </xsl:if>
   </xsl:template>
 
+  <!-- Create the Iter structure for a structure with the given name.  If the
+       name is not supplied, it defaults to the value of the name attribute of
+       the context node. -->
   <xsl:template name="make-iterator">
-    <xsl:param name="type" />
+    <xsl:param name="name" select="@name" />
     <xsl:variable name="ext"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
-    <struct name="XCB{$ext}{@name}Iter">
-      <field type="XCB{$ext}{@name} *" name="data" />
+    <struct name="XCB{$ext}{$name}Iter">
+      <field type="XCB{$ext}{$name} *" name="data" />
       <field type="int" name="rem" />
       <field type="int" name="index" />
     </struct>
@@ -246,9 +274,7 @@
       <l>ret.xid = XCBGenerateID(c);</l>
       <l>return ret;</l>
     </function>
-    <xsl:call-template name="make-iterator">
-      <xsl:with-param name="type" select="concat($ext, @name)" />
-    </xsl:call-template>
+    <xsl:call-template name="make-iterator" />
   </xsl:template>
 
   <xsl:template match="struct|union" mode="pass1">
@@ -264,19 +290,18 @@
           <xsl:copy-of select="." />
         </xsl:if>
         <xsl:if test="self::field">
-          <field name="{@name}">
+          <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name">
-                <xsl:with-param name="type" select="@type" />
-              </xsl:call-template>
+              <xsl:call-template name="canonical-type-name" />
+            </xsl:attribute>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name" />
             </xsl:attribute>
           </field>
         </xsl:if>
       </xsl:for-each>
     </struct>
-    <xsl:call-template name="make-iterator">
-      <xsl:with-param name="type" select="concat($ext, @name)" />
-    </xsl:call-template>
+    <xsl:call-template name="make-iterator" />
   </xsl:template>
 
   <xsl:template match="/">
