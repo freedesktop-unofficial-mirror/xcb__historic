@@ -830,9 +830,7 @@ for licensing information.
       <op op="&amp;"><fieldref>string_len</fieldref><value>1</value></op>
     </exprfield>
     <field type="FONTABLE" name="font" />
-    <list type="CHAR2B" name="string">
-      <fieldref>string_len</fieldref>
-    </list>
+    <list type="CHAR2B" name="string" />
     <reply>
       <field type="BYTE" name="draw_direction" />
       <field type="INT16" name="font_ascent" />
@@ -872,9 +870,7 @@ for licensing information.
   <request name="SetFontPath" opcode="51">
     <pad bytes="1" />
     <field type="CARD16" name="font_qty" />
-    <list type="char" name="path">
-      <fieldref>path_len</fieldref>
-    </list>
+    <list type="char" name="path" />
   </request>
 
   <request name="GetFontPath" opcode="52">
@@ -940,9 +936,7 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="clip_x_origin" />
     <field type="INT16" name="clip_y_origin" />
-    <list type="RECTANGLE" name="rectangles">
-      <fieldref>rectangles_len</fieldref>
-    </list>
+    <list type="RECTANGLE" name="rectangles" />
   </request>
 
   <request name="FreeGC" opcode="60">
@@ -990,18 +984,14 @@ for licensing information.
     <field type="BYTE" name="coordinate_mode" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="POINT" name="points">
-      <fieldref>points_len</fieldref>
-    </list>
+    <list type="POINT" name="points" />
   </request>
 
   <request name="PolyLine" opcode="65" combine-adjacent="true">
     <field type="BYTE" name="coordinate_mode" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="POINT" name="points">
-      <fieldref>points_len</fieldref>
-    </list>
+    <list type="POINT" name="points" />
   </request>
 
   <struct name="SEGMENT">
@@ -1015,18 +1005,14 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="SEGMENT" name="segments">
-      <fieldref>segments_len</fieldref>
-    </list>
+    <list type="SEGMENT" name="segments" />
   </request>
 
   <request name="PolyRectangle" opcode="67" combine-adjacent="true">
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="RECTANGLE" name="rectangles">
-      <fieldref>rectangles_len</fieldref>
-    </list>
+    <list type="RECTANGLE" name="rectangles" />
   </request>
 
   <!--
@@ -1038,9 +1024,7 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="ARC" name="arcs">
-      <fieldref>arcs_len</fieldref>
-    </list>
+    <list type="ARC" name="arcs" />
   </request>
 
   <request name="FillPoly" opcode="69">
@@ -1049,27 +1033,21 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="CARD8" name="shape" />
     <field type="CARD8" name="coordinate_mode" />
-    <list type="POINT" name="points">
-      <fieldref>points_len</fieldref>
-    </list>
+    <list type="POINT" name="points" />
   </request>
 
   <request name="PolyFillRectangle" opcode="70" combine-adjacent="true">
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="RECTANGLE" name="rectangles">
-      <fieldref>rectangles_len</fieldref>
-    </list>
+    <list type="RECTANGLE" name="rectangles" />
   </request>
 
   <request name="PolyFillArc" opcode="71" combine-adjacent="true">
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <list type="ARC" name="arcs">
-      <fieldref>arcs_len</fieldref>
-    </list>
+    <list type="ARC" name="arcs" />
   </request>
 
   <request name="PutImage" opcode="72">
@@ -1082,9 +1060,7 @@ for licensing information.
     <field type="INT16" name="dst_y" />
     <field type="CARD8" name="left_pad" />
     <field type="CARD8" name="depth" />
-    <list type="BYTE" name="data">
-      <fieldref>data_len</fieldref>
-    </list>
+    <list type="BYTE" name="data" />
   </request>
 
   <!-- FIXME: data array in reply will include padding, but ought not to. -->
@@ -1115,9 +1091,7 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="x" />
     <field type="INT16" name="y" />
-    <list type="BYTE" name="items">
-      <fieldref>items_len</fieldref>
-    </list>
+    <list type="BYTE" name="items" />
   </request>
 
   <request name="PolyText16" opcode="75">
@@ -1126,9 +1100,7 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="x" />
     <field type="INT16" name="y" />
-    <list type="BYTE" name="items">
-      <fieldref>items_len</fieldref>
-    </list>
+    <list type="BYTE" name="items" />
   </request>
 
   <request name="ImageText8" opcode="76">
@@ -1273,9 +1245,7 @@ for licensing information.
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
     <field type="CARD32" name="plane_mask" />
-    <list type="CARD32" name="pixels">
-      <fieldref>pixels_len</fieldref>
-    </list>
+    <list type="CARD32" name="pixels" />
   </request>
 
   <struct name="COLORITEM">
@@ -1290,9 +1260,7 @@ for licensing information.
   <request name="StoreColors" opcode="89" combine-adjacent="true">
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
-    <list type="COLORITEM" name="items">
-      <fieldref>items_len</fieldref>
-    </list>
+    <list type="COLORITEM" name="items" />
   </request>
 
   <request name="StoreNamedColor" opcode="90">
@@ -1315,9 +1283,7 @@ for licensing information.
   <request name="QueryColors" opcode="91">
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
-    <list type="CARD32" name="pixels">
-      <fieldref>pixels_len</fieldref>
-    </list>
+    <list type="CARD32" name="pixels" />
     <reply>
       <pad bytes="1" />
       <field type="CARD16" name="colors_len" />

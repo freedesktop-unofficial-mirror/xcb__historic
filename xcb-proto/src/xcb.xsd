@@ -51,7 +51,7 @@ See the file COPYING in this package for licensing information.
     <xsd:complexType>
       <xsd:complexContent>
         <xsd:extension base="var">
-          <xsd:group ref="expression" />
+          <xsd:group ref="expression" minOccurs="0" maxOccurs="1" />
         </xsd:extension>
       </xsd:complexContent>
     </xsd:complexType>

@@ -104,9 +104,7 @@ for licensing information.
     </request>
 
     <request name="Await" opcode="7">
-      <list type="WAITCONDITION" name="wait_list">
-        <fieldref>wait_list_len</fieldref>
-      </list>
+      <list type="WAITCONDITION" name="wait_list" />
     </request>
 
     <request name="ChangeCounter" opcode="4">

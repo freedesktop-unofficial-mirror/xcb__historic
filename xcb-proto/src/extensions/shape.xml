@@ -37,9 +37,7 @@ for licensing information.
       <field type="WINDOW" name="destination_window" />
       <field type="INT16" name="x_offset" />
       <field type="INT16" name="y_offset" />
-      <list type="RECTANGLE" name="rectangles">
-        <fieldref>rectangles_len</fieldref>
-      </list>
+      <list type="RECTANGLE" name="rectangles" />
     </request>
 
     <request name="Mask" opcode="2">
