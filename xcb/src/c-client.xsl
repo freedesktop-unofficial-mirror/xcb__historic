@@ -164,9 +164,7 @@ See the file COPYING in this package for licensing information.
     <xsl:if test="reply">
       <struct name="XCB{$ext}{@name}Rep">
         <field type="BYTE" name="response_type" />
-        <xsl:apply-templates select="reply/*" mode="field">
-          <xsl:with-param name="fixed-length-ok" select="true()" />
-        </xsl:apply-templates>
+        <xsl:apply-templates select="reply/*" mode="field" />
         <middle>
           <field type="CARD16" name="sequence" />
           <field type="CARD32" name="length" />
@@ -243,9 +241,7 @@ See the file COPYING in this package for licensing information.
           <xsl:if test="self::error">
             <field type="BYTE" name="error_code" />
           </xsl:if>
-          <xsl:apply-templates select="*" mode="field">
-            <xsl:with-param name="fixed-length-ok" select="true()" />
-          </xsl:apply-templates>
+          <xsl:apply-templates select="*" mode="field" />
           <xsl:if test="not(self::event and boolean(@no-sequence-number))">
             <middle>
               <field type="CARD16" name="sequence" />
@@ -303,8 +299,7 @@ See the file COPYING in this package for licensing information.
     <xsl:copy-of select="." />
   </xsl:template>
   
-  <xsl:template match="field|exprfield|list" mode="field">
-    <xsl:param name="fixed-length-ok" select="false()" />
+  <xsl:template match="field|exprfield" mode="field">
     <xsl:copy>
       <xsl:attribute name="type">
         <xsl:call-template name="canonical-type-name" />
@@ -312,15 +307,55 @@ See the file COPYING in this package for licensing information.
       <xsl:attribute name="name">
         <xsl:call-template name="canonical-var-name" />
       </xsl:attribute>
-      <xsl:if test="$fixed-length-ok and self::list and node()
+      <xsl:copy-of select="*" />
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="list" mode="field">
+    <xsl:variable name="type"><!--
+      --><xsl:call-template name="canonical-type-name" /><!--
+    --></xsl:variable>
+    <list type="{$type}">
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name" />
+      </xsl:attribute>
+      <xsl:if test="not(parent::request) and node()
                     and not(.//*[not(self::value or self::op)])">
         <xsl:attribute name="fixed">true</xsl:attribute>
       </xsl:if>
-      <xsl:if test="self::list and not(node())">
-        <fieldref><xsl:value-of select="concat(@name, '_len')" /></fieldref>
+      <!-- Handle lists with no length expressions. -->
+      <xsl:if test="not(node())">
+        <xsl:choose>
+          <!-- In a request, refer to an implicit localparam for length. -->
+          <xsl:when test="parent::request">
+            <fieldref>
+              <xsl:value-of select="concat(@name, '_len')" />
+            </fieldref>
+          </xsl:when>
+          <!-- In a reply, use the length of the reply to determine the length
+               of the list. -->
+          <xsl:when test="parent::reply">
+            <op op="/">
+              <fieldref>length</fieldref>
+              <op op=">>">
+                <function-call name="sizeof">
+                  <param><xsl:value-of select="$type" /></param>
+                </function-call>
+                <value>2</value>
+              </op>
+            </op>
+          </xsl:when>
+          <!-- Other cases generate an error. -->
+          <xsl:otherwise>
+            <xsl:message terminate="yes"><!--
+              -->Encountered a list with no length expresssion outside a<!--
+              --> request or reply.<!--
+            --></xsl:message>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:if>
       <xsl:copy-of select="*" />
-    </xsl:copy>
+    </list>
   </xsl:template>
 
   <xsl:template match="valueparam" mode="field">
