@@ -1,54 +1,48 @@
 #include "xclint.h"
 
-int XDrawImageString(register Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length)
+#define MAXIMTEXTREQ 255
+
+int XDrawImageString(Display *dpy, const Drawable d, GC gc, int x, const int y, const char *string, int length)
 {
-    char *CharacterOffset = (char *)string;
-    int FirstTimeThrough = True;
-    int lastX = 0;
+    register XCBConnection *c = XCBConnectionOfDisplay(dpy);
+    CHAR2B buf[MAXIMTEXTREQ];
+    register CHAR2B *ptr;
+    register int i;
+
+    if(length <= 0)
+	return 0;
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
 
-    while (length > 0) 
+    /* if it'll be used later, zero the high bytes of the buffer. */
+    if(length > MAXIMTEXTREQ)
+	for(i = MAXIMTEXTREQ, ptr = buf; i; --i)
+	    (ptr++)->byte1 = 0;
+
+    while(1)
     {
-	int Unit;
+	i = (length > MAXIMTEXTREQ) ? MAXIMTEXTREQ : length;
 
-	if (length > 255) Unit = 255;
-	else Unit = length;
+	XCBImageText8(c, i, XCLDRAWABLE(d), XCLGCONTEXT(gc->gid), x, y, string);
 
-   	if (FirstTimeThrough)
+	length -= MAXIMTEXTREQ;
+	if(length <= 0)
+	    break;
+
+	/* invariant: i == MAXIMTEXTREQ */
+	for(ptr = buf; i; --i)
+	    (ptr++)->byte2 = *string++;
+
 	{
-	    FirstTimeThrough = False;
-        }
-	else
-	{
-	    char buf[512];
-	    char *ptr, *str;
-	    XCBQueryTextExtentsCookie c;
 	    XCBQueryTextExtentsRep *r;
-	    int i;
-
-	    str = CharacterOffset - 255;
-	    for(ptr = buf, i = 255; --i >= 0; )
-	    {
-		*ptr++ = 0;
-		*ptr++ = *str++;
-	    }
-
-	    c = XCBQueryTextExtents(XCBConnectionOfDisplay(dpy), XCLFONTABLE(gc->gid), 255, (CHAR2B *) buf);
-	    r = XCBQueryTextExtentsReply(XCBConnectionOfDisplay(dpy), c, 0);
+	    r = XCBQueryTextExtentsReply(c, XCBQueryTextExtents(c, XCLFONTABLE(gc->gid), MAXIMTEXTREQ, buf), 0);
 	    if(!r)
 		break;
 
-	    x = lastX + cvtINT32toInt(r->overall_width);
+	    x += cvtINT32toInt(r->overall_width);
 	    free(r);
 	}
-
-	XCBImageText8(XCBConnectionOfDisplay(dpy), Unit, XCLDRAWABLE(d), XCLGCONTEXT(gc->gid), x, y, CharacterOffset);
-
-	lastX = x;
-        CharacterOffset += Unit;
-	length -= Unit;
     }
     UnlockDisplay(dpy);
     return 0;

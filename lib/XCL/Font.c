@@ -66,7 +66,9 @@ XFontStruct *XLoadQueryFont(dpy, name)
    char *name;
 #endif
 {
+#ifdef USE_LOCALE
     XFontStruct *font_result;
+#endif
     FONT f;
 
 #ifdef USE_LOCALE

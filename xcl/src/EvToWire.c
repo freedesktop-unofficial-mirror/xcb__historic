@@ -6,7 +6,7 @@
 /* event: wire protocol event */
 Status _XUnknownNativeEvent(register Display *dpy, register XEvent *re, register xEvent *event)
 {
-        fprintf(stderr, "XCL: unhandled native event! event number = %d, display = %x\n.", re->type, dpy);
+        fprintf(stderr, "XCL: unhandled native event! event number = %d, display = %p\n.", re->type, (void *) dpy);
         return(0);
 }
 
@@ -378,7 +378,7 @@ Status _XEventToWire(register Display *dpy, register XEvent *re, register xEvent
 /* event: wire protocol event */
 Bool _XUnknownWireEvent(register Display *dpy, register XEvent *re, register xEvent *event)
 {
-	fprintf(stderr, "Xlib: unhandled wire event! event number = %d, display = %x\n.", event->u.u.type, dpy);
+	fprintf(stderr, "Xlib: unhandled wire event! event number = %d, display = %p\n.", event->u.u.type, (void *) dpy);
 	return(False);
 }
 

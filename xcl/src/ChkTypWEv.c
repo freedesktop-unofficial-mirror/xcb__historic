@@ -28,7 +28,6 @@ Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
 {
 	_XQEvent *prev = NULL;
 	unsigned long qe_serial = 0;
-	int n;			/* time through count */
 
         LockDisplay(dpy);
 

@@ -1,8 +1,8 @@
 #include "xclint.h"
 
-XModifierKeymap *XGetModifierMapping(register Display *dpy)
-{       
-    XCBGetModifierMappingCookie c;
+XModifierKeymap *XGetModifierMapping(Display *dpy)
+{
+    register XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGetModifierMappingRep *r;
     XModifierKeymap *res;
     unsigned int nbytes;
@@ -11,9 +11,7 @@ XModifierKeymap *XGetModifierMapping(register Display *dpy)
     if (!res)
 	return 0;
 
-    c = XCBGetModifierMapping(XCBConnectionOfDisplay(dpy));
-    r = XCBGetModifierMappingReply(XCBConnectionOfDisplay(dpy), c, 0);
-
+    r = XCBGetModifierMappingReply(c, XCBGetModifierMapping(c), 0);
     if (!r)
 	goto error;
 
@@ -24,12 +22,15 @@ XModifierKeymap *XGetModifierMapping(register Display *dpy)
 
     memcpy(res->modifiermap, XCBGetModifierMappingkeycodes(r), nbytes);
     res->max_keypermod = r->keycodes_per_modifier;
+
+done:
     return (res);
 
 error:
     if (res)
 	Xfree((char *) res);
-    return 0;
+    res = 0;
+    goto done;
 }
 
 /*

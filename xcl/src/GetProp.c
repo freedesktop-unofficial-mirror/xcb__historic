@@ -31,8 +31,7 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
 		error.minorCode = 0;
 		error.errorCode = BadImplementation;
 		_XError(dpy, &error);
-		/* XXX: Xlib returns BadAlloc here, but that's weird. */
-		return BadAlloc;	/* not Success */
+		goto error;
 	}
 	/* One more byte is malloced than is needed to contain the property
 	 * data, but this last byte is null terminated and convenient for 
@@ -41,7 +40,7 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
 	 * it's a really stupid idea. */
 	*prop = Xmalloc (r->bytes_after + 1);
 	if (!*prop)
-	    return BadAlloc;	/* not Success */
+	    goto error;
 	/* FIXME: Xlib has a different behavior than this for systems where a
 	 * short isn't 16 bits or where a long isn't 32 bits. */
 	memcpy (*prop, XCBGetPropertyvalue(r), r->bytes_after);
@@ -54,4 +53,8 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
     *bytesafter = r->bytes_after;
     free(r);
     return Success;
+
+error:
+    free(r);
+    return BadAlloc;	/* not Success */
 }

@@ -3,17 +3,16 @@
 
 /* XXX: this implementation does no caching. */
 
-Atom XInternAtom(Display *dpy, const char *name, Bool onlyIfExists)
+Atom XInternAtom(Display *dpy, const char *name, const Bool onlyIfExists)
 {
+    register XCBConnection *c = XCBConnectionOfDisplay(dpy);
     Atom atom;
-    XCBInternAtomCookie c;
     XCBInternAtomRep *r;
 
     if (!name)
 	name = "";
 
-    c = XCBInternAtom(XCBConnectionOfDisplay(dpy), onlyIfExists, strlen(name), name);
-    r = XCBInternAtomReply(XCBConnectionOfDisplay(dpy), c, 0);
+    r = XCBInternAtomReply(c, XCBInternAtom(c, onlyIfExists, strlen(name), name), 0);
     if (!r)
 	return None;
     atom = r->atom.xid;
@@ -21,11 +20,12 @@ Atom XInternAtom(Display *dpy, const char *name, Bool onlyIfExists)
     return (atom);
 }
 
-Status XInternAtoms(Display *dpy, char **names, int count, Bool onlyIfExists, Atom *atoms_return)
+Status XInternAtoms(Display *dpy, char **const names, const int count, const Bool onlyIfExists, Atom *const atoms_return)
 {
+    register XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBInternAtomCookie *cs;
-    XCBInternAtomRep *r;
-    int i, ret = 1;
+    register int i;
+    int ret = 1;
 
     cs = (XCBInternAtomCookie *) malloc(count * sizeof(XCBInternAtomCookie));
     /* even if this memory allocation fails, ensure that every entry in
@@ -40,10 +40,11 @@ Status XInternAtoms(Display *dpy, char **names, int count, Bool onlyIfExists, At
     }
 
     for (i = 0; i < count; ++i)
-	cs[i] = XCBInternAtom(XCBConnectionOfDisplay(dpy), onlyIfExists, strlen(names[i]), names[i]);
+	cs[i] = XCBInternAtom(c, onlyIfExists, strlen(names[i]), names[i]);
 
     for (i = 0; i < count; ++i) {
-	r = XCBInternAtomReply(XCBConnectionOfDisplay(dpy), cs[i], 0);
+	XCBInternAtomRep *r;
+	r = XCBInternAtomReply(c, cs[i], 0);
 	if (!r) {
 	    ret = 0; /* something failed... */
 	    continue; /* ...but finish working anyway. */

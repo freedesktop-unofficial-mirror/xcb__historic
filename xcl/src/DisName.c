@@ -22,7 +22,8 @@ char *XDisplayName(char *display)
     char *d;
     if(display && *display != '\0')
 	return display;
-    if(d = getenv("DISPLAY"))
+    d = getenv("DISPLAY");
+    if(d)
 	return d;
     return "";
 }

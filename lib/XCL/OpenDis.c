@@ -1,6 +1,7 @@
 #include "xclint.h"
 #include <X11/Xatom.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef XKB
 #include "XKBlib.h"
@@ -36,8 +37,6 @@ void (*_XFreeDisplayLock_fn)(Display *dpy) = NULL;
 #define InitDisplayLock(dis) Success
 #define FreeDisplayLock(dis)
 #endif /* XTHREADS */
-
-static xReq _dummy_request;
 
 static Display _default_display;
 static void _XInitDefaultDisplay()

@@ -73,71 +73,82 @@ int _XUpdateGCCache(register GC gc, register unsigned long mask, register XGCVal
 {
     register XGCValues *gv = &gc->values;
 
-    if (mask & GCFunction)
+    if (mask & GCFunction) {
         if (gv->function != attr->function)
 	    gv->function = attr->function;
 	else
 	    mask &= ~GCFunction;
+    }
 	
-    if (mask & GCPlaneMask)
+    if (mask & GCPlaneMask) {
         if (gv->plane_mask != attr->plane_mask)
             gv->plane_mask = attr->plane_mask;
 	else
 	    mask &= ~GCPlaneMask;
+    }
 
-    if (mask & GCForeground)
+    if (mask & GCForeground) {
         if (gv->foreground != attr->foreground)
             gv->foreground = attr->foreground;
 	else
 	    mask &= ~GCForeground;
+    }
 
-    if (mask & GCBackground)
+    if (mask & GCBackground) {
         if (gv->background != attr->background)
             gv->background = attr->background;
 	else
 	    mask &= ~GCBackground;
+    }
 
-    if (mask & GCLineWidth)
+    if (mask & GCLineWidth) {
         if (gv->line_width != attr->line_width)
             gv->line_width = attr->line_width;
 	else
 	    mask &= ~GCLineWidth;
+    }
 
-    if (mask & GCLineStyle)
+    if (mask & GCLineStyle) {
         if (gv->line_style != attr->line_style)
             gv->line_style = attr->line_style;
 	else
 	    mask &= ~GCLineStyle;
+    }
 
-    if (mask & GCCapStyle)
+    if (mask & GCCapStyle) {
         if (gv->cap_style != attr->cap_style)
             gv->cap_style = attr->cap_style;
 	else
 	    mask &= ~GCCapStyle;
+    }
     
-    if (mask & GCJoinStyle)
+    if (mask & GCJoinStyle) {
         if (gv->join_style != attr->join_style)
             gv->join_style = attr->join_style;
 	else
 	    mask &= ~GCJoinStyle;
+    }
 
-    if (mask & GCFillStyle)
+    if (mask & GCFillStyle) {
         if (gv->fill_style != attr->fill_style)
             gv->fill_style = attr->fill_style;
 	else
 	    mask &= ~GCFillStyle;
+    }
 
-    if (mask & GCFillRule)
+    if (mask & GCFillRule) {
         if (gv->fill_rule != attr->fill_rule)
     	    gv->fill_rule = attr->fill_rule;
 	else
 	    mask &= ~GCFillRule;
+    }
 
-    if (mask & GCArcMode)
+    if (mask & GCArcMode) {
         if (gv->arc_mode != attr->arc_mode)
 	    gv->arc_mode = attr->arc_mode;
 	else
 	    mask &= ~GCArcMode;
+    }
 
     /* always write through tile change, since client may have changed pixmap contents */
     if (mask & GCTile)
@@ -147,47 +158,55 @@ int _XUpdateGCCache(register GC gc, register unsigned long mask, register XGCVal
     if (mask & GCStipple)
 	gv->stipple = attr->stipple;
 
-    if (mask & GCTileStipXOrigin)
+    if (mask & GCTileStipXOrigin) {
         if (gv->ts_x_origin != attr->ts_x_origin)
     	    gv->ts_x_origin = attr->ts_x_origin;
 	else
 	    mask &= ~GCTileStipXOrigin;
+    }
 
-    if (mask & GCTileStipYOrigin)
+    if (mask & GCTileStipYOrigin) {
         if (gv->ts_y_origin != attr->ts_y_origin)
 	    gv->ts_y_origin = attr->ts_y_origin;
 	else
 	    mask &= ~GCTileStipYOrigin;
+    }
 
-    if (mask & GCFont)
+    if (mask & GCFont) {
         if (gv->font != attr->font)
 	    gv->font = attr->font;
 	else
 	    mask &= ~GCFont;
+    }
 
-    if (mask & GCSubwindowMode)
+    if (mask & GCSubwindowMode) {
         if (gv->subwindow_mode != attr->subwindow_mode)
 	    gv->subwindow_mode = attr->subwindow_mode;
 	else
 	    mask &= ~GCSubwindowMode;
+    }
 
-    if (mask & GCGraphicsExposures)
+    if (mask & GCGraphicsExposures) {
         if (gv->graphics_exposures != attr->graphics_exposures)
 	    gv->graphics_exposures = attr->graphics_exposures;
 	else
 	    mask &= ~GCGraphicsExposures;
+    }
 
-    if (mask & GCClipXOrigin)
+    if (mask & GCClipXOrigin) {
         if (gv->clip_x_origin != attr->clip_x_origin)
 	    gv->clip_x_origin = attr->clip_x_origin;
 	else
 	    mask &= ~GCClipXOrigin;
+    }
 
-    if (mask & GCClipYOrigin)
+    if (mask & GCClipYOrigin) {
         if (gv->clip_y_origin != attr->clip_y_origin)
 	    gv->clip_y_origin = attr->clip_y_origin;
 	else
 	    mask &= ~GCClipYOrigin;
+
+    }
 
     /* always write through mask change, since client may have changed pixmap contents */
     if (mask & GCClipMask) {
@@ -195,18 +214,20 @@ int _XUpdateGCCache(register GC gc, register unsigned long mask, register XGCVal
 	gc->rects = 0;
     } 
 
-    if (mask & GCDashOffset)
+    if (mask & GCDashOffset) {
         if (gv->dash_offset != attr->dash_offset)
 	    gv->dash_offset = attr->dash_offset;
 	else
 	    mask &= ~GCDashOffset;
+    }
 
-    if (mask & GCDashList)
+    if (mask & GCDashList) {
         if ((gv->dashes != attr->dashes) || (gc->dashes == True)) {
             gv->dashes = attr->dashes;
 	    gc->dashes = 0;
 	} else
 	    mask &= ~GCDashList;
+    }
 
     gc->dirty |= mask;
 

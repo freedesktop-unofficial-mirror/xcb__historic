@@ -45,22 +45,17 @@ Status XParseColor(register Display *dpy, Colormap cmap, const char *spec, XColo
 	}
 
 	{
-	    COLORMAP cm = { cmap };
-	    XCBLookupColorCookie c;
+	    XCBConnection *c = XCBConnectionOfDisplay(dpy);
 	    XCBLookupColorRep *r;
 	    
-	    c = XCBLookupColor(XCBConnectionOfDisplay(dpy), cm, strlen(spec), spec);
-	    r = XCBLookupColorReply(XCBConnectionOfDisplay(dpy), c, 0);
-	    
-	    if (!r)
-	    {
+	    r = XCBLookupColorReply(c, XCBLookupColor(c, XCLCOLORMAP(cmap), strlen(spec), spec), 0);
+	    if(!r)
 		return 0;
-	    }
 	    	    
 	    def->red = r->exact_red;
 	    def->green = r->exact_green;
 	    def->blue = r->exact_blue;
 	    def->flags = DoRed | DoGreen | DoBlue;
-	    return (1);
+	    return 1;
 	}
 }

@@ -91,7 +91,9 @@ XGetErrorDatabaseText(dpy, name, type, defaultp, buffer, nbytes)
 {
 
     static XrmDatabase db = NULL;
+#if 0 /* not implemented yet */
     XrmString type_str;
+#endif
     XrmValue result;
     char temp[BUFSIZ];
     char* tptr;

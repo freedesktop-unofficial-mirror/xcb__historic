@@ -1,42 +1,42 @@
 #include "xclint.h"
+#include <assert.h>
 
-int XQueryColors(Display *dpy, Colormap cmap, register XColor *defs, int ncolors)
+int XQueryColors(Display *dpy, Colormap cmap, XColor *const defs, const int ncolors)
 {
     register int i;
     RGB *colors;
-    long nbytes;
-    CARD32 *colors_data;
     XCBQueryColorsCookie c;
     XCBQueryColorsRep *rep;
-    
-    colors_data = malloc(sizeof(CARD32) * ncolors);
-    if (!colors_data)
-	return 1; /* on error, leave defaults alone */
 
-    for (i = 0; i < ncolors; i++)
     {
-	colors_data[i] = defs[i].pixel;
-    }
+        CARD32 *pixels;
+        pixels = malloc(sizeof(CARD32) * ncolors);
+        if (!pixels)
+	    return 1; /* on error, leave defaults alone */
+
+        for(i = 0; i < ncolors; ++i)
+	    pixels[i] = defs[i].pixel;
     
-    c = XCBQueryColors(XCBConnectionOfDisplay(dpy), XCLCOLORMAP(cmap), ncolors, colors_data);
+        c = XCBQueryColors(XCBConnectionOfDisplay(dpy), XCLCOLORMAP(cmap), ncolors, pixels);
+        free(pixels);
+    }
+
     rep = XCBQueryColorsReply(XCBConnectionOfDisplay(dpy), c, 0);
     if (!rep)
 	return 1; /* on error, leave defaults alone */
 
     colors = XCBQueryColorscolors(rep);
     
-    for(i = ncolors; i; --i);
+    assert(rep->colors_len == ncolors);
+
+    for(i = 0; i < rep->colors_len; ++i)
     {
-	defs->red = colors->red;
-	defs->green = colors->green;
-	defs->blue = colors->blue;
-	defs->flags = DoRed | DoGreen | DoBlue;
-	++defs;
-	++colors;
+	defs[i].red = colors[i].red;
+	defs[i].green = colors[i].green;
+	defs[i].blue = colors[i].blue;
+	defs[i].flags = DoRed | DoGreen | DoBlue;
     }
    
     free(rep);
-    
     return 1;
 }
-

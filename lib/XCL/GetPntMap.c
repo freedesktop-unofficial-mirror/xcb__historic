@@ -63,14 +63,15 @@ KeySym *XGetKeyboardMapping (Display *dpy,
     c = XCBGetKeyboardMapping(XCBConnectionOfDisplay(dpy), XCLKEYCODE(first_keycode), count);
     r = XCBGetKeyboardMappingReply(XCBConnectionOfDisplay(dpy), c, 0);
     if (!r)
-	    return 0;
+	return 0;
 
     mapping = (KeySym *) Xmalloc(r->length * 4 * sizeof(KEYSYM));
-    if (!mapping)
-	    return 0;
-    memcpy(mapping, XCBGetKeyboardMappingkeysyms(r), r->length * 4 * sizeof(KEYSYM));
-
-    *keysyms_per_keycode = r->keysyms_per_keycode;
+    if (mapping)
+    {
+	memcpy(mapping, XCBGetKeyboardMappingkeysyms(r), r->length * 4 * sizeof(KEYSYM));
+	*keysyms_per_keycode = r->keysyms_per_keycode;
+    }
+    free(r);
     return mapping;
 }
 
