@@ -23,11 +23,8 @@
 /* X_TCP_PORT + display number = server port for TCP transport */
 #define X_TCP_PORT 6000
 
-/* Round up (sizeof (T) * E) to a multiple of 4 bytes */
-#define XCB_TYPE_CEIL(T,E) (sizeof (T) >= 4 ? (E) : \
-			    sizeof (T) == 2 ? (((E)+1) & ~1) : \
-			    sizeof (T) == 1 ? (((E)+3) & ~3) : \
-			    1/0)
+#define XCB_TYPE_PAD(T,I) (-(I) & (sizeof(T) > 4 ? 3 : sizeof(T) - 1))
+
 
 /* Opaque structures */
 
@@ -35,6 +32,12 @@ typedef struct XCBConnection XCBConnection;
 
 
 /* Other types */
+
+typedef struct {
+    void *data;
+    int rem;
+    int index;
+} XCBGenericIter;
 
 divert(-1)
 define(`_H')

@@ -117,6 +117,7 @@ define(`ITERATOR', `
 TYPEDEF(`struct {INDENT()
 TAB()$1 *data;
 TAB()int rem;
+TAB()int index;
 UNINDENT()}', `$1Iter')
 
 ifelse(NEXTFIELD, `R + 1',
@@ -124,23 +125,34 @@ ifelse(NEXTFIELD, `R + 1',
 FUNCTION(`void XCB'EXTENSION`$1Next', $1Iter `*i', `
 TAB()--i->rem;
 TAB()++i->data;
+TAB()i->index += sizeof($1);
 ')
 
-FUNCTION(`void *XCB'EXTENSION`$1End', $1Iter `i', `
-TAB()return (void *) (i.data + XCB_TYPE_CEIL($1, i.rem));
+FUNCTION(`XCBGenericIter XCB'EXTENSION`$1End', $1Iter `i', `
+TAB()XCBGenericIter ret;
+TAB()ret.data = i.data + i.rem;
+TAB()ret.index = i.index + ((char *) ret.data - (char *) i.data);
+TAB()ret.rem = 0;
+TAB()return ret;
 ')
 ',
 `dnl Iterate over a variable-length object.
 FUNCTION(`void XCB'EXTENSION`$1Next', $1Iter `*i', `
 TAB()$1 *R = i->data;
+TAB()XCBGenericIter child = NEXTFIELD();
 TAB()--i->rem;
-TAB()i->data = ($1 *) (NEXTFIELD());
+TAB()i->data = ($1 *) child.data;
+TAB()i->index = child.index;
 ')
 
-FUNCTION(`void *XCB'EXTENSION`$1End', $1Iter `i', `
+FUNCTION(`XCBGenericIter XCB'EXTENSION`$1End', $1Iter `i', `
+TAB()XCBGenericIter ret;
 TAB()while(i.rem > 0)INDENT()
 TAB()$1`'Next(&i);UNINDENT()
-TAB()return (void *) i.data;
+TAB()ret.data = i.data;
+TAB()ret.rem = i.rem;
+TAB()ret.index = i.index;
+TAB()return ret;
 ')
 ')
 ')
@@ -317,14 +329,28 @@ dnl ARRAYFIELD(field type, field name, list length expr)
 define(`ARRAYFIELD', `
 pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
 FUNCTION(`$1 *'REQ`'NAME, REQ`'KIND` *R', `
-    return (`$1' *) (NEXTFIELD);
+ifelse(NEXTFIELD, `R + 1', `dnl
+    return (`$1' *) (NEXTFIELD);', `dnl
+    XCBGenericIter prev = NEXTFIELD();
+    return (`$1' *) ((char *) prev.data + XCB_TYPE_PAD(`$1', prev.index));')
 ')
 
 FUNCTION(`int 'REQ`'NAME`'Length, REQ`'KIND` *R', `
     return `$3';
 ')
 
-define(`NEXTFIELD', REQ`'NAME`(R) + XCB_TYPE_CEIL($1, `$3')')
+FUNCTION(`XCBGenericIter' REQ`'NAME`'End, REQ`'KIND` *R', `
+    XCBGenericIter i;
+ifelse(NEXTFIELD, `R + 1', `dnl
+    i.data = ((ifelse(`$1', void, char, `$1') *) (NEXTFIELD())) + (`$3');', `dnl
+    XCBGenericIter child = NEXTFIELD();
+    i.data = ((ifelse(`$1', void, char, `$1') *) child.data) + (`$3');')
+    i.rem = 0;
+    i.index = (char *) i.data - (char *) R;
+    return i;
+')
+
+define(`NEXTFIELD', REQ`'NAME`End'(R))
 popdef(`NAME')
 ')
 
@@ -336,12 +362,16 @@ define(`LISTFIELD', `
 pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
 FUNCTION(`$1Iter 'REQ`'NAME, REQ`'KIND` *R', `
 TAB()$1Iter i;
-TAB()i.data = (`$1' *) (NEXTFIELD);
+ifelse(NEXTFIELD, `R + 1', `dnl
+TAB()i.data = (`$1' *) (NEXTFIELD());', `dnl
+TAB()XCBGenericIter prev = NEXTFIELD();
+TAB()i.data = (`$1' *) ((char *) prev.data + XCB_TYPE_PAD(`$1', prev.index));')
 TAB()i.rem = (`$3');
+TAB()i.index = (char *) i.data - (char *) R;
 TAB()return i;
 ')
 
-define(`NEXTFIELD', `$1End'(REQ`'NAME`'((REQ`'KIND *) R)))
+define(`NEXTFIELD', `$1End'(REQ`'NAME`'(R)))
 popdef(`NAME')
 ')
 

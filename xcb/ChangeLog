@@ -1,5 +1,15 @@
 2004-07-02  Jamey Sharp  <jamey@minilop.net>
 
+	* src/client-c.xcb:
+	* src/xcb.h.m4:
+	Keith's fix for padding didn't quite work, despite
+	looking quite sensible at the time. Replaced
+	XCB_TYPE_CEIL with XCB_TYPE_PAD and made all the
+	iterators, lists, and arrays count the number of
+	bytes from the beginning of the current request.
+
+2004-07-02  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_out.c:
 	* src/xcbint.h:
 	Force a response from the server if we haven't seen
