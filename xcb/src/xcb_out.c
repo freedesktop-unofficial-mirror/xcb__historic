@@ -54,6 +54,12 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
 
     /* get a sequence number and arrange for delivery. */
     pthread_mutex_lock(&c->iolock);
+    if(isvoid && !_xcb_out_force_sequence_wrap(c))
+    {
+        pthread_mutex_unlock(&c->iolock);
+        return -1;
+    }
+
     *request = ++c->out.request;
 
     if(!isvoid)
@@ -99,6 +105,18 @@ void _xcb_out_destroy(_xcb_out *out)
 {
     pthread_cond_destroy(&out->cond);
     free(out->vec);
+}
+
+int _xcb_out_force_sequence_wrap(XCBConnection *c)
+{
+    int ret = 1;
+    if((c->out.request - c->in.request_read) > 65530)
+    {
+        pthread_mutex_unlock(&c->iolock);
+        ret = XCBSync(c, 0);
+        pthread_mutex_lock(&c->iolock);
+    }
+    return ret;
 }
 
 int _xcb_out_write(XCBConnection *c)

@@ -1,3 +1,11 @@
+2004-07-02  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_out.c:
+	* src/xcbint.h:
+	Force a response from the server if we haven't seen
+	one in 65530 requests. If you don't do this, XCB
+	gets confused the next time it waits for a reply.
+
 2004-06-16  Keith Packard  <keithp@keithp.com>
 
 	* src/client-c.xcb:
