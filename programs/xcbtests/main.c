@@ -10,9 +10,14 @@
 #undef TEST_THREADS
 #define VERBOSE
 #undef SUPERVERBOSE
+#define TEST_ICCCM
 
 #ifdef TEST_THREADS
 #include <pthread.h>
+#endif
+
+#ifdef TEST_ICCCM
+#include <X11/Xatom.h>
 #endif
 
 #ifdef VERBOSE
@@ -45,6 +50,10 @@ int main(int argc, char **argv)
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
     XCB_GetWindowAttributes_cookie attr[1];
     XCB_GetWindowAttributes_Rep *attrrep[1];
+#endif
+#ifdef TEST_ICCCM
+    XCB_InternAtom_cookie atom[2];
+    XCB_InternAtom_Rep *atomrep[2];
 #endif
 #ifdef TEST_THREADS
     pthread_t event_thread;
@@ -90,6 +99,21 @@ int main(int argc, char **argv)
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
         /* visual */ c->roots[0].data->rootVisualID, mask, values);
+#ifdef TEST_ICCCM
+    atom[0] = XCB_InternAtom(c, 0, "WM_PROTOCOLS");
+    atom[1] = XCB_InternAtom(c, 0, "WM_DELETE_WINDOW");
+    atomrep[1] = XCB_InternAtom_Reply(c, atom[1], 0);
+    atomrep[0] = XCB_InternAtom_Reply(c, atom[0], 0);
+    XCB_ChangeProperty(c, PropModeReplace, window, XA_WM_NAME, XA_STRING, 8, strlen(argv[0]), argv[0]);
+    if(atomrep[0] && atomrep[1])
+    {
+        Atom WM_PROTOCOLS = atomrep[0]->atom;
+        Atom WM_DELETE_WINDOW = atomrep[1]->atom;
+        XCB_ChangeProperty(c, PropModeReplace, window, WM_PROTOCOLS, XA_ATOM, 32, 1, &WM_DELETE_WINDOW);
+    }
+    free(atomrep[0]);
+    free(atomrep[1]);
+#endif
     XCB_MapWindow(c, window);
 
     /* Send off a collection of requests */

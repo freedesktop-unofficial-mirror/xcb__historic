@@ -440,7 +440,7 @@ VOIDREQUEST(ChangeProperty, `
     PARAM(CARD8, `format')
     PAD(3)
     PARAM(CARD32, `data_len')
-    LISTPARAM(BYTE, `data', `data_len * format / 8')
+    LISTPARAM(void, `data', `data_len * format / 8')
 ')
 
 VOIDREQUEST(DeleteProperty, `
@@ -464,7 +464,7 @@ REQUEST(GetProperty, `
     REPLY(CARD32, `bytes_after')
     REPLY(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(BYTE, `value', `R->value_len')
+    ARRAYREPLY(void, `value', `R->value_len')
 ')
 
 REQUEST(ListProperties, `

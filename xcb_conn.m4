@@ -25,7 +25,12 @@ REQUIRE(X11/Xproto)
 REQUIRE(sys/uio)
 REQUIRE(pthread)
 
+/* Number of bytes needed to pad E bytes to a 4-byte boundary. */
 CPPDEFINE(`XCB_PAD(E)', `((4-((E)%4))%4)')
+
+/* Index of nearest 4-byte boundary following E. */
+CPPDEFINE(`XCB_CEIL(E)', `(((E)+3)&~3)')
+
 CPPDEFINE(`X_TCP_PORT', `6000')	/* add display number */
 
 STRUCT(XCB_ListNode, `
@@ -609,6 +614,7 @@ ALLOC(XCB_Connection, c, 1)
 #endif
     c->fd = fd;
     pthread_mutex_init(&c->locked, 0);
+    pthread_cond_init(&c->waiting_threads, 0);
     c->reading = 0;
     c->writing = 0;
 
@@ -666,7 +672,7 @@ ALLOC(XCB_Connection, c, 1)
     /* Set up a collection of convenience pointers. */
     /* Initialize these since they are used before the next realloc. */
     c->vendor = (char *) (c + 1);
-    c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XCB_PAD(c->setup.nbytesVendor));
+    c->pixmapFormats = (xPixmapFormat *) (c->vendor + XCB_CEIL(c->setup.nbytesVendor));
 
     /* So, just how obscure *can* a person make memory management? */
     {
@@ -697,7 +703,7 @@ ALLOC(XCB_Connection, c, 1)
 
         /* Re-initialize these since realloc probably moved them. */
         c->vendor = (char *) (c + 1);
-        c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XCB_PAD(c->setup.nbytesVendor));
+        c->pixmapFormats = (xPixmapFormat *) (c->vendor + XCB_CEIL(c->setup.nbytesVendor));
 
         c->roots = (XCB_WindowRoot *) (((char *) c) + oldclen);
         xpdepth = (XCB_Depth *) (c->roots + c->setup.numRoots);
