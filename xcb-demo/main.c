@@ -234,7 +234,7 @@ int show_event(XCBGenericEvent *e)
 void try_events(XCBConnection *c)
 {
     XCBGenericEvent *e;
-    while(XCBEventQueueLength(c) > 0 && (e = XCBWaitEvent(c)) && show_event(e))
+    while((e = XCBPollForEvent(c, 0)) && show_event(e))
         /* empty statement */ ;
 }
 
