@@ -285,6 +285,20 @@
     </typedef>
   </xsl:template>
 
+  <xsl:template match="enum" mode="pass1">
+    <xsl:variable name="ext-retval"><!--
+      --><xsl:call-template name="current-extension" /><!--
+    --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
+    <enum name="XCB{$ext}{@name}">
+      <xsl:for-each select="item">
+        <item name="XCB{$ext}{../@name}{@name}">
+          <xsl:copy-of select="*" />
+        </item>
+      </xsl:for-each>
+    </enum>
+  </xsl:template>
+
   <!--
     Templates for processing fields.
   -->
@@ -407,7 +421,8 @@
 
 </xsl:text></xsl:if>
 
-    <xsl:apply-templates mode="pass2" select="//constant|//struct|//typedef" />
+    <xsl:apply-templates mode="pass2"
+                         select="//constant|//enum|//struct|//typedef" />
     <xsl:apply-templates mode="pass2" select="//function" />
 
 <xsl:if test="$h">
@@ -486,6 +501,24 @@
 
 </xsl:text>
     </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="enum" mode="pass2">
+    <xsl:text>typedef enum {
+    </xsl:text>
+    <xsl:call-template name="list">
+      <xsl:with-param name="separator"><xsl:text>,
+    </xsl:text></xsl:with-param>
+      <xsl:with-param name="items">
+        <xsl:for-each select="item">
+          <item><xsl:value-of select="@name" /></item>
+        </xsl:for-each>
+      </xsl:with-param>
+    </xsl:call-template>
+    <xsl:text>
+} </xsl:text><xsl:value-of select="@name" /><xsl:text>;
+
+</xsl:text>
   </xsl:template>
 
   <xsl:template match="function" mode="pass2">
