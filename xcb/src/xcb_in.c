@@ -39,7 +39,6 @@ typedef struct XCBReplyData {
     unsigned int request;
     void *data;
     char pending;
-    char error;
 } XCBReplyData;
 
 static void free_reply_data(XCBReplyData *data)
@@ -109,7 +108,8 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
 
     /* No need to update pending flag - about to delete cur anyway. */
 
-    if(cur->error)
+    /* is this an error reply? */
+    if(cur->data && ((XCBGenericRep *) cur->data)->response_type == 0)
     {
         if(!e)
             _xcb_list_append(c->in.events, (XCBGenericEvent *) cur->data);
@@ -238,7 +238,6 @@ int _xcb_in_expect_reply(XCBConnection *c, unsigned int request)
     data->request = request;
     data->data = 0;
     data->pending = 0;
-    data->error = 0;
 
     _xcb_list_append(c->in.replies, data);
     return 1;
@@ -299,7 +298,6 @@ int _xcb_in_read_packet(XCBConnection *c)
     if(rep) /* reply or error with a reply record. */
     {
         assert(rep->data == 0);
-        rep->error = (buf[0] == 0);
         rep->data = buf;
     }
     else /* event or error without a reply record */
