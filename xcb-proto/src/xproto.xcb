@@ -274,7 +274,7 @@ ERRORCOPY(Implementation, 17, Request)
 PUSHDIV(-1)
 
 dnl Window attributes for CreateWindow and ChangeWindowAttributes.
-XCBENUM(CW,
+ENUM(XCBCW,
 BackPixmap = 1L<<0,
 BackPixel = 1L<<1,
 BorderPixmap = 1L<<2,
