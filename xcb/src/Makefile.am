@@ -7,13 +7,15 @@ EXTHEADERS = \
 		extensions/shm.h \
 		extensions/shape.h \
 		extensions/render.h \
-		extensions/dpms.h
+		extensions/dpms.h \
+		extensions/xc_misc.h
 EXTSOURCES = \
 		extensions/bigreq.c \
 		extensions/shm.c \
 		extensions/shape.c \
 		extensions/render.c \
-		extensions/dpms.c
+		extensions/dpms.c \
+		extensions/xc_misc.c
 EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
 COREPROTO = xcb.h xproto.c xcb_types.c

@@ -1,5 +1,11 @@
 2004-07-02  Jamey Sharp  <jamey@minilop.net>
 
+	* src/Makefile.am:
+	Importing part of patches, adding XC-MISC, by
+	Mikko Markus Torni <mikko.markus.torni@iki.fi>.
+
+2004-07-02  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb.h.m4:
 	* src/xcb_in.c:
 	Remove XCBEventQueueRemove and XCBEventQueueFind.
