@@ -17,10 +17,13 @@ define(`REALLOC', `dnl
 TAB()$2 = ($1 *) realloc($2, ($3) * sizeof($1));
 TAB()assert($2);')
 
-define(`_outdiv',-1)
+define(`_parmdiv',1)
+define(`_outdiv',2)
+define(`_vardiv',3)
+define(`_sizediv',4)
+
 define(`_index',0)
 define(`_SIZE',0)
-define(`_FIRST',1)
 define(`_VARSIZE',0)
 define(`_BASESTRUCT',0)
 
@@ -51,23 +54,21 @@ TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
 TAB()`$1' = buf[INDEX];')
 BASETYPE(unsigned short,2,`dnl
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 8);
-TAB()buf[INDEX] |= (unsigned char) (`$1');',`dnl
-TAB()`$1' = buf[INDEX] << 8;
-TAB()`$1' |= buf[INDEX];')
+TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
+TAB()`$1' = (buf[INDEX] << 8) | buf[INDEX];')
 BASETYPE(unsigned int,4,`dnl
 TAB()buf[INDEX] = (unsigned char) (`$1' >> 24);
-TAB()buf[INDEX] |= (unsigned char) (`$1' >> 16);
-TAB()buf[INDEX] |= (unsigned char) (`$1' >> 8);
-TAB()buf[INDEX] |= (unsigned char) (`$1');',`dnl
-TAB()`$1' = buf[INDEX] << 24;
-TAB()`$1' |= buf[INDEX] << 16;
-TAB()`$1' |= buf[INDEX] << 8;
-TAB()`$1' |= buf[INDEX];')
+TAB()buf[INDEX] = (unsigned char) (`$1' >> 16);
+TAB()buf[INDEX] = (unsigned char) (`$1' >> 8);
+TAB()buf[INDEX] = (unsigned char) (`$1');',`dnl
+TAB()`$1' = (buf[INDEX] << 24) | (buf[INDEX] << 16) | (buf[INDEX] << 8) | buf[INDEX];')
 TYPE(unsigned char,signed char)
 TYPE(unsigned short,signed short)
 TYPE(unsigned int,signed int)
 
-define(`COOKIETYPE', `STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')')
+define(`COOKIETYPE', `pushdef(`_BASESTRUCT',1)dnl
+STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')`'dnl
+popdef(`_BASESTRUCT')_H')
 
 dnl --- Request/Response macros -----------------------------------------------
 
@@ -75,51 +76,90 @@ define(`VALUE', `STRUCT($1, `FIELD(XP_CARD32, `mask')')')
 define(`VALUECODE', `dnl')
 
 define(`BITMASKPARAM', `pushdef(`_divnum',divnum)dnl
-divert(_outdiv)dnl
-PACK($1,$2.mask)
+define(`_VARSIZE',1)dnl
+divert(_sizediv)dnl
     {
         $1 mask = $2.mask;
         for(; mask; mask >>= 1)
             if(mask & 1)
                 varsize += 4;
     }
+divert(_outdiv)dnl
+PACK($1, `$2'.mask)
+divert(_divnum)popdef(`_divnum')')
+
+define(`LISTPARAM', `pushdef(`_divnum',divnum)dnl
 define(`_VARSIZE',1)dnl
+divert(_sizediv)dnl
+    varsize += (`$3') + XP_PAD((`$3') * sizeof($1));
+divert(_outdiv)dnl
+    memcpy(buf + _index, $2, (`$3') * sizeof($1));
+divert(_parmdiv), $1 *$2`'dnl
 divert(_divnum)popdef(`_divnum')')
 
 define(`VALUEPARAM', `pushdef(`_divnum',divnum)dnl
 divert(_outdiv)`'dnl
-REALLOC(unsigned char, buf, _SIZE + varsize)
     /* pack in values from `$1' here */
-divert(1)`'ifelse(_FIRST,1,define(`_FIRST',0),`, ')$1 $2`'dnl
+divert(_parmdiv), $1 $2`'dnl
+divert(_divnum)popdef(`_divnum')')
+
+define(`STRLENPARAM', `pushdef(`_divnum',divnum)dnl
+divert(_vardiv)dnl
+    $1 `$3';
+divert(_sizediv)dnl
+    `$3' = strlen(`$2');
+divert(_outdiv)`'PACK($1, `$3')
 divert(_divnum)popdef(`_divnum')')
 
 define(`PARAM', `pushdef(`_divnum',divnum)dnl
 divert(_outdiv)`'PACK($1,`$2')
-divert(1)`'ifelse(_FIRST,1,define(`_FIRST',0),`, ')$1 `$2'`'dnl
+divert(_parmdiv), $1 `$2'`'dnl
 divert(_divnum)popdef(`_divnum')')
 
 dnl return type, name, opcode, data, and a collection of parameters.
-define(`REQUEST',`divert(-1)INDENT()
-define(`_outdiv',2)
-define(`_index',0) divert(2)PACK(XP_CARD8,$3)
+define(`REQUEST',`divert(-1)
+INDENT()
+define(`_index',0) divert(_outdiv)PACK(XP_CARD8,$3)
 divert(-1) ifelse($4,unused,,`PARAM(`XP_CARD8',`$4')')
 define(`_index',4) define(`_SIZE',4) $5 define(`_THISSIZE', _SIZE)
 define(`_index',2)
-divert(2)PACK(XP_CARD16,dnl
+divert(_outdiv)PACK(XP_CARD16,dnl
 ifelse(_VARSIZE,1,(eval(_THISSIZE/4) + varsize / 4),eval(_THISSIZE/4)))
-define(`_outdiv',-1)UNINDENT()divert(0)dnl
-FUNCTION(`', `XCB_'$1`_cookie XP_'$2, `XCB_Connection *c, undivert(1)', `
+UNINDENT()divert(0)dnl
+FUNCTION(`', `XCB_'$1`_cookie XP_'$2, `XCB_Connection *c`'undivert(_parmdiv)', `
     XCB_`'$1`'_cookie ret;
+ifelse($1,void,`dnl',`    XCB_Reply_Data *reply_data;')
 ifelse(_VARSIZE,1,`    int varsize = 0;',`dnl')
     unsigned char *buf;
-ALLOC(unsigned char, buf, _THISSIZE)
-undivert(2)dnl
+undivert(_vardiv)dnl
+
+undivert(_sizediv)dnl
+ALLOC(unsigned char, buf, ifelse(_VARSIZE,1,_THISSIZE + varsize,_THISSIZE))
+
+undivert(_outdiv)dnl
+
     XCB_Connection_Lock(c);
     ret.seqnum = XCB_Write(c, buf, ifelse(_VARSIZE,1,_THISSIZE + varsize,_THISSIZE));
+ifelse($1,void,,`dnl
+ALLOC(XCB_Reply_Data, reply_data, 1)
+    reply_data->received = 0;
+    reply_data->reply_handler = XP_`'$1`'_Reply_Handler;
+    reply_data->seqnum = ret.seqnum;
+    reply_data->data = 0; /* FIXME: no really, I mean it! */
+    XCB_Add_Reply_Data(c, reply_data);
+')dnl
     XCB_Connection_Unlock(c);
+
     free(buf);
     return ret;
-')define(`_FIRST',1)define(`_VARSIZE',0)')
+')define(`_VARSIZE',0)')
+
+define(`REPLY', `COOKIETYPE($1)
+_H
+FUNCTION(`', `int XP_'$1`_Reply_Handler', dnl
+`XCB_Connection *c, XCB_Reply_Data *r, unsigned char *buf', `
+    return 1;
+')')
 
 dnl --- Structure macros ------------------------------------------------------
 
@@ -127,7 +167,6 @@ define(`FIELD', `divert(1)dnl
     $1 $2;
 divert(-1)
 ifelse(_BASESTRUCT,1,,`
-dnl    define(`_SIZE', eval(SIZEOF($1)+_SIZE))
     define(`_UNPACKSTRUCT', defn(`_UNPACKSTRUCT')UNPACK($1,$`'1.$2)
 )
 ')
