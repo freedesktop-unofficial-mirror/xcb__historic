@@ -37,11 +37,9 @@ void (*_XFreeDisplayLock_fn)(Display *dpy) = NULL;
 #define FreeDisplayLock(dis)
 #endif /* XTHREADS */
 
-static xReq _dummy_request = {
-	0, 0, 0
-};
+static xReq _dummy_request;
 
-static Display _default_display = { 0 };
+static Display _default_display;
 static void _XInitDefaultDisplay()
 {
 	static unsigned done = 0;

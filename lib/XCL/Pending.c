@@ -20,10 +20,19 @@ int XPending(Display *dpy)
 
 int _XEventsQueued(register Display *dpy, int mode)
 {
+    fd_set fds;
+    struct timeval tv = { 0, 0 };
     if(mode == QueuedAfterFlush)
     {
 	_XFlush(dpy);
 	if(dpy->qlen)
+	    return(dpy->qlen);
+    }
+    if(XCBEventQueueIsEmpty(XCBConnectionOfDisplay(dpy)))
+    {
+	FD_ZERO(&fds);
+	FD_SET(dpy->fd, &fds);
+	if(select(dpy->fd + 1, &fds, 0, 0, &tv) < 1)
 	    return(dpy->qlen);
     }
     _XReadEvents(dpy);

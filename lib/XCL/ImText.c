@@ -1,37 +1,55 @@
 #include "xclint.h"
 
-/* XXX: Xlib returns 0 in all cases. This returns non-zero (success) in most
- * cases and 0 (failure) in some cases. */
-int XDrawImageString(register Display *dpy, Drawable d, GC gc, int x, int y, const char *p, int length)
+int XDrawImageString(register Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length)
 {
-    char *buf, *bufp;
-    int qty;
-
-    /* XXX: Xlib might produce ChangeGC requests in cases where this won't. */
-    if (length <= 0)
-	return 1; /* success */
-
-    qty = (length + 253) / 254;
-    bufp = buf = (char *) malloc(length + qty * 2);
-    if (!buf)
-	return 0; /* failure */
-    while (length > 254) {
-	*bufp++ = 254;
-	*bufp++ = 0; /* delta */
-	memcpy(bufp, p, 254);
-	length -= 254;
-	bufp += 254;
-	p += 254;
-    }
-    *bufp++ = length;
-    *bufp++ = 0; /* delta */
-    memcpy(bufp, p, length);
+    char *CharacterOffset = (char *)string;
+    int FirstTimeThrough = True;
+    int lastX = 0;
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
 
-    XCBPolyText8(XCBConnectionOfDisplay(dpy), XCLDRAWABLE(d), XCLGCONTEXT(gc->gid), x, y, qty, buf);
-    free(buf);
+    while (length > 0) 
+    {
+	int Unit;
+
+	if (length > 255) Unit = 255;
+	else Unit = length;
+
+   	if (FirstTimeThrough)
+	{
+	    FirstTimeThrough = False;
+        }
+	else
+	{
+	    char buf[512];
+	    char *ptr, *str;
+	    XCBQueryTextExtentsCookie c;
+	    XCBQueryTextExtentsRep *r;
+	    int i;
+
+	    str = CharacterOffset - 255;
+	    for(ptr = buf, i = 255; --i >= 0; )
+	    {
+		*ptr++ = 0;
+		*ptr++ = *str++;
+	    }
+
+	    c = XCBQueryTextExtents(XCBConnectionOfDisplay(dpy), XCLFONTABLE(gc->gid), 255, (CHAR2B *) buf);
+	    r = XCBQueryTextExtentsReply(XCBConnectionOfDisplay(dpy), c, 0);
+	    if(!r)
+		break;
+
+	    x = lastX + cvtINT32toInt(r->overall_width);
+	    free(r);
+	}
+
+	XCBImageText8(XCBConnectionOfDisplay(dpy), Unit, XCLDRAWABLE(d), XCLGCONTEXT(gc->gid), x, y, CharacterOffset);
+
+	lastX = x;
+        CharacterOffset += Unit;
+	length -= Unit;
+    }
     UnlockDisplay(dpy);
-    return 1; /* success */
+    return 0;
 }

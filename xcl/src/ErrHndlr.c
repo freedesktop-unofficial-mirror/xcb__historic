@@ -1,12 +1,13 @@
 #include "xclint.h"
 #include <stdio.h>
+#include <errno.h>
 #include <assert.h>
 
 int _XDefaultError(Display *dpy, XErrorEvent *event);
 int _XDefaultIOError(Display *dpy);
 
-XErrorHandler _XErrorFunction = _XDefaultError;
-XIOErrorHandler _XIOErrorFunction = _XDefaultIOError;
+XErrorHandler _XErrorFunction;
+XIOErrorHandler _XIOErrorFunction;
 
 int _XDefaultError(Display *dpy, XErrorEvent *event)
 {
@@ -113,6 +114,8 @@ int _XDefaultError(Display *dpy, XErrorEvent *event)
     fputs("\n  ", fp);
     (void) fprintf(fp, mesg, dpy->request);
     fputs("\n", fp);
+#else
+    fprintf(stderr, "Error of type %d occured.\n", event->error_code);
 #endif
     if (event->error_code == BadImplementation) return 0;
     exit(1);
@@ -129,6 +132,7 @@ int _XDefaultIOError(Display *dpy)
         "X connection to %s broken (explicit kill or server shutdown).\r\n",
                             DisplayString (dpy));
         } else {
+#endif
             (void) fprintf (stderr, 
                         "XIO:  fatal IO error %d (%s) on X server \"%s\"\r\n",
 #ifdef WIN32
@@ -143,6 +147,7 @@ g.\r\n",
                         NextRequest(dpy) - 1, LastKnownRequestProcessed(dpy),
                         QLength(dpy));
 
+#if 0 /* not needed yet */
         }
 #endif
         exit(1);
@@ -192,9 +197,7 @@ int _XError(Display *dpy, register xError *rep)
     register _XAsyncHandler *async, *next;
     int rtn_val;
 
-#if 0 /* not implemented yet */
     event.xerror.serial = _XSetLastRequestRead(dpy, (xGenericReply *)rep);
-#endif
 
     for (async = dpy->async_handlers; async; async = next) {
         next = async->next;

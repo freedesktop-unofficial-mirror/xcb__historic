@@ -1,5 +1,6 @@
 #include "xclint.h"
 #include <assert.h>
+#include <unistd.h>
 
 /* Return next event in queue, or if none, flush output and wait for events. */
 int XNextEvent(register Display *dpy, register XEvent *event)
@@ -25,13 +26,15 @@ void _XReadEvents(Display *dpy)
 
 	if(XCBEventQueueIsEmpty(c))
 		_XFlush(dpy);
-	e = XCBWaitEvent(c);
-	_XEnq(dpy, (xEvent *) e);
-	while(!XCBEventQueueIsEmpty(c))
-	{
+
+	do {
 		e = XCBWaitEvent(c);
-		_XEnq(dpy, (xEvent *) e);
-	}
+		if(e->response_type == X_Error)
+			_XError(dpy, (xError *) e);
+		else
+			_XEnq(dpy, (xEvent *) e);
+		free(e);
+	} while(!XCBEventQueueIsEmpty(c));
 }
 
 /* _XEnq - Place event packets on the display's queue. note that no
@@ -40,36 +43,48 @@ void _XEnq(register Display *dpy, register xEvent *event)
 {
         register _XQEvent *qelt;
 
-        if ((qelt = dpy->qfree)) {
+        qelt = dpy->qfree;
+        if(qelt)
                 /* If dpy->qfree is non-NULL do this, else malloc a new one. */
                 dpy->qfree = qelt->next;
-        }
-        else if ((qelt = (_XQEvent *) Xmalloc(sizeof(_XQEvent))) == NULL) {
-                /* Malloc call failed! */
+	else
+	        qelt = (_XQEvent *) Xmalloc(sizeof(_XQEvent));
+
 #if 0 /* not implemented yet */
+        if(!qelt)
+                /* Malloc call failed! */
                 ESET(ENOMEM);
                 _XIOError(dpy);
-#else
-		assert(qelt);
-#endif
         }
-        qelt->next = NULL;
+#else
+	assert(qelt);
+#endif
+
+	/* invariant: qelt points to usable but uninitialized memory. */
+
         /* go call through display to find proper event reformatter */
-        if ((*dpy->event_vec[event->u.u.type & 0177])(dpy, &qelt->event, event))
- {
-		qelt->qserial_num = dpy->next_event_serial_num++;
-		if (dpy->tail)
-			dpy->tail->next = qelt;
-		else
-			dpy->head = qelt;
-    
-		dpy->tail = qelt;
-		dpy->qlen++;
-        } else {
-		/* ignored, or stashed away for many-to-one compression */
+        if(!(*dpy->event_vec[event->u.u.type & 0177])(dpy, &qelt->event, event))
+	{
+		/* reformatter told us not to enqueue this one after all.
+		 * Put it back on the free list. */
 		qelt->next = dpy->qfree;
 		dpy->qfree = qelt;
+		return;
         }
+
+	/* invariant: qelt->event is initialized but nothing else is. */
+	qelt->qserial_num = dpy->next_event_serial_num++;
+
+	/* list method: append at end */
+	if(dpy->tail)
+		dpy->tail->next = qelt;
+	else
+		dpy->head = qelt;
+
+	dpy->tail = qelt;
+        qelt->next = NULL;
+
+	dpy->qlen++;
 }
 
 /* _XDeq - Remove event packet from the display's queue. */
@@ -77,14 +92,14 @@ void _XEnq(register Display *dpy, register xEvent *event)
 /* qelt: element to be unlinked */
 void _XDeq(register Display *dpy, register _XQEvent *prev, register _XQEvent *qelt)
 {
-    if (prev) {
-        if ((prev->next = qelt->next) == NULL)
-            dpy->tail = prev;
-    } else {
-        /* no prev, so removing first elt */
-        if ((dpy->head = qelt->next) == NULL)
-            dpy->tail = NULL;
-    }
+    if(prev)
+        prev->next = qelt->next;
+    else
+	dpy->head = qelt->next;
+
+    if(!qelt->next)
+	dpy->tail = prev;
+
     qelt->qserial_num = 0;
     qelt->next = dpy->qfree;
     dpy->qfree = qelt;

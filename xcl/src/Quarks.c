@@ -11,13 +11,13 @@ typedef unsigned char Bits;
 #endif
 
 static XrmQuark nextQuark = 1;	/* next available quark number */
-static unsigned long quarkMask = 0;
-static Entry zero = 0;
+static unsigned long quarkMask;
+static Entry zero;
 static Entry *quarkTable = &zero; /* crock */
 static unsigned long quarkRehash;
-static XrmString **stringTable = NULL;
+static XrmString **stringTable;
 #ifdef PERMQ
-static Bits **permTable = NULL;
+static Bits **permTable;
 #endif
 static XrmQuark nextUniq = -1;	/* next quark from XrmUniqueQuark */
 
@@ -56,8 +56,8 @@ static XrmQuark nextUniq = -1;	/* next quark from XrmUniqueQuark */
 #define DALIGN sizeof(double)
 
 #define NEVERFREETABLESIZE ((8192-12) & ~(DALIGN-1))
-static char *neverFreeTable = NULL;
-static int  neverFreeTableSize = 0;
+static char *neverFreeTable;
+static int  neverFreeTableSize;
 
 static char *permalloc(unsigned int length)
 {
