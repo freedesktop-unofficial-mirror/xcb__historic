@@ -2,10 +2,10 @@ XCBGEN(xcb_types, `
 Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
-')
+')HEADERONLY(`
 /* Basic types */
 dnl from Xmd.h
-dnl XXX: 64-bit architectures untested with XCB; probably won't work.
+dnl XXX: 64-bit architectures untested with XCB; probably will not work.
 
 #ifdef CRAY
 #define WORD64                          /* 64-bit architecture */
@@ -93,13 +93,14 @@ typedef CARD8           BOOL;
 #define BOOL            CARD8
 #endif /* __EMX__ */
 
+')dnl end HEADERONLY
 
 /* Core protocol types */
 
 PACKETSTRUCT(Generic, `Rep', `')
 PACKETSTRUCT(Generic, `Event', `')
 PACKETSTRUCT(Generic, `Error', `')
-typedef XCBGenericEvent XCBEvent; /* deprecated name */
+HEADERONLY(typedef XCBGenericEvent XCBEvent; /* deprecated name */)
 
 COOKIETYPE(`Void')
 
@@ -192,7 +193,7 @@ STRUCT(DEPTH, `
     PAD(1)
     FIELD(CARD16, `visuals_len')
     PAD(4)
-    LISTFIELD(VISUALTYPE, `visuals', `R->visuals_len')
+    ARRAYFIELD(VISUALTYPE, `visuals', `R->visuals_len')
 ')
 
 STRUCT(SCREEN, `
@@ -222,8 +223,8 @@ STRUCT(XCBConnSetupReq, `
     FIELD(CARD16, `protocol_minor_version')
     FIELD(CARD16, `authorization_protocol_name_len')
     FIELD(CARD16, `authorization_protocol_data_len')
-    dnl LISTFIELD(char, `authorization_protocol_name', `R->authorization_protocol_name_len')
-    dnl LISTFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
+    ARRAYFIELD(char, `authorization_protocol_name', `R->authorization_protocol_name_len')
+    ARRAYFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
 ')
 
 STRUCT(XCBConnSetupGenericRep, `
@@ -238,14 +239,14 @@ STRUCT(XCBConnSetupFailedRep, `
     FIELD(CARD16, `protocol_major_version')
     FIELD(CARD16, `protocol_minor_version')
     FIELD(CARD16, `length')
-    dnl LISTFIELD(char, `reason', `R->reason_length')
+    ARRAYFIELD(char, `reason', `R->reason_len')
 ')
 
 STRUCT(XCBConnSetupAuthenticateRep, `
     FIELD(CARD8, `status') dnl always 2 -> Authenticate
     PAD(5)
     FIELD(CARD16, `length')
-    dnl LISTFIELD(char, `reason', `R->length * 4')
+    ARRAYFIELD(char, `reason', `R->length * 4')
 ')
 
 STRUCT(XCBConnSetupSuccessRep, `
@@ -269,11 +270,12 @@ STRUCT(XCBConnSetupSuccessRep, `
     FIELD(KEYCODE, `min_keycode')
     FIELD(KEYCODE, `max_keycode')
     PAD(4)
-    dnl LISTFIELD(char, `vendor', `R->vendor_len')
-    LISTFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
+    ARRAYFIELD(char, `vendor', `R->vendor_len')
+    ARRAYFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
     LISTFIELD(SCREEN, `roots', `R->roots_len')
 ')
 
+HEADERONLY(`
 /* Pre-defined constants */
 
 dnl XXX: everything after here probably belongs in xcb.m4. It came from
@@ -619,7 +621,7 @@ COMMENT(Arc modes for PolyFillArc)
 #define ArcChord                0       /* join endpoints of arc */
 #define ArcPieSlice             1       /* join endpoints to center of arc */
 
-COMMENT(GC components: masks used in CreateGC, CopyGC, ChangeGC, OR'ed into
+COMMENT(GC components: masks used in CreateGC, CopyGC, ChangeGC, ORed into
 GC.stateChanges)
 
 #define GCFunction              (1L<<0)
@@ -747,5 +749,6 @@ COMMENT(Byte order used in imageByteOrder and bitmapBitOrder)
 
 #define LSBFirst                0
 #define MSBFirst                1
+')dnl end HEADERONLY
 
 ENDXCBGEN

@@ -27,13 +27,6 @@ define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
     `$1' `$2';
 POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
 
-dnl Declares an array field with the given quantity of elements of the
-dnl given type.
-dnl ARRAYFIELD(type, name, quantity)
-define(`ARRAYFIELD', `PUSHDIV(STRUCTDIV)dnl
-    `$1' `$2'[`$3'];
-POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
-
 dnl Declares a field with the given name which is a pointer to the given type.
 dnl POINTERFIELD(type, name)
 define(`POINTERFIELD', `PUSHDIV(STRUCTDIV)dnl

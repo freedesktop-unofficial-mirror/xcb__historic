@@ -799,12 +799,11 @@ REQUEST(QueryTextExtents, `
     REPLY(INT32, `overall_right')
 ')
 
-dnl STRUCT(STR, `
-dnl     FIELD(CARD8, `name_len')
-dnl     LISTFIELD(char, `name', `R->name_len')
-dnl ')
+STRUCT(STR, `
+    FIELD(CARD8, `name_len')
+    ARRAYFIELD(char, `name', `R->name_len')
+')
 
-dnl FIXME: ListFonts needs an iterator for the reply - a pointer won't do.
 REQUEST(ListFonts, `
     OPCODE(49)
     PAD(1)
@@ -815,7 +814,7 @@ REQUEST(ListFonts, `
     PAD(1)
     REPLY(CARD16, `names_len')
     PAD(22)
-    dnl LISTFIELD(STR, `names', `R->names_len')
+    LISTFIELD(STR, `names', `R->names_len')
 ')
 
 /* The ListFontsWithInfo request is not supported by XCB. */
@@ -828,14 +827,13 @@ VOIDREQUEST(SetFontPath, `
     LISTPARAM(char, `path', `path_len')
 ')
 
-dnl FIXME: GetFontPath needs an iterator for the reply - a pointer won't do.
 REQUEST(GetFontPath, `
     OPCODE(52)
 ', `
     PAD(1)
     REPLY(CARD16, `path_len')
     PAD(22)
-    dnl LISTREPLY(STR, path, ...)
+    LISTFIELD(STR, `path', `R->path_len')
 ')
 
 VOIDREQUEST(CreatePixmap, `
@@ -1362,13 +1360,12 @@ REQUEST(QueryExtension, `
     REPLY(CARD8, `first_error')
 ')
 
-dnl FIXME: ListExtensions needs an iterator for the reply - a pointer won't do.
 REQUEST(ListExtensions, `
     OPCODE(99)
 ', `
     REPLY(CARD8, `names_len')
     PAD(24)
-    dnl LISTREPLY(STR, names, ...)
+    LISTFIELD(STR, `names', `R->names_len')
 ')
 
 VOIDREQUEST(ChangeKeyboardMapping, `
@@ -1461,14 +1458,20 @@ VOIDREQUEST(ChangeHosts, `
     LISTPARAM(char, `address', `address_len')
 ')
 
-dnl FIXME: ListHosts needs an iterator for the reply - a pointer won't do.
+STRUCT(HOST, `
+    FIELD(CARD8, `family')
+    PAD(1)
+    FIELD(CARD16, `address_len')
+    ARRAYFIELD(BYTE, `address', `R->address_len')
+')
+
 REQUEST(ListHosts, `
     OPCODE(110)
 ', `
     REPLY(BYTE, `mode')
     REPLY(CARD16, `hosts_len')
     PAD(22)
-    dnl LISTREPLY(HOST, hosts, ...)
+    LISTFIELD(HOST, `hosts', `R->hosts_len')
 ')
 
 VOIDREQUEST(SetAccessControl, `

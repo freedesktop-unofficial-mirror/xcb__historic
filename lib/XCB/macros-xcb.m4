@@ -178,6 +178,10 @@ define(`ARRAYFIELD', `PUSHDIV(FUNCDIV)
 INLINEFUNCTION(`$1 *'REQ`$2', REQ`'KIND` *R', `
     return ($1 *) (NEXTFIELD);
 ')
+
+INLINEFUNCTION(`int 'REQ`$2'Length, REQ`'KIND` *R', `
+    return `$3';
+')
 POPDIV()
 define(`NEXTFIELD', REQ`$2'`(R) + (`$3')')')
 
