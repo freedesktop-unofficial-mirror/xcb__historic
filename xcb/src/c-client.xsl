@@ -783,7 +783,7 @@ See the file COPYING in this package for licensing information.
       <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
       <xsl:text> {
 </xsl:text>
-      <xsl:for-each select="field|pad">
+      <xsl:for-each select="exprfield|field|pad">
         <xsl:text>    </xsl:text>
         <xsl:apply-templates select="." />
         <xsl:text>;
