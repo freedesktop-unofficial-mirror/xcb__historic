@@ -57,6 +57,9 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked)
     if (fcntl(fd, F_SETFL, flags) == -1)
 	return 0;
 
+    if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+	return 0;
+
     h->fd = fd;
     h->locked = locked;
     pthread_cond_init(&h->waiting_threads, 0);
