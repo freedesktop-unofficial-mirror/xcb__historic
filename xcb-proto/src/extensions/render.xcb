@@ -469,7 +469,7 @@ REQUEST(RenderQueryFilters, `
     LISTFIELD(STR, `filters', `R->num_filters')
 ')
 
-REQUEST(RenderSetPictureFilter, `
+VOIDREQUEST(RenderSetPictureFilter, `
     OPCODE(30)
     PARAM(PICTURE, `picture')
     PARAM(CARD16, `filter_len')
