@@ -1,3 +1,9 @@
+2004-08-10  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_out.c:
+	I misread the BIG-REQUESTS specification. The long
+	length field needs to count itself too.
+
 2004-07-24  Jamey Sharp  <jamey@minilop.net>
 
 	* src/client-c.xcb:

@@ -47,6 +47,7 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
     ++i;
     if(!shortlen)
     {
+        ++longlen;
         prefix[i].iov_base = &longlen;
         prefix[i].iov_len = sizeof(CARD32);
         ++i;
