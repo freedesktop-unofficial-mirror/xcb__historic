@@ -1,5 +1,12 @@
 2004-09-29  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_util.c:
+	* src/xcbext.h:
+	Oops, XCBPopcount was supposed to change argument
+	types too.
+
+2004-09-29  Jamey Sharp  <jamey@minilop.net>
+
 	* src/client-c.xcb:
 	* src/xcb_util.c:
 	* src/xcbext.h:

@@ -19,7 +19,7 @@
 #include "xcb.h"
 #include "xcbext.h"
 
-int XCBPopcount(unsigned long mask)
+int XCBPopcount(CARD32 mask)
 {
     unsigned long y;
     y = (mask >> 1) & 033333333333;
