@@ -1,5 +1,25 @@
 2004-11-06  Josh Triplett  <josh@freedesktop.org>
 
+	* xcb.h:
+	* xcb_auth.c:
+	* xcb_conn.c:
+	* xcb_ext.c:
+	* xcb_in.c:
+	* xcb_list.c:
+	* xcb_out.c:
+	* xcb_util.c:
+	* xcb_xid.c:
+	* xcbext.h:
+	* xcbint.h:
+	Include license in every file rather than referencing COPYING.
+	Update copyright notices to 2004.
+
+	* COPYING:
+	Remove non-applicable licenses from COPYING file.
+
+
+2004-11-06  Josh Triplett  <josh@freedesktop.org>
+
 	* configure.ac:
 	* src/.cvsignore:
 	* src/Makefile.am:
