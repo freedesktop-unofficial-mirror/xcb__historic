@@ -7,25 +7,15 @@
 #include <X11/Xutil.h>
 #include <stdio.h>
 
-int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
-							      req_height)
-    register Display *dpy;
-    Drawable d;
-    GC gc;
-    register XImage *image;
-    int x, y;
-    unsigned int req_width, req_height;
-    int req_xoffset, req_yoffset;
+int XPutImage(Display *dpy, Drawable d, GC gc, XImage *image,
+    int req_xoffset, int req_yoffset, int x, int y,
+    unsigned int req_width, unsigned int req_height)
 {
- 
     unsigned int alignment, image_size, bytes_per_line, unaligned_bits;
     unsigned int unaligned_bytes, bytes_per_image_line;
     unsigned int image_alignment;
     char  *image_data, *line_ptr, *image_line_ptr;
     int index;
-    DRAWABLE drw;
-    XCBConnection *c = XCBConnectionOfDisplay(dpy);
-    drw.pixmap.xid = d;
     
     /* find out how large the image is going to be */
     alignment = image->bitmap_unit >> 3;
@@ -40,17 +30,7 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
 
     /* bytes_per_image_line is the number of bytes per scanline in the 
      * source image */
-    
-//    fprintf(stdout, "depth:   %2d, bytes_per_line:   %d\n"
-//            "width:        %7d, height:     %7d\n"
-//            "req_width:    %7d, req_height: %7d\n\n"
-//            "bitmap_unit:   %6d, bitmap_pad: %6d\n"
-//            "bits_per_pixel: %5d, unaligned_bytes: %d\n"
-//            "image_size:     %5d\n-------------------------------------------------------------\n",
-//            image->depth, image->bytes_per_line, image->width, image->height, 
-//            req_width, req_height, image->bitmap_unit, image->bitmap_pad,
-//            image->bits_per_pixel, unaligned_bytes, image_size);
-    
+
     line_ptr = image_data = malloc( image_size );
     image_line_ptr = image->data;
     for(index = 0; index < req_height; index++)
@@ -59,14 +39,8 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
         line_ptr += bytes_per_line;
         image_line_ptr += (image->bytes_per_line);
     }
-    
-//    fprintf(stdout, "bitmap_unit:          %d\n", image->bitmap_unit);
-//    fprintf(stdout, "bitmap_pad:          %d\n", image->bitmap_pad);
-    LockDisplay(dpy);
-    
-    XCBPutImage(c, image->format, drw, XCLGCONTEXT(gc->gid), req_width, req_height, req_xoffset, req_yoffset, 0, image->depth, image_size, image_data );
-    XCBSync(c, 0);
-    UnlockDisplay(dpy);
+
+    XCBPutImage(XCBConnectionOfDisplay(dpy), image->format, XCLDRAWABLE(d), XCLGCONTEXT(gc->gid), req_width, req_height, req_xoffset, req_yoffset, 0, image->depth, image_size, image_data);
     free( image_data );
     return 0;
 }
