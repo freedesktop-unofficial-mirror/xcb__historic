@@ -276,7 +276,7 @@ ERRORCOPY(Implementation, 17, Request)
 
 /* The ListFontsWithInfo request is not supported by XCB. */
 
-divert(-1)
+PUSHDIV(-1)
 
 dnl Window attributes for CreateWindow and ChangeWindowAttributes.
 XCBENUM(CW,
@@ -1536,6 +1536,6 @@ FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
     return (reply != 0);
 ')
 
-divert(0)
+POPDIV()
 ENDXCBGEN
 HEADERONLY(REQUIRE(X11, XCB, xcb_extension))
