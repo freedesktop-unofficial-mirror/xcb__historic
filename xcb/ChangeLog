@@ -1,5 +1,19 @@
 2004-07-24  Jamey Sharp  <jamey@minilop.net>
 
+	* src/client-c.xcb:
+	Renamed functions that return new iterators to
+	*Iter, to avoid conflict with similar functions that
+	return arrays.
+
+	Deprecating ARRAYFIELD in favor of LISTFIELD, which
+	now generates both array and iterator accessors. You
+	get an array accessor as long as the element type is
+	fixed length; you get an interator accessor as long
+	as the base type has an iterator. You always get a
+	'Length' function.
+
+2004-07-24  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_auth.c:
 	Bart cleaned up some code that I made ugly, and
 	I'm fixing a warning that resulted from a static

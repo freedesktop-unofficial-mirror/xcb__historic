@@ -155,6 +155,7 @@ TAB()ret.rem = i.rem;
 TAB()ret.index = i.index;
 TAB()return ret;
 ')
+define($1`IsVariable')
 ')
 ')
 
@@ -326,55 +327,57 @@ dnl Generates a C pre-processor macro providing access to a variable-length
 dnl portion of a structure. The length parameter is an expression, usually
 dnl involving the fixed-length portion of the structure, which evaluates
 dnl at run-time to the number of elements in this array.
-dnl ARRAYFIELD(field type, field name, list length expr)
-define(`ARRAYFIELD', `
+dnl LISTFIELD(field type, field name, list length expr)
+define(`LISTFIELD', `
 pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
+ifdef(`$1IsVariable', , `
 FUNCTION(`$1 *'REQ`'NAME, REQ`'KIND` *R', `
 ifelse(NEXTFIELD, `R + 1', `dnl
     return (`$1' *) (NEXTFIELD);', `dnl
     XCBGenericIter prev = NEXTFIELD();
     return (`$1' *) ((char *) prev.data + XCB_TYPE_PAD(`$1', prev.index));')
 ')
+')
 
 FUNCTION(`int 'REQ`'NAME`'Length, REQ`'KIND` *R', `
     return `$3';
 ')
 
+ifelse(substr(`$1', 0, 3), `XCB', `
+FUNCTION(`$1Iter 'REQ`'NAME`Iter', REQ`'KIND` *R', `
+    $1Iter i;
+ifelse(NEXTFIELD, `R + 1', `dnl
+    i.data = (`$1' *) (NEXTFIELD());
+', `dnl
+    XCBGenericIter prev = NEXTFIELD();
+    i.data = (`$1' *) ((char *) prev.data + XCB_TYPE_PAD(`$1', prev.index));
+')dnl
+    i.rem = (`$3');
+    i.index = (char *) i.data - (char *) R;
+    return i;
+')
+define(`NEXTFIELD', `$1End'(REQ`'NAME`Iter'(R)))
+', `
 FUNCTION(`XCBGenericIter' REQ`'NAME`'End, REQ`'KIND` *R', `
     XCBGenericIter i;
 ifelse(NEXTFIELD, `R + 1', `dnl
-    i.data = ((ifelse(`$1', void, char, `$1') *) (NEXTFIELD())) + (`$3');', `dnl
+    i.data = ((ifelse(`$1', void, char, `$1') *) (NEXTFIELD())) + (`$3');
+', `dnl
     XCBGenericIter child = NEXTFIELD();
-    i.data = ((ifelse(`$1', void, char, `$1') *) child.data) + (`$3');')
+    i.data = ((ifelse(`$1', void, char, `$1') *) child.data) + (`$3');
+')dnl
     i.rem = 0;
     i.index = (char *) i.data - (char *) R;
     return i;
 ')
-
 define(`NEXTFIELD', REQ`'NAME`End'(R))
+')
+
 popdef(`NAME')
 ')
 
-define(`ARRAYREPLY', `ARRAYFIELD($@)')
-
-dnl Generates an iterator for the variable-length portion of a structure.
-dnl LISTFIELD(field type, field name, list length expr)
-define(`LISTFIELD', `
-pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
-FUNCTION(`$1Iter 'REQ`'NAME, REQ`'KIND` *R', `
-TAB()$1Iter i;
-ifelse(NEXTFIELD, `R + 1', `dnl
-TAB()i.data = (`$1' *) (NEXTFIELD());', `dnl
-TAB()XCBGenericIter prev = NEXTFIELD();
-TAB()i.data = (`$1' *) ((char *) prev.data + XCB_TYPE_PAD(`$1', prev.index));')
-TAB()i.rem = (`$3');
-TAB()i.index = (char *) i.data - (char *) R;
-TAB()return i;
-')
-
-define(`NEXTFIELD', `$1End'(REQ`'NAME`'(R)))
-popdef(`NAME')
-')
+define(`ARRAYFIELD', `LISTFIELD($@)')
+define(`ARRAYREPLY', `LISTFIELD($@)')
 
 
 dnl Creates a function named XCB<name> returning XCBVoidCookie and
