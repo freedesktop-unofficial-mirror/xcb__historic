@@ -1,6 +1,12 @@
 2004-11-26  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
+	In do-request processing, use the existing num-parts variable
+	rather than recalculating the same expression.
+
+2004-11-26  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
 	  * Add a list of known core types, and don't search all the
 	    protocol descriptions for types in that list.  This
 	    significantly shortens the processing time.

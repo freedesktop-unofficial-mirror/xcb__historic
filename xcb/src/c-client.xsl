@@ -554,8 +554,7 @@ authorization from the authors.
     <l>};</l>
 
     <l />
-    <l>struct iovec xcb_parts[<!--
-    --><xsl:value-of select="1+count($struct/list)" />];</l>
+    <l>struct iovec xcb_parts[<xsl:value-of select="$num-parts" />];</l>
     <l><xsl:value-of select="../@type" /> xcb_ret;</l>
     <l><xsl:value-of select="@ref" /> xcb_out;</l>
 
