@@ -38,18 +38,12 @@
 typedef struct XCBReplyData {
     unsigned int request;
     void *data;
-    char pending;
 } XCBReplyData;
 
 static void free_reply_data(XCBReplyData *data)
 {
     free(data->data);
     free(data);
-}
-
-static int match_pointer(const void *a, const void *b)
-{
-    return a == b;
 }
 
 static int match_reply(const void *request, const void *data)
@@ -73,6 +67,7 @@ static void wake_up_next_reader(XCBConnection *c)
 void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **e)
 {
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    XCBReplyData reader;
     void *ret = 0;
     XCBReplyData *cur;
     if(e)
@@ -85,28 +80,21 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
         if(_xcb_out_flush(c) <= 0)
             goto done; /* error */
 
-    /* Compare the sequence number as a full int. */
-    cur = _xcb_list_find(c->in.replies, match_reply, &request);
-
-    if(!cur || cur->pending)
+    if(!_xcb_list_find(c->in.replies, match_reply, &request) || _xcb_list_find(c->in.readers, match_reply, &request))
         goto done; /* error */
 
-    ++cur->pending;
-
-    _xcb_list_append(c->in.readers, &cond);
+    reader.request = request;
+    reader.data = &cond;
+    _xcb_list_append(c->in.readers, &reader);
 
     /* If this request has not been read yet, wait for it. */
     while((signed int) (c->in.request_read - request) < 0)
         if(_xcb_conn_wait(c, /*should_write*/ 0, &cond) <= 0)
-        {
             /* Do not remove the reply record on I/O error. */
-            --cur->pending;
             goto done;
-        }
 
-    _xcb_list_remove(c->in.readers, match_pointer, &cond);
-
-    /* No need to update pending flag - about to delete cur anyway. */
+    _xcb_list_remove(c->in.readers, match_reply, &request);
+    cur = _xcb_list_remove(c->in.replies, match_reply, &request);
 
     /* is this an error reply? */
     if(cur->data && ((XCBGenericRep *) cur->data)->response_type == 0)
@@ -119,7 +107,6 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
     else
         ret = cur->data;
 
-    _xcb_list_remove(c->in.replies, match_reply, &request);
     free(cur);
 
 done:
@@ -214,7 +201,6 @@ int _xcb_in_expect_reply(XCBConnection *c, unsigned int request)
 
     data->request = request;
     data->data = 0;
-    data->pending = 0;
 
     _xcb_list_append(c->in.replies, data);
     return 1;
@@ -277,8 +263,11 @@ int _xcb_in_read_packet(XCBConnection *c)
 
     if(rep) /* reply or error with a reply record. */
     {
+        XCBReplyData *reader = _xcb_list_find(c->in.readers, match_reply, &c->in.request_read);
         assert(rep->data == 0);
         rep->data = buf;
+        if(reader)
+            pthread_cond_signal(reader->data);
     }
     else /* event or error without a reply record */
     {

@@ -1,5 +1,12 @@
 2005-03-25  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_in.c:
+	Instead of storing a pending flag per reply record, look in the
+	readers list to find out whether there's a reader waiting for
+	the reply we've just been asked to wait for.
+
+2005-03-25  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_list.c, src/xcbint.h:
 	Add _xcb_queue_is_empty.
 
