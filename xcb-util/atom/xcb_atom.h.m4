@@ -3,7 +3,7 @@
 
 enum tag_t {
 	TAG_COOKIE,
-	TAG_VALUE,
+	TAG_VALUE
 };
 typedef struct {
 	enum tag_t tag;
