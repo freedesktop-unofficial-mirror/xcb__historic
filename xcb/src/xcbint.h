@@ -110,8 +110,6 @@ int _xcb_out_flush(XCBConnection *c);
 
 /* xcb_in.c */
 
-typedef int (*XCBUnexpectedReplyFunc)(void *unexpected_reply_data, XCBGenericRep *buf);
-
 typedef struct _xcb_in {
     pthread_cond_t event_cond;
     int reading;
@@ -120,20 +118,17 @@ typedef struct _xcb_in {
     int queue_len;
 
     unsigned int request_read;
+    _xcb_queue *current_reply;
 
-    _xcb_list *replies;
+    _xcb_map *replies;
     _xcb_queue *events;
     _xcb_list *readers;
-
-    XCBUnexpectedReplyFunc unexpected_reply_handler;
-    void *unexpected_reply_data;
 } _xcb_in;
 
 int _xcb_in_init(_xcb_in *in);
 void _xcb_in_destroy(_xcb_in *in);
 
 int _xcb_in_expect_reply(XCBConnection *c, unsigned int request);
-void _xcb_in_set_unexpected_reply_handler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
 
 int _xcb_in_read_packet(XCBConnection *c);
 int _xcb_in_read(XCBConnection *c);

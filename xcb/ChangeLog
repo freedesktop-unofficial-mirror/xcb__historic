@@ -1,5 +1,14 @@
 2005-03-30  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_in.c, src/xcbint.h:
+	Accept zero or more replies to any request. Eliminates, for the
+	moment, nearly all run-time error checking regarding the number
+	of replies expected for a particular request. Also breaks the
+	unexpected reply callback, which is OK because I was going to
+	remove it anyway, and now I've done so.
+
+2005-03-30  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_list.c, src/xcbint.h:
 	Add a map ADT implemented using the list ADT.
 
