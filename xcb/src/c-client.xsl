@@ -312,7 +312,7 @@ See the file COPYING in this package for licensing information.
       <xsl:attribute name="name">
         <xsl:call-template name="canonical-var-name" />
       </xsl:attribute>
-      <xsl:if test="$fixed-length-ok and self::list
+      <xsl:if test="$fixed-length-ok and self::list and node()
                     and not(.//*[not(self::value or self::op)])">
         <xsl:attribute name="fixed">true</xsl:attribute>
       </xsl:if>
