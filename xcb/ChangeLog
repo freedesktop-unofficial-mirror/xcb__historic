@@ -1,3 +1,9 @@
+2004-11-10  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
+	Prefix variables in request functions with "xcb_" to avoid
+	collisions with field names.
+
 2004-11-09  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:

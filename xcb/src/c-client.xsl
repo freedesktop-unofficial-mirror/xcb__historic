@@ -512,8 +512,8 @@ authorization from the authors.
     <l />
     <l>struct iovec xcb_parts[<!--
     --><xsl:value-of select="1+count($struct/list)" />];</l>
-    <l><xsl:value-of select="../@type" /> ret;</l>
-    <l><xsl:value-of select="@ref" /> out;</l>
+    <l><xsl:value-of select="../@type" /> xcb_ret;</l>
+    <l><xsl:value-of select="@ref" /> xcb_out;</l>
 
     <xsl:for-each select="$struct/exprfield">
       <l><xsl:call-template name="type-and-name" /> = <!--
@@ -523,13 +523,13 @@ authorization from the authors.
     <l />
     <xsl:for-each select="$struct//*[(self::field or self::exprfield)
                                      and not(boolean(@no-assign))]">
-      <l>out.<xsl:value-of select="@name" /> = <!--
+      <l>xcb_out.<xsl:value-of select="@name" /> = <!--
       --><xsl:value-of select="@name" />;</l>
     </xsl:for-each>
 
     <l />
-    <l>xcb_parts[0].iov_base = &amp;out;</l>
-    <l>xcb_parts[0].iov_len = sizeof(out);</l>
+    <l>xcb_parts[0].iov_base = &amp;xcb_out;</l>
+    <l>xcb_parts[0].iov_len = sizeof(xcb_out);</l>
 
     <xsl:for-each select="$struct/list">
       <l>xcb_parts[<xsl:number />].iov_base = (void *) <!--
@@ -543,8 +543,8 @@ authorization from the authors.
       </xsl:if>;</l>
     </xsl:for-each>
 
-    <l>XCBSendRequest(c, &amp;ret.sequence, xcb_parts, &amp;xcb_req);</l>
-    <l>return ret;</l>
+    <l>XCBSendRequest(c, &amp;xcb_ret.sequence, xcb_parts, &amp;xcb_req);</l>
+    <l>return xcb_ret;</l>
   </xsl:template>
 
   <xsl:template match="iterator" mode="pass2">
