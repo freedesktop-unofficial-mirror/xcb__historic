@@ -1,0 +1,15 @@
+XCOMM Adapted from XFree86 library directory makefile
+XCOMM Run "xmkmf -a" to generate a Makefile from this file.
+
+XCOMM Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+XCOMM All Rights Reserved.  See the file COPYING in this directory
+XCOMM for licensing information.
+
+#define IHaveSubdirs
+#define PassCDebugFlags
+
+SUBDIRS = XCB
+
+MakeSubdirs($(SUBDIRS))
+DependSubdirs($(SUBDIRS))
+

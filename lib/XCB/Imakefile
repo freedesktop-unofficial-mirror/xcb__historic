@@ -1,0 +1,65 @@
+XCOMM Adapted from Xkw Imakefile
+
+XCOMM Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+XCOMM All Rights Reserved.  See the file COPYING in the parent directory
+XCOMM for licensing information.
+
+#define DoNormalLib YES
+#define DoSharedLib YES
+#define DoDebugLib YES
+#define DoProfileLib YES
+#define LibName XCB
+#define SoRev SOXCBREV
+#define HasSharedData YES
+#define IncSubdir X11
+#define IncSubSubdir XCB
+
+SOXCBREV = 1.0
+INCLUDES = -I../../exports/include
+
+XCOMM Turn any of these on to trace calls through XCB:
+XCOMM DEFINES = -DXCBTRACEREQ -DXCBTRACEMARSHAL -DXCBTRACEREP -DXCBTRACEEVENT
+
+#include <Threads.tmpl>
+
+    GENMACROS = generics.m4 macros-c.m4 macros-xcb.m4
+
+    SRCMACROS = xcb_conn.m4 \
+		xcb_dpms.m4 xcb_shape.m4 \
+		xcb_types.m4 xcb.m4 xcb_render.m4
+
+       MACROS = $(GENMACROS) $(SRCMACROS)
+
+         SRCS = xcb_conn.c xcb_list.c xcb_io.c xcb_extension.c \
+		xcb_dpms.c xcb_shape.c xcb_render.c \
+		xcb.c xcb_event.c xcb_types.c
+
+         OBJS = xcb_conn.o xcb_list.o xcb_io.o xcb_extension.o \
+		xcb_dpms.o xcb_shape.o xcb_render.o \
+		xcb.o xcb_event.o xcb_types.o
+
+      HEADERS = xcb_conn.h xcb_list.h xcb_io.h xcb_extension.h \
+		xcb_dpms.h xcb_shape.h xcb_render.h \
+		xcb.h xcb_event.h xcb_types.h xcb_consts.h xcb_trace.h
+
+.SUFFIXES: .m4
+
+#include <Library.tmpl>
+
+.m4.c:
+	$(M4) -D"_C" $(GENMACROS) $< >$@
+
+.m4.h:
+	$(M4) -D"_H" $(GENMACROS) $< >$@
+
+$(SRCMACROS): $(GENMACROS)
+
+depend:: $(SRCS) $(HEADERS)
+
+clean::
+	for f in $(SRCMACROS); do \
+		$(RM) `basename $$f .m4`.c `basename $$f .m4`.h; \
+	done
+
+DependTarget()
+

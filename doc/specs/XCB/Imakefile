@@ -1,0 +1,10 @@
+XCOMM Adapted from xc/doc/Xext/Imakefile
+
+XCOMM Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+XCOMM All Rights Reserved.  See the file COPYING in the parent directory
+XCOMM for licensing information.
+
+MakeLatexDoc(xcb_proto_macros,xcb_proto_macros.tex)
+
+InstallLatexDoc(xcb_proto_macros)
+

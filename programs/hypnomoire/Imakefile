@@ -1,0 +1,23 @@
+XCOMM Adapted from Xkw/dominos/Imakefile
+
+XCOMM Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+XCOMM All Rights Reserved.  See the file COPYING in the parent directory
+XCOMM for licensing information.
+
+INCLUDES = -I. -I../../exports/include -I../xcbtests
+XCB=../../lib/XCB
+XCBLIB=-L$(XCB) -lXCB
+DEPXCBLIB=$(XCB)/libXCB.a
+
+        DEPLIBS = $(DEPXCBLIB)
+        XCBLIBS = $(XCBLIB) -L$(XLIB) -lXau
+
+all:: hypnomoire
+
+THREADS = -lpthread
+
+hypnomoire_OBJS = hypnomoire.o ../xcbtests/reply_formats.o
+
+NormalProgramTarget(hypnomoire,$(hypnomoire_OBJS),$(DEPXCBLIB),$(XCBLIBS),-lm $(THREADS))
+
+DependTarget()
