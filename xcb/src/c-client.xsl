@@ -1040,6 +1040,14 @@ authorization from the authors.
     <xsl:text>)</xsl:text>
   </xsl:template>
 
+  <!-- Catch invalid elements in expressions. -->
+  <xsl:template match="*" mode="output-expression">
+    <xsl:message terminate="yes">
+      <xsl:text>Invalid element in expression: </xsl:text>
+      <xsl:value-of select="name()" />
+    </xsl:message>
+  </xsl:template>
+
   <xsl:template match="field|exprfield">
     <xsl:call-template name="type-and-name" />
   </xsl:template>
