@@ -37,24 +37,29 @@ xcbincludedir='${includedir}/X11/XCB'
 AC_SUBST(xcbincludedir)
 
 AC_ARG_WITH(opt,
-AC_HELP_STRING([--with-opt=debug], [compile for debugging (default)])
 AC_HELP_STRING([--with-opt],       [compile with reasonable optimizations])
-AC_HELP_STRING([--with-opt=small], [compile for smallest code]),
-[ac_cv_opt=$withval], [ac_cv_opt=debug])
-AC_CACHE_CHECK([whether to optimize generated code], [ac_cv_opt], [ac_cv_opt=debug])
-
-case "$ac_cv_opt" in
-yes)
-	CDEBUGFLAGS="-O2"
-	;;
-small)
-	CDEBUGFLAGS="-O2 -fomit-frame-pointer -DNDEBUG"
-	;;
-*)
-	CDEBUGFLAGS="-g"
-	;;
-esac
-CDEBUGFLAGS="$CDEBUGFLAGS -Wall -pedantic"
+AC_HELP_STRING([--with-opt=FLAGS], [compile with specified FLAGS])
+AC_HELP_STRING([--with-opt=small], [compile for smallest code])
+AC_HELP_STRING([--with-opt=debug], [compile for debugging (default)]),
+[
+	case "$withval" in
+	yes)
+		optflags="-O3"
+		;;
+	small)
+		optflags="-Os -fomit-frame-pointer -DNDEBUG"
+		;;
+	no|debug)
+		optflags="-g"
+		;;
+	*)
+		optflags="$withval"
+		;;
+	esac
+])
+AC_CACHE_CHECK([what compiler optimizations to apply], [optflags], [optflags="-g"])
+CDEBUGFLAGS="$optflags -Wall -pedantic -Wpointer-arith \
+	-Wstrict-prototypes -Wmissing-declarations -Wnested-externs"
 AC_SUBST(CDEBUGFLAGS)
 
 AC_OUTPUT([Makefile src/Makefile xcb.pc])
