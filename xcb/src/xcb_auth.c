@@ -1,18 +1,19 @@
 #include <assert.h>
 #include <X11/Xauth.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <sys/un.h>
 #include <sys/param.h>
 #include <unistd.h>
 
 #include "xcb.h"
 #include "xcbint.h"
+#include "xcb_des.h"
 
 #define XA1 "XDM-AUTHORIZATION-1"
 #define MC1 "MIT-MAGIC-COOKIE-1"
-static char *authtypes[] = { /* XA1, */ MC1 };
-static int authtypelens[] = { /* sizeof(XA1)-1, */ sizeof(MC1)-1 };
+static char *authtypes[] = { XA1, MC1 };
+static int authtypelens[] = { sizeof(XA1)-1, sizeof(MC1)-1 };
 
 int XCBNextNonce()
 {
@@ -23,6 +24,54 @@ int XCBNextNonce()
     ret = nonce++;
     pthread_mutex_unlock(&nonce_mutex);
     return ret;
+}
+
+/*
+ * This code and the code it calls is taken from libXdmcp,
+ * specifically from Wrap.c, Wrap.h, and Wraphelp.c.  The US
+ * has changed, thank goodness, and it should be OK to bury
+ * DES code in an open source product without a maze of
+ * twisty wrapper functions stored offshore.  --Bart Massey
+ * 2003/11/5
+ */
+
+static void
+Wrap (
+    des_cblock	        input,
+    des_cblock          key,
+    des_cblock          output,
+    int			bytes)
+{
+    int			i, j;
+    int			len;
+    des_cblock          tmp;
+    des_cblock          expand_key;
+    des_key_schedule	schedule;
+
+    XCBDESKeyToOddParity (key, expand_key);
+    XCBDESKeySchedule (expand_key, schedule);
+    for (j = 0; j < bytes; j += 8)
+    {
+	len = 8;
+	if (bytes - j < len)
+	    len = bytes - j;
+	/* block chaining */
+	for (i = 0; i < len; i++)
+	{
+	    if (j == 0)
+		tmp[i] = input[i];
+	    else
+		tmp[i] = input[j + i] ^ output[j - 8 + i];
+	}
+	for (; i < 8; i++)
+	{
+	    if (j == 0)
+		tmp[i] = 0;
+	    else
+		tmp[i] = 0 ^ output[j - 8 + i];
+	}
+	XCBDESEncrypt (tmp, (output + j), schedule, 1);
+    }
 }
 
 XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
@@ -43,24 +92,31 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
     if (getpeername(fd, (struct sockaddr *) sockname, &socknamelen) == -1)
         return 0;  /* can only authenticate sockets */
     family = FamilyLocal; /* 256 */
-    if (sockname->sa_family == AF_INET) {
-        struct sockaddr_in *si = (struct sockaddr_in *) sockname;
-        assert(sizeof(*si) == socknamelen);
-        addr = (char *) &si->sin_addr;
-        addrlen = 4;
-        family = FamilyInternet; /* 0 */
-        if (ntohl(si->sin_addr.s_addr) == 0x7f000001)
-            family = FamilyLocal; /* 256 */
-        (void) sprintf(dispbuf, "%d", ntohs(si->sin_port) - X_TCP_PORT);
-        display = dispbuf;
-    } else if (sockname->sa_family == AF_UNIX) {
-        struct sockaddr_un *su = (struct sockaddr_un *) sockname;
-        assert(sizeof(*su) >= socknamelen);
-        display = strrchr(su->sun_path, 'X');
-        if (display == 0)
-            return 0;   /* sockname is mangled somehow */
-        display++;
-    } else {
+    switch (sockname->sa_family) {
+    case AF_INET:
+	/*block*/ {
+             struct sockaddr_in *si = (struct sockaddr_in *) sockname;
+	     assert(sizeof(*si) == socknamelen);
+	     addr = (char *) &si->sin_addr;
+	     addrlen = 4;
+	     family = FamilyInternet; /* 0 */
+	     if (ntohl(si->sin_addr.s_addr) == 0x7f000001)
+		 family = FamilyLocal; /* 256 */
+	     (void) sprintf(dispbuf, "%d", ntohs(si->sin_port) - X_TCP_PORT);
+	     display = dispbuf;
+        }
+	break;
+    case AF_UNIX:
+	/*block*/ { 
+	    struct sockaddr_un *su = (struct sockaddr_un *) sockname;
+	    assert(sizeof(*su) >= socknamelen);
+	    display = strrchr(su->sun_path, 'X');
+	    if (display == 0)
+		return 0;   /* sockname is mangled somehow */
+	    display++;
+	}
+	break;
+    default:
         return 0;   /* cannot authenticate this family */
     }
     if (family == FamilyLocal) {
@@ -100,26 +156,33 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
         info->namelen = authptr->name_length;
         for (j = 0; j < 8; j++)
             info->data[j] = authptr->data[j];
-        XauDisposeAuth(authptr);
-        if (sockname->sa_family == AF_INET) {
-            struct sockaddr_in *si =
-              (struct sockaddr_in *) sockname;
-            (void)memcpy(info->data + j,
-                         &si->sin_addr.s_addr,
-                         sizeof(si->sin_addr.s_addr));
-            j += sizeof(si->sin_addr.s_addr);
-            (void)memcpy(info->data + j,
-                         &si->sin_port,
-                         sizeof(si->sin_port));
-            j += sizeof(si->sin_port);
-        } else if (sockname->sa_family == AF_UNIX) {
-            long fakeaddr = htonl(0xffffffff - nonce);
-            short fakeport = htons(getpid());
-            (void)memcpy(info->data + j, &fakeaddr, sizeof(long));
-            j += sizeof(long);
-            (void)memcpy(info->data + j, &fakeport, sizeof(short));
-            j += sizeof(short);
-        } else {
+	switch(sockname->sa_family) {
+        case AF_INET:
+	    /*block*/ {
+                struct sockaddr_in *si =
+		    (struct sockaddr_in *) sockname;
+		(void)memcpy(info->data + j,
+			     &si->sin_addr.s_addr,
+			     sizeof(si->sin_addr.s_addr));
+		j += sizeof(si->sin_addr.s_addr);
+		(void)memcpy(info->data + j,
+			     &si->sin_port,
+			     sizeof(si->sin_port));
+		j += sizeof(si->sin_port);
+	    }
+	    break;
+        case AF_UNIX:
+	    /*block*/ {
+		long fakeaddr = htonl(0xffffffff - nonce);
+		short fakeport = htons(getpid());
+		(void)memcpy(info->data + j, &fakeaddr, sizeof(long));
+		j += sizeof(long);
+		(void)memcpy(info->data + j, &fakeport, sizeof(short));
+		j += sizeof(short);
+	    }
+	    break;
+        default:
+	    XauDisposeAuth(authptr);
             return 0;   /* do not know how to build this */
         }
         (void)time(&now);
@@ -129,6 +192,8 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
         while (j < 192 / 8)
             info->data[j++] = 0;
         info->datalen = j;
+	Wrap (info->data, authptr->data + 8, info->data, info->datalen);
+	XauDisposeAuth(authptr);
         return info;
     }
     XauDisposeAuth(authptr);

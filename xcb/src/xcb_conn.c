@@ -284,6 +284,7 @@ XCBConnection *XCBConnect(int fd, int nonce)
         XCBConnSetupReq *out = XCBAllocOut(c->handle, XCB_CEIL(sizeof(XCBConnSetupReq)));
         XCBAuthInfo auth, *auth_info;
         int endian = 0x01020304;
+	struct iovec parts[2];
 
         /* B = 0x42 = MSB first, l = 0x6c = LSB first */
         if(htonl(endian) == endian)
@@ -296,14 +297,13 @@ XCBConnection *XCBConnect(int fd, int nonce)
         out->authorization_protocol_data_len = 0;
 
         auth_info = XCBGetAuthInfo(fd, nonce, &auth);
-        if (auth_info) {
-            struct iovec parts[2];
-            parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
-            parts[0].iov_base = auth_info->name;
-            parts[1].iov_len = out->authorization_protocol_data_len = auth_info->datalen;
-            parts[1].iov_base = auth_info->data;
-            XCBWrite(c->handle, parts, 2);
-        }
+	if (!auth_info)
+	    goto error;
+	parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
+	parts[0].iov_base = auth_info->name;
+	parts[1].iov_len = out->authorization_protocol_data_len = auth_info->datalen;
+	parts[1].iov_base = auth_info->data;
+	XCBWrite(c->handle, parts, 2);
     }
     if(XCBFlushLocked(c->handle) <= 0)
         goto error;
