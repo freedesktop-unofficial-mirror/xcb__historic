@@ -204,6 +204,9 @@ See the file COPYING in this package for licensing information.
           <xsd:attribute name="newname" type="xsd:string" />
         </xsd:complexType>
       </xsd:element>
+      <!-- The import element allows a protocol description to reference the
+           declarations of another protocol description. -->
+      <xsd:element name="import" type="xsd:string" />
     </xsd:choice>
   </xsd:group>
 </xsd:schema>

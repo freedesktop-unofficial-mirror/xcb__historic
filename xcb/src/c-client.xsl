@@ -23,6 +23,30 @@ See the file COPYING in this package for licensing information.
   <xsl:variable name="header" select="/xcb/@header" />
   <xsl:variable name="ucase-header"
                 select="translate($header,$lcase,$ucase)" />
+
+  <!-- Other protocol descriptions to search for types in, after checking the
+       current protocol description. -->
+  <xsl:variable name="search-path-rtf">
+    <xsl:for-each select="(/xcb | /xcb/extension)/import">
+      <path><xsl:value-of select="concat($base-path, ., '.xml')" /></path>
+    </xsl:for-each>
+    <xsl:choose>
+      <xsl:when test="$header='xproto'">
+        <path><xsl:value-of select="concat($base-path,
+                                           'xcb_types.xml')" /></path>
+      </xsl:when>
+      <xsl:when test="$header='xcb_types'" />
+      <xsl:otherwise>
+        <path><xsl:value-of select="concat($base-path,
+                                           'xproto.xml')" /></path>
+        <path><xsl:value-of select="concat($base-path,
+                                           'xcb_types.xml')" /></path>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:variable name="search-path" select="e:node-set($search-path-rtf)/path"/>
+
+  <xsl:variable name="root" select="/" />
   
   <!-- First pass: Store everything in a variable. -->
   <xsl:variable name="pass1-rtf">
@@ -62,54 +86,26 @@ See the file COPYING in this package for licensing information.
 
   <!--
     Output the canonical name for a type.  This will be
-    XCB{current-extension}Type if the type exists in the current extension or
-    the current top-level description if not in an extension, XCBType if the
-    type exists in xproto or xcb_types, and Type otherwise.  If the type
-    parameter is not specified, it defaults to the value of the type attribute
-    on the context node.
+    XCB{extension-containing-Type-if-any}Type, wherever the type is found in
+    the search path, or just Type if not found.  If the type parameter is not
+    specified, it defaults to the value of the type attribute on the context
+    node.
   -->
   <xsl:template name="canonical-type-name">
-    <xsl:param name="type" select="@type" />
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
-    <xsl:choose>
-      <!-- First search the current extension/top-level. -->
-      <xsl:when test="(/xcb[not($ext)]
-                      |/xcb/extension[@name=$ext]
-                      )/*[((self::struct or self::union
-                            or self::xidtype or self::enum
-                            or self::event or self::eventcopy
-                            or self::error or self::errorcopy) and @name=$type)
-                          or (self::typedef and @newname=$type)]">
-        <xsl:text>XCB</xsl:text>
-        <xsl:value-of select="concat($ext, $type)" />
-      </xsl:when>
-      <!-- If this is not xproto or xcb_types, search xproto next (which will
-           then search xcb_types if necessary). -->
-      <xsl:when test="/xcb[not(@header='xcb_types')
-                           and not(@header='xproto')]">
-        <xsl:for-each select="document(concat($base-path, 'xproto.xml'))/xcb">
-          <xsl:call-template name="canonical-type-name">
-            <xsl:with-param name="type" select="$type" />
-          </xsl:call-template>
-        </xsl:for-each>
-      </xsl:when>
-      <!-- If this is xproto, search xcb_types next. -->
-      <xsl:when test="/xcb[@header='xproto']">
-        <xsl:for-each select="document(concat($base-path,
-                                              'xcb_types.xml'))/xcb">
-          <xsl:call-template name="canonical-type-name">
-            <xsl:with-param name="type" select="$type" />
-          </xsl:call-template>
-        </xsl:for-each>
-      </xsl:when>
-      <!-- The type was not found; assume it is already defined somewhere. -->
-      <xsl:otherwise>
-        <xsl:value-of select="$type" />
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:param name="type" select="string(@type)" />
+    <xsl:for-each select="(/xcb|/xcb/extension
+                          |document($search-path)/xcb
+                          |document($search-path)/xcb/extension
+                          )/*[((self::struct or self::union
+                                or self::xidtype or self::enum
+                                or self::event or self::eventcopy
+                                or self::error or self::errorcopy)
+                               and @name=$type)
+                              or (self::typedef and @newname=$type)][1]">
+      <xsl:text>XCB</xsl:text>
+      <xsl:call-template name="current-extension" />
+    </xsl:for-each>
+    <xsl:value-of select="$type" />
   </xsl:template>
   
   <!-- Helper template for requests, that outputs the cookie type.  The
@@ -565,18 +561,12 @@ See the file COPYING in this package for licensing information.
       --></xsl:variable>
       <xsl:variable name="is-variable"
                     select="$pass1//struct[@name=current()/@type]/list
-                            or (not($header='xproto')
-                                and not($header='xcb_types')
-                                and document(concat($base-path, 'xproto.xml'))
-                                    /xcb/struct
-                                    [concat('XCB', @name)=current()/@type]
-                                    /*[self::valueparam or self::list])
-                            or (not($header='xcb_types')
-                                and document(concat($base-path,
-                                                    'xcb_types.xml'))
-                                    /xcb/struct
-                                    [concat('XCB', @name)=current()/@type]
-                                    /*[self::valueparam or self::list])" />
+                            or ((document($search-path)/xcb
+                                |document($search-path)/xcb/extension
+                                )/struct[concat('XCB',
+                                                ancestor::extension/@name,
+                                                @name) = current()/@type]
+                                 /*[self::valueparam or self::list])" />
       <xsl:if test="not($is-variable)">
         <function type="{@type} *" name="{$ref}{$field-name}">
           <field type="{$ref}{$kind} *" name="R" />
@@ -740,7 +730,12 @@ See the file COPYING in this package for licensing information.
 
 <xsl:if test="$c"><xsl:text>
 #include &lt;assert.h&gt;
-#include "xcb.h"
+#include "xcb.h"</xsl:text>
+<xsl:for-each select="($root/xcb | $root/xcb/extension)/import">
+<xsl:text>
+#include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"</xsl:text>
+</xsl:for-each>
+<xsl:text>
 #include "</xsl:text><xsl:value-of select="$header" /><xsl:text>.h"
 
 </xsl:text></xsl:if>
