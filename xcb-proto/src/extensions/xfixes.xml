@@ -39,7 +39,7 @@ See the file COPYING in this directory for licensing information.
     <request name="ChangeSaveSet" opcode="1">
       <field type="BYTE" name="mode" />   <!-- SaveSetMode -->
       <field type="BYTE" name="target" /> <!-- SaveSetTarget -->
-      <field type="BTYE" name="map" />    <!-- SaveSetMapping -->
+      <field type="BYTE" name="map" />    <!-- SaveSetMapping -->
       <pad bytes="1" />
       <field type="WINDOW" name="window" />
     </request>
