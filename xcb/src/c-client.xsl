@@ -457,7 +457,8 @@ See the file COPYING in this package for licensing information.
     <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:variable name="struct"
                   select="e:node-set($pass1//struct[@name=current()/@ref])" />
-    <l>struct iovec parts[<xsl:value-of select="1+count($struct/list)" />];</l>
+    <l>struct iovec xcb_parts[<!--
+    --><xsl:value-of select="1+count($struct/list)" />];</l>
     <l><xsl:value-of select="../@type" /> ret;</l>
     <l><xsl:value-of select="@ref" /> out;</l>
 
@@ -489,13 +490,13 @@ See the file COPYING in this package for licensing information.
     </xsl:for-each>
 
     <l />
-    <l>parts[0].iov_base = &amp;out;</l>
-    <l>parts[0].iov_len = sizeof(out);</l>
+    <l>xcb_parts[0].iov_base = &amp;out;</l>
+    <l>xcb_parts[0].iov_len = sizeof(out);</l>
 
     <xsl:for-each select="$struct/list">
-      <l>parts[<xsl:number />].iov_base = (void *) <!--
+      <l>xcb_parts[<xsl:number />].iov_base = (void *) <!--
       --><xsl:value-of select="@name" />;</l>
-      <l>parts[<xsl:number />].iov_len = <!--
+      <l>xcb_parts[<xsl:number />].iov_len = <!--
       --><xsl:apply-templates mode="output-expression" /><!--
       --><xsl:if test="not(@type = 'void')">
         <xsl:text> * sizeof(</xsl:text>
@@ -508,7 +509,7 @@ See the file COPYING in this package for licensing information.
     --><xsl:choose>
       <xsl:when test="@has-reply = 'yes'">0</xsl:when>
       <xsl:otherwise>1</xsl:otherwise>
-    </xsl:choose>, parts, /* partqty */ <!--
+    </xsl:choose>, xcb_parts, /* partqty */ <!--
     --><xsl:value-of select="1+count($struct/list)" />);</l>
     <l>return ret;</l>
   </xsl:template>
