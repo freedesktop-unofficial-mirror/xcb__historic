@@ -275,8 +275,12 @@ REQUEST(ListFonts, `
 
 /* The ListFontsWithInfo request is not supported by XCB. */
 
-dnl TODO: SetFontPath
-dnl
+VOIDREQUEST(SetFontPath, `
+    PARAM(CARD16, `nFonts')
+    LOCALPARAM(CARD16, `nbytes')
+    LISTPARAM(char, `path', `nbytes')
+')
+
 dnl FIXME: GetFontPath needs an iterator for the reply - a pointer won't do.
 REQUEST(GetFontPath)
 
@@ -371,8 +375,8 @@ VOIDREQUEST(PolyLine, `
     PARAM(BYTE, `coordMode')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nLines')
-    LISTPARAM(xPoint, `lines', `nLines')
+    LOCALPARAM(CARD16, `nPoints')
+    LISTPARAM(xPoint, `points', `nPoints')
 ')
 
 VOIDREQUEST(PolySegment, `
@@ -479,18 +483,52 @@ VOIDREQUEST(ImageText16, `
     LISTPARAM(CHAR2B, `string', `nChars')
 ')
 
-dnl TODO: CreateColormap
-dnl TODO: FreeColormap
-dnl TODO: CopyColormapAndFree
-dnl TODO: InstallColormap
-dnl TODO: UninstallColormap
-dnl TODO: ListInstalledColormaps
-dnl TODO: AllocColor
-dnl TODO: AllocNamedColor
+VOIDREQUEST(CreateColormap, `
+    PARAM(BYTE, `alloc')
+    PARAM(Colormap, `mid')
+    PARAM(Window, `window')
+    PARAM(VisualID, `visual')
+')
+
+VOIDREQUEST(FreeColormap, `PARAM(Colormap, `id')')
+
+VOIDREQUEST(CopyColormapAndFree, `
+    PARAM(Colormap, `mid')
+    PARAM(Colormap, `srcCmap')
+')
+
+VOIDREQUEST(InstallColormap, `PARAM(Colormap, `id')')
+
+VOIDREQUEST(UninstallColormap, `PARAM(Colormap, `id')')
+
+REQUEST(ListInstalledColormaps, `PARAM(Window, `id')', `
+    REPLYFIELD(Colormap, `cmaps', `nColormaps')
+')
+
+dnl **REQUEST(AllocColor, `
+    PARAM(Colormap, `cmap')
+    PARAM(CARD16, `red')
+    PARAM(CARD16, `green')
+    PARAM(CARD16, `blue')
+    
+')
+
+dnl **REQUEST(AllocNamedColor, `
+    PARAM(Colormap, `cmap)
+')
+
 dnl TODO: AllocColorCells
 dnl TODO: AllocColorPlanes
-dnl TODO: FreeColors
-dnl TODO: StoreColors
+
+dnl **VOIDREQUEST(FreeColors, `
+    PARAM(Colormap, `cmap')
+    PARAM(CARD32, `planeMask')
+')
+    
+dnl **VOIDREQUEST(StoreColors, `
+    PARAM(Colormap, `cmap')
+')
+
 dnl TODO: StoreNamedColor
 dnl TODO: QueryColors
 dnl TODO: LookupColor
