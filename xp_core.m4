@@ -12,12 +12,13 @@ _H`'typedef char CHAR2B[2];
  * the only non-request in the file. */
 FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
     XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
-    xGetInputFocusReply *reply = XCB_GetInputFocus_Reply(c, cookie, e);
+    XCB_GetInputFocus_Rep *reply = XCB_GetInputFocus_Reply(c, cookie, e);
     free(reply);
     return (reply != 0);
 ')
 
 /* The requests, in major number order. */
+/* It is the caller's responsibility to free returned XCB_*_Rep objects. */
 
 VOIDREQUEST(CreateWindow, `
     OPCODE(1)
@@ -45,6 +46,22 @@ REQUEST(GetWindowAttributes, `
     OPCODE(3)
     PAD(1)
     PARAM(Window, `window')
+', `
+    REPLY(CARD8, `backing_store')
+    REPLY(VisualID, `visual')
+    REPLY(CARD16, `_class')
+    REPLY(CARD8, `bit_gravity')
+    REPLY(CARD8, `win_gravity')
+    REPLY(CARD32, `backing_planes')
+    REPLY(CARD32, `backing_pixel')
+    REPLY(BOOL, `save_under')
+    REPLY(BOOL, `map_is_installed')
+    REPLY(CARD8, `map_state')
+    REPLY(BOOL, `override_redirect')
+    REPLY(Colormap, `colormap')
+    REPLY(CARD32, `all_event_masks')
+    REPLY(CARD32, `your_event_mask')
+    REPLY(CARD16, `do_not_propagate_mask')
 ')
 
 VOIDREQUEST(DestroyWindow, `
@@ -115,6 +132,14 @@ REQUEST(GetGeometry, `
     OPCODE(14)
     PAD(1)
     PARAM(Drawable, `drawable')
+', `
+    REPLY(CARD8, `depth')
+    REPLY(Window, `root')
+    REPLY(INT16, `x')
+    REPLY(INT16, `y')
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
+    REPLY(CARD16, `border_width')
 ')
 
 REQUEST(QueryTree, `
@@ -122,7 +147,12 @@ REQUEST(QueryTree, `
     PAD(1)
     PARAM(Window, `window')
 ', `
-    REPLYFIELD(Window, `children')
+    PAD(1)
+    REPLY(Window, `root')
+    REPLY(Window, `parent')
+    REPLY(CARD16, `children_len')
+    PAD(14)
+    ARRAYREPLY(Window, `children')
 ')
 
 REQUEST(InternAtom, `
@@ -131,6 +161,9 @@ REQUEST(InternAtom, `
     EXPRFIELD(CARD16, `name_len', `strlen(name)')
     PAD(2)
     LISTPARAM(char, `name', `name_len')
+', `
+    PAD(1)
+    REPLY(Atom, `atom')
 ')
 
 REQUEST(GetAtomName, `
@@ -138,7 +171,10 @@ REQUEST(GetAtomName, `
     PAD(1)
     PARAM(Atom, `atom')
 ', `
-    REPLYFIELD(CARD8, `name')
+    PAD(1)
+    REPLY(CARD16, `name_len')
+    PAD(22)
+    ARRAYREPLY(CARD8, `name')
 ')
 
 VOIDREQUEST(ChangeProperty, `
@@ -169,7 +205,12 @@ REQUEST(GetProperty, `
     PARAM(CARD32, `long_offset')
     PARAM(CARD32, `long_length')
 ', `
-    REPLYFIELD(BYTE, `value')
+    REPLY(CARD8, `format')
+    REPLY(Atom, `type')
+    REPLY(CARD32, `bytes_after')
+    REPLY(CARD32, `value_len')
+    PAD(12)
+    ARRAYREPLY(BYTE, `value')
 ')
 
 REQUEST(ListProperties, `
@@ -177,7 +218,10 @@ REQUEST(ListProperties, `
     PAD(1)
     PARAM(Window, `window')
 ', `
-    REPLYFIELD(Atom, `atoms')
+    PAD(1)
+    REPLY(CARD16, `atoms_len')
+    PAD(22)
+    ARRAYREPLY(Atom, `atoms')
 ')
 
 VOIDREQUEST(SetSelectionOwner, `
@@ -319,17 +363,22 @@ REQUEST(GetMotionEvents, `
     PARAM(Time, `start')
     PARAM(Time, `stop')
 ', `
-    REPLYFIELD(xTimecoord, `events')
+    ARRAYREPLY(xTimecoord, `events')
 ')
 
-dnl REQUEST(TranslateCoordinates, `
-dnl     OPCODE(40)
-dnl     PAD(1)
-dnl     PARAM(Window, `src_window')
-dnl     PARAM(Window, `dst_window')
-dnl     PARAM(INT16, `src_x')
-dnl     PARAM(INT16, `src_y')
-dnl ')
+REQUEST(TranslateCoordinates, `
+    OPCODE(40)
+    PAD(1)
+    PARAM(Window, `src_window')
+    PARAM(Window, `dst_window')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+', `
+    REPLY(BOOL, `same_screen')
+    REPLY(Window, `child')
+    REPLY(CARD16, `dst_x')
+    REPLY(CARD16, `dst_y')
+')
 
 VOIDREQUEST(WarpPointer, `
     OPCODE(41)
@@ -378,8 +427,8 @@ REQUEST(QueryFont, `
     PAD(1)
     PARAM(Font, `font')
 ', `
-    REPLYFIELD(xFontProp, `properties', `nFontProps')
-    REPLYFIELD(xCharInfo, `char_infos')
+    ARRAYREPLY(xFontProp, `properties', `nFontProps')
+    ARRAYREPLY(xCharInfo, `char_infos')
 ')
 
 REQUEST(QueryTextExtents, `
@@ -614,7 +663,7 @@ REQUEST(GetImage, `
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
     PARAM(CARD32, `plane_mask')
-', `REPLYFIELD(BYTE, `data')')
+', `ARRAYREPLY(BYTE, `data')')
 
 VOIDREQUEST(PolyText8, `
     OPCODE(74)
@@ -696,7 +745,7 @@ REQUEST(ListInstalledColormaps, `
     PAD(1)
     PARAM(Window, `window')
 ', `
-    REPLYFIELD(Colormap, `cmaps', `nColormaps')
+    ARRAYREPLY(Colormap, `cmaps', `nColormaps')
 ')
 
 REQUEST(AllocColor, `
@@ -723,8 +772,8 @@ REQUEST(AllocColorCells, `
     PARAM(CARD16, `colors')
     PARAM(CARD16, `planes')
 ', `
-    REPLYFIELD(CARD32, `pixels', `nPixels')
-    REPLYFIELD(CARD32, `masks', `nMasks')
+    ARRAYREPLY(CARD32, `pixels', `nPixels')
+    ARRAYREPLY(CARD32, `masks', `nMasks')
 ')
 
 REQUEST(AllocColorPlanes, `
@@ -736,7 +785,7 @@ REQUEST(AllocColorPlanes, `
     PARAM(CARD16, `greens')
     PARAM(CARD16, `blues')
 ', `
-    REPLYFIELD(CARD32, `pixels', `nPixels')
+    ARRAYREPLY(CARD32, `pixels', `nPixels')
 ')
 
 VOIDREQUEST(FreeColors, `

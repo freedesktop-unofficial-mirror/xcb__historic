@@ -3,7 +3,7 @@
 
 #define WINFMT "0x%08x"
 
-int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
+int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *reply)
 {
     if(!reply)
     {
@@ -29,27 +29,27 @@ int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
            "    yourEventMask      = 0x%08x\n"
            "    doNotPropagateMask = 0x%08x\n",
         (unsigned int) wid,
-        reply->backingStore,
-        (unsigned int) reply->visualID,
-        reply->class,
-        reply->bitGravity,
-        reply->winGravity,
-        reply->backingBitPlanes,
-        reply->backingPixel,
-        reply->saveUnder,
-        reply->mapInstalled,
-        reply->mapState,
-        reply->override,
+        reply->backing_store,
+        (unsigned int) reply->visual,
+        reply->_class,
+        reply->bit_gravity,
+        reply->win_gravity,
+        reply->backing_planes,
+        reply->backing_pixel,
+        reply->save_under,
+        reply->map_is_installed,
+        reply->map_state,
+        reply->override_redirect,
         (unsigned int) reply->colormap,
-        (unsigned int) reply->allEventMasks,
-        (unsigned int) reply->yourEventMask,
-        reply->doNotPropagateMask);
+        (unsigned int) reply->all_event_masks,
+        (unsigned int) reply->your_event_mask,
+        reply->do_not_propagate_mask);
 
     fflush(stdout);
     return 1;
 }
 
-int formatGetGeometryReply(Window wid, xGetGeometryReply *reply)
+int formatGetGeometryReply(Window wid, XCB_GetGeometry_Rep *reply)
 {
     if(!reply)
     {
@@ -69,7 +69,7 @@ int formatGetGeometryReply(Window wid, xGetGeometryReply *reply)
     return 1;
 }
 
-int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
+int formatQueryTreeReply(Window wid, XCB_QueryTree_Rep *reply)
 {
     int i;
 
@@ -84,10 +84,10 @@ int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
         (unsigned int) wid,
         (unsigned int) reply->parent,
         (unsigned int) reply->root,
-        (unsigned int) reply->nChildren,
-        reply->nChildren ? ':' : '.');
+        (unsigned int) reply->children_len,
+        reply->children_len ? ':' : '.');
 
-    for(i = 0; i < reply->nChildren; ++i)
+    for(i = 0; i < reply->children_len; ++i)
         printf("    window " WINFMT "\n",
             (unsigned int) XCB_QUERYTREE_CHILDREN(reply)[i]);
 

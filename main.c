@@ -30,15 +30,15 @@ int main(int argc, char **argv)
     CARD32 values[6];
 #ifdef TEST_GET_GEOMETRY
     XCB_GetGeometry_cookie geom[3];
-    xGetGeometryReply *geomrep[3];
+    XCB_GetGeometry_Rep *geomrep[3];
 #endif
 #ifdef TEST_QUERY_TREE
     XCB_QueryTree_cookie tree[3];
-    xQueryTreeReply *treerep[3];
+    XCB_QueryTree_Rep *treerep[3];
 #endif
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
     XCB_GetWindowAttributes_cookie attr[1];
-    xGetWindowAttributesReply *attrrep[1];
+    XCB_GetWindowAttributes_Rep *attrrep[1];
 #endif
 #ifdef TEST_THREADS
     pthread_t event_thread;

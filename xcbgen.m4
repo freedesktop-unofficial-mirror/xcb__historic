@@ -107,6 +107,7 @@ define(`STRUCTDIV', 4)  dnl Body of structure declared
 
 dnl 
 define(`FIELDQTY', 0)  dnl Count of fields in a struct (or request)
+define(`PADQTY',   0)  dnl Count of padding fields in a request or reply
 define(`PARTQTY',  0)  dnl Count of variable length elements in request
 define(`PARAMQTY', 0)  dnl Count of parameters to request (currently tests
                        dnl only for zero/nonzero)
@@ -193,7 +194,8 @@ ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
 POPDIV()')
 
 dnl PAD(bytes)
-define(`PAD', `ARRAYFIELD(CARD8, `pad', $1)dnl
+define(`PAD', `ARRAYFIELD(CARD8, `pad'PADQTY, $1)`'dnl
+define(`PADQTY', eval(1+PADQTY))dnl
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl LENGTHFIELD()
@@ -202,15 +204,30 @@ PUSHDIV(OUTDIV)dnl
 TAB()out->length = (sizeof(*out) + XCB_PAD(sizeof(*out))) / 4;
 POPDIV()')
 
+dnl REPLY(type, name)
+define(`REPLY', `FIELD($1, `$2')`'dnl
+ifelse(FIELDQTY, 2, `LENGTHREPLY()')')
+
 dnl Generates a C pre-processor macro providing access to a variable-length
 dnl portion of a reply. If another reply field follows, the length name
 dnl must be provided. The length name is the name of a field in the
 dnl fixed-length portion of the response which contains the number of
 dnl elements in this section.
-dnl REPLYFIELD(field type, field name, opt length name)
-define(`REPLYFIELD', `PUSHDIV(OUTDIV)dnl
+dnl ARRAYREPLY(field type, field name, opt length name)
+define(`ARRAYREPLY', `PUSHDIV(OUTDIV)dnl
 _H`'#define `XCB_'REQ`_'TOUPPER($2)`(reply) (($1 *) ('ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')`))'
 POPDIV()define(`LASTFIELD', TOUPPER($2))ifelse($#, 3, `define(`LASTLEN', $3)')')
+
+dnl Generates an iterator for the variable-length portion of a reply.
+dnl TODO: um, write this.
+dnl LISTREPLY(???)
+define(`LISTREPLY', `')
+
+dnl LENGTHREPLY()
+define(`LENGTHREPLY', `
+    FIELD(CARD16, `seqnum')
+    FIELD(CARD32, `length')
+')
 
 
 
@@ -224,24 +241,31 @@ dnl Creates a function named XCB_<name> returning XCB_<name>_cookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
 dnl and FIELDs to the X server. Declares the struct XCB_<name>_cookie.
 dnl Creates a function named XCB_<name>_Reply returning a pointer to
-dnl x<name>Reply from Xproto.h which forces a cookie returned from
-dnl XCB_<name>, waiting for the response from the server if necessary.
-dnl If any REPLYFIELDs are given, they must be quoted.
-dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYFIELDs)
+dnl XCB_<name>_Rep which forces a cookie returned from XCB_<name>, waiting
+dnl for the response from the server if necessary. Declares the struct
+dnl XCB_<name>_Rep. The three parameters must be quoted.
+dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYs)
 define(`REQUEST',`REQUESTFUNCTION($1, $1, `$2')
 
-/* It is the caller''`s responsibility to free the returned
- * x'$1`Reply object. */
-FUNCTION(`x'$1`Reply *XCB_'$1`_Reply', dnl
-`XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
-    return (x'$1`Reply *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
-')`'dnl
+INDENT()dnl
 pushdef(`REQ', TOUPPER($1))dnl
-PUSHDIV(-1)
-$3
-POPDIV()dnl
+pushdef(`LENGTHFIELD', defn(`LENGTHREPLY'))dnl So that PAD works right
+STRUCT(XCB_`$1'_Rep, `
+    FIELD(BYTE, `response_type') dnl always 1 -> reply
+    $3
+    ifelse(FIELDQTY, 1, `PAD(1)') dnl ensure a length field is included
+')
+define(`PADQTY', 0)dnl
+popdef(`LENGTHFIELD')dnl
+popdef(`REQ')dnl
+UNINDENT()dnl
 undivert(OUTDIV)`'dnl
-undefine(`LASTFIELD')undefine(`LASTLEN')popdef(`REQ')dnl')
+_H
+FUNCTION(`XCB_'$1`_Rep *XCB_'$1`_Reply',
+`XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
+    return (XCB_'$1`_Rep *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
+')`'dnl
+undefine(`LASTFIELD')undefine(`LASTLEN')dnl')
 
 
 dnl Internal function shared by REQUEST and VOIDREQUEST, implementing the
@@ -254,6 +278,7 @@ STATICSTRUCT(XCB_`$2'_Req, `
     $3
     ifelse(FIELDQTY, 1, `PAD(1)') dnl ensure a length field is included
 ')
+define(`PADQTY', 0)dnl
 UNINDENT()dnl
 _C
 FUNCTION(`XCB_'$1`_cookie XCB_'$2, `XCB_Connection *c`'undivert(PARMDIV)', `
