@@ -386,7 +386,7 @@ STRUCT(GLYPHELT$1, `
     PAD(3)
     FIELD(INT16, `deltax')
     FIELD(INT16, `deltay')
-    ARRAYFIELD(CARD$1, `glyphs', `R->len')
+    LISTFIELD(CARD$1, `glyphs', `R->len')
 ')
 
 UNION(GLYPHITEM$1, `
@@ -465,7 +465,7 @@ REQUEST(`QueryFilters', `
     FIELD(CARD32, `num_aliases')
     FIELD(CARD32, `num_filters')
     PAD(16)
-    ARRAYFIELD(CARD16, `aliases', `R->num_aliases')
+    LISTFIELD(CARD16, `aliases', `R->num_aliases')
     LISTFIELD(STR, `filters', `R->num_filters')
 ')
 

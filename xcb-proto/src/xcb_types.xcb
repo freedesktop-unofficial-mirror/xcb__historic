@@ -91,7 +91,7 @@ STRUCT(DEPTH, `
     PAD(1)
     FIELD(CARD16, `visuals_len')
     PAD(4)
-    ARRAYFIELD(VISUALTYPE, `visuals', `R->visuals_len')
+    LISTFIELD(VISUALTYPE, `visuals', `R->visuals_len')
 ')
 
 STRUCT(SCREEN, `
@@ -121,8 +121,8 @@ STRUCT(ConnSetupReq, `
     FIELD(CARD16, `protocol_minor_version')
     FIELD(CARD16, `authorization_protocol_name_len')
     FIELD(CARD16, `authorization_protocol_data_len')
-    ARRAYFIELD(char, `authorization_protocol_name', `R->authorization_protocol_name_len')
-    ARRAYFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
+    LISTFIELD(char, `authorization_protocol_name', `R->authorization_protocol_name_len')
+    LISTFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
 ')
 
 STRUCT(ConnSetupGenericRep, `
@@ -137,14 +137,14 @@ STRUCT(ConnSetupFailedRep, `
     FIELD(CARD16, `protocol_major_version')
     FIELD(CARD16, `protocol_minor_version')
     FIELD(CARD16, `length')
-    ARRAYFIELD(char, `reason', `R->reason_len')
+    LISTFIELD(char, `reason', `R->reason_len')
 ')
 
 STRUCT(ConnSetupAuthenticateRep, `
     FIELD(CARD8, `status') dnl always 2 -> Authenticate
     PAD(5)
     FIELD(CARD16, `length')
-    ARRAYFIELD(char, `reason', `R->length * 4')
+    LISTFIELD(char, `reason', `R->length * 4')
 ')
 
 STRUCT(ConnSetupSuccessRep, `
@@ -168,8 +168,8 @@ STRUCT(ConnSetupSuccessRep, `
     FIELD(KEYCODE, `min_keycode')
     FIELD(KEYCODE, `max_keycode')
     PAD(4)
-    ARRAYFIELD(char, `vendor', `R->vendor_len')
-    ARRAYFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
+    LISTFIELD(char, `vendor', `R->vendor_len')
+    LISTFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
     LISTFIELD(SCREEN, `roots', `R->roots_len')
 ')
 

@@ -36,7 +36,7 @@ STRUCT(SYSTEMCOUNTER, `
     FIELD(COUNTER, `counter')
     FIELD(INT64, `resolution')
     FIELD(CARD16, `name_len')
-    ARRAYFIELD(CARD8, `name', `R->name_len')
+    LISTFIELD(CARD8, `name', `R->name_len')
 ')
 
 STRUCT(TRIGGER, `

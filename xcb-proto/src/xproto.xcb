@@ -783,7 +783,7 @@ REQUEST(QueryTextExtents, `
 
 STRUCT(STR, `
     FIELD(CARD8, `name_len')
-    ARRAYFIELD(char, `name', `R->name_len')
+    LISTFIELD(char, `name', `R->name_len')
 ')
 
 REQUEST(ListFonts, `
@@ -1442,7 +1442,7 @@ STRUCT(HOST, `
     FIELD(CARD8, `family')
     PAD(1)
     FIELD(CARD16, `address_len')
-    ARRAYFIELD(BYTE, `address', `R->address_len')
+    LISTFIELD(BYTE, `address', `R->address_len')
 ')
 
 REQUEST(ListHosts, `
