@@ -8,7 +8,10 @@
 
 #include "xcb.h"
 #include "xcbint.h"
+
+#ifdef HAS_AUTH_XA1
 #include "xcb_des.h"
+#endif
 
 enum auth_protos {
 #ifdef HAS_AUTH_XA1

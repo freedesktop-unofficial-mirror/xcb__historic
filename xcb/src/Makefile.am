@@ -21,6 +21,9 @@ libXCB_la_SOURCES = \
 		xcb_list.c xcb_event.c xcb_des.c \
 		$(COREPROTO) $(EXTENSIONS)
 
+xcb_des.c:
+	touch xcb_des.c
+
 BUILT_SOURCES = $(COREPROTO) $(EXTENSIONS)
 CLEANFILES = $(COREPROTO) $(EXTENSIONS)
 clean-local:
