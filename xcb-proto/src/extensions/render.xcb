@@ -1,4 +1,4 @@
-XCBGEN(xcb_render, `
+XCBGEN(render, `
 Copyright (C) 2002 Carl D. Worth
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.

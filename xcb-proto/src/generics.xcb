@@ -57,15 +57,6 @@ define(`UNIMPLEMENTED',
 
 dnl -- Macros which should be implemented in a more specific context
 
-dnl Comma-separated path of the logical package containing the current file.
-dnl PACKAGE()
-UNIMPLEMENTED(`PACKAGE')
-
-dnl Declare that the file or package is required to compile the current file.
-dnl The file extension should not be included.
-dnl REQUIRE(package, opt file)
-UNIMPLEMENTED(`REQUIRE')
-
 dnl Define a human-readable comment regarding the surrounding context.
 dnl COMMENT(text)
 UNIMPLEMENTED(`COMMENT')

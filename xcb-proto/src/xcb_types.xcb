@@ -2,18 +2,9 @@ XCBGEN(xcb_types, `
 Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
-')HEADERONLY(REQUIRE(X11, XCB, xcb_consts))
-
-/* forward declaration from xcb_conn.h */
-struct XCBConnection;
+')
 
 /* Core protocol types */
-
-PACKETSTRUCT(Generic, `Rep')
-PACKETSTRUCT(Generic, `Event')
-PACKETSTRUCT(Generic, `Error')
-
-COOKIETYPE(`Void')
 
 STRUCT(CHAR2B, `
     FIELD(CARD8, `byte1')

@@ -1,14 +1,9 @@
-XCBGEN(xcb, `
+XCBGEN(xproto, `
 Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
-SOURCEONLY(`
-REQUIRE(stdlib)
-REQUIRE(stdio)
-REQUIRE(string)
-')HEADERONLY(`
-REQUIRE(X11, XCB, xcb_conn)
+HEADERONLY(`
 
 /* Core event and error types */
 
@@ -1538,4 +1533,3 @@ FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
 
 POPDIV()
 ENDXCBGEN
-HEADERONLY(REQUIRE(X11, XCB, xcb_extension))
