@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     treerep[1] = XCB_QueryTree_Reply(c, tree[1], 0);
     formatQueryTreeReply(window, treerep[1]);
 
-    if(treerep[1]->parent && treerep[1]->parent != c->roots[0].data->windowId)
+    if(treerep[1] && treerep[1]->parent && treerep[1]->parent != c->roots[0].data->windowId)
     {
         tree[2] = XCB_QueryTree(c, treerep[1]->parent);
 
@@ -147,14 +147,16 @@ int main(int argc, char **argv)
 #endif
 
     /* Get the last reply of the first batch */
+#if 1 /* if 0, leaves a reply in the reply queue */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
     attrrep[0] = XCB_GetWindowAttributes_Reply(c, attr[0], 0);
     formatGetWindowAttributesReply(window, attrrep[0]);
     free(attrrep[0]);
 #endif
+#endif
 
 #ifdef VERBOSE
-    if(c->reply_data.head)
+    if(!XCB_List_is_empty(&c->reply_data))
         printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 

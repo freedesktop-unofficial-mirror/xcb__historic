@@ -57,7 +57,7 @@ void paint(int idx)
 {
 	XCB_CopyArea(c, windows[idx].p, windows[idx].w, white, 0, 0, 0, 0,
 		windows[idx].width, windows[idx].height);
-	XCB_Flush(c);
+	XCB_Sync(c, 0);
 }
 
 void *run(void *param)
