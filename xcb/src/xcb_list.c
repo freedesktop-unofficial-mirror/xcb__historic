@@ -151,3 +151,61 @@ int _xcb_queue_is_empty(_xcb_queue *q)
 {
     return q->head == 0;
 }
+
+typedef struct {
+    unsigned int key;
+    void *value;
+} map_pair;
+
+_xcb_map *_xcb_map_new(void) __attribute__ ((alias ("_xcb_list_new")));
+
+void _xcb_map_delete(_xcb_map *q, XCBListFreeFunc do_free)
+{
+    map_pair *tmp;
+    while((tmp = _xcb_list_remove_head(q)))
+    {
+        if(do_free)
+            do_free(tmp->value);
+        free(tmp);
+    }
+    free(q);
+}
+
+int _xcb_map_put(_xcb_map *q, unsigned int key, void *data)
+{
+    map_pair *cur = malloc(sizeof(map_pair));
+    if(!cur)
+        return 0;
+    cur->key = key;
+    cur->value = data;
+    if(!_xcb_list_append(q, cur))
+    {
+        free(cur);
+        return 0;
+    }
+    return 1;
+}
+
+static int match_map_pair(const void *key, const void *pair)
+{
+    return ((map_pair *) pair)->key == *(unsigned int *) key;
+}
+
+void *_xcb_map_get(_xcb_map *q, unsigned int key)
+{
+    map_pair *cur = _xcb_list_find(q, match_map_pair, &key);
+    if(!cur)
+        return 0;
+    return cur->value;
+}
+
+void *_xcb_map_remove(_xcb_map *q, unsigned int key)
+{
+    map_pair *cur = _xcb_list_remove(q, match_map_pair, &key);
+    void *ret;
+    if(!cur)
+        return 0;
+    ret = cur->value;
+    free(cur);
+    return ret;
+}

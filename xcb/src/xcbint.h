@@ -60,6 +60,14 @@ int _xcb_queue_enqueue(_xcb_queue *q, void *data);
 void *_xcb_queue_dequeue(_xcb_queue *q);
 int _xcb_queue_is_empty(_xcb_queue *q);
 
+typedef _xcb_list _xcb_map;
+
+_xcb_map *_xcb_map_new(void);
+void _xcb_map_delete(_xcb_map *q, XCBListFreeFunc do_free);
+int _xcb_map_put(_xcb_map *q, unsigned int key, void *data);
+void *_xcb_map_get(_xcb_map *q, unsigned int key);
+void *_xcb_map_remove(_xcb_map *q, unsigned int key);
+
 
 /* xcb_util.c */
 

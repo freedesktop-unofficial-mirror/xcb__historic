@@ -1,3 +1,8 @@
+2005-03-30  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_list.c, src/xcbint.h:
+	Add a map ADT implemented using the list ADT.
+
 2005-03-28  Vincent Torri  <torri@iecn.u-nancy.fr>
 
 	* doc/tutorial/index.html, doc/tutorial/xcb.css:
