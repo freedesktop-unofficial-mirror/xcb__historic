@@ -104,7 +104,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     WINDOW          window;
     DRAWABLE        window_drawable, tmp, root_drawable;
     PIXMAP          surfaces[4], alpha_surface;
-    PICTFORMAT      alpha_mask_format, window_format, surface_format;
+    PICTFORMAT      alpha_mask_format, window_format, surface_format, no_format = {0};
     PICTURE         window_pict, pict_surfaces[4], alpha_pict, 
                         no_picture = {0}, root_picture;
     PICTFORMINFO    *forminfo_ptr, *alpha_forminfo_ptr, query;
@@ -112,6 +112,10 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     RECTANGLE       pict_rect[1], window_rect;
     COLOR           pict_color[4], back_color, alpha_color;
     SCREEN          *root;
+    TRAP            traps[4];
+    TRIANGLE        triangles[4];
+    POINTFIX        tristrips[9];
+    POINTFIX        trifans[9];
     int index;
 
     root = XCBConnSetupSuccessReproots(c->setup).data;
@@ -134,7 +138,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     alpha_mask_format.xid = alpha_forminfo_ptr->id.xid;
     
     /* resetting certain parts of query to search for the surface format */
-    query.depth = 24;
+    query.depth = 32;
     query.direct.alpha_mask = 0;
   
     /* Get the surface forminfo and PICTFORMAT */
@@ -158,10 +162,10 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     for(index = 0; index < 4; index++)
     {
         surfaces[index] = XCBPIXMAPNew(conn);
-        XCBCreatePixmap(conn, 24, surfaces[index], root_drawable, 200, 200);
+        XCBCreatePixmap(conn, 32, surfaces[index], root_drawable, 600, 600);
     }
     alpha_surface = XCBPIXMAPNew(conn);
-    XCBCreatePixmap(conn, 8, alpha_surface, root_drawable, 300, 300);
+    XCBCreatePixmap(conn, 8, alpha_surface, root_drawable, 600, 600);
     
     /* initialize the value list */
     value_mask = XCBCWEventMask;
@@ -172,7 +176,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
             0,  /* depth, 0 means it will copy it from the parent */
             window, root_drawable.window, /* window and parent */
             0, 0,   /* x and y */
-            300, 300,   /* width and height */
+            600, 600,   /* width and height */
             0,  /* border width */
             InputOutput,    /* class */
             root->root_visual,   /* VISUALID */
@@ -203,13 +207,13 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
      */
     window_rect.x = 0;
     window_rect.y = 0;
-    window_rect.width = 300;
-    window_rect.height = 300;
+    window_rect.width = 600;
+    window_rect.height = 600;
 
     pict_rect[0].x = 0;
     pict_rect[0].y = 0;
-    pict_rect[0].width = 200;
-    pict_rect[0].height = 200;
+    pict_rect[0].width = 600;
+    pict_rect[0].height = 600;
    
     /* 
      * initialize the colors
@@ -219,30 +223,88 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     back_color.blue = 0xffff;
     back_color.alpha = 0xffff;
    
-    pict_color[0].red = 0xffff;
+    pict_color[0].red = 0x5fff;
     pict_color[0].green = 0x0000;
     pict_color[0].blue = 0x0000;
-    pict_color[0].alpha = 0xffff;
+    pict_color[0].alpha = 0x5fff;
     
     pict_color[1].red = 0x0000;
-    pict_color[1].green = 0xffff;
+    pict_color[1].green = 0x5fff;
     pict_color[1].blue = 0x0000;
-    pict_color[1].alpha = 0xffff;
+    pict_color[1].alpha = 0x5fff;
 
     pict_color[2].red = 0x0000;
     pict_color[2].green = 0x0000;
-    pict_color[2].blue = 0xffff;
-    pict_color[2].alpha = 0xffff;
+    pict_color[2].blue = 0x5fff;
+    pict_color[2].alpha = 0x5fff;
 
     pict_color[3].red = 0x0000;
     pict_color[3].green = 0x0000;
-    pict_color[3].blue = 0xffff;
-    pict_color[3].alpha = 0xffff;
+    pict_color[3].blue = 0x5fff;
+    pict_color[3].alpha = 0x5fff;
 
     alpha_color.red = 0x0000;
     alpha_color.green = 0x0000;
     alpha_color.blue = 0x0000;
-    alpha_color.alpha = 0x4fff;
+    alpha_color.alpha = 0xffff;
+
+    /* Create the trapeziod dimensions */
+    traps[0].top = make_fixed(300, 32000);
+    traps[0].bottom = make_fixed(416, 0);
+    traps[0].left.p1.y = make_fixed(250, 0);
+    traps[0].left.p1.x = make_fixed(300, 0);
+    traps[0].left.p2.y = make_fixed(500, 0);
+    traps[0].left.p2.x = make_fixed(100, 0);
+    traps[0].right.p1.y = make_fixed(250, 0);
+    traps[0].right.p1.x = make_fixed(300, 0);
+    traps[0].right.p2.y = make_fixed(505, 6000);
+    traps[0].right.p2.x = make_fixed(456, 512);
+
+    /* Create the triangle dimensions */
+    triangles[0].p1.x = make_fixed(100, 40000);
+    triangles[0].p1.y = make_fixed(100, 0);
+    triangles[0].p2.x = make_fixed(400, 0);
+    triangles[0].p2.y = make_fixed(150, 30000);
+    triangles[0].p3.x = make_fixed(30, 0);
+    triangles[0].p3.y = make_fixed(456, 0);
+
+    /* Create the tristrip dimensions */
+    tristrips[0].x = make_fixed(400, 0);
+    tristrips[0].y = make_fixed(50, 0);
+    tristrips[1].x = make_fixed(436, 0);
+    tristrips[1].y = make_fixed(50, 0);
+    tristrips[2].x = make_fixed(398, 0);
+    tristrips[2].y = make_fixed(127, 0);
+    tristrips[3].x = make_fixed(450, 0);
+    tristrips[3].y = make_fixed(120, 0);
+    tristrips[4].x = make_fixed(450, 0);
+    tristrips[4].y = make_fixed(180, 0);
+    tristrips[5].x = make_fixed(503, 0);
+    tristrips[5].y = make_fixed(124, 0);
+    tristrips[6].x = make_fixed(500, 0);
+    tristrips[6].y = make_fixed(217, 0);
+    tristrips[7].x = make_fixed(542, 0);
+    tristrips[7].y = make_fixed(237, 0);
+    tristrips[8].x = make_fixed(501, 0);
+    tristrips[8].y = make_fixed(250, 0);
+
+    /* Create the trifan dimensions */
+    trifans[0].x = make_fixed(424, 0);
+    trifans[0].y = make_fixed(415, 0);
+    trifans[1].x = make_fixed(375, 0);
+    trifans[1].y = make_fixed(355, 0);
+    trifans[2].x = make_fixed(403, 0);
+    trifans[2].y = make_fixed(350, 0);
+    trifans[3].x = make_fixed(430, 0);
+    trifans[3].y = make_fixed(380, 0);
+    trifans[4].x = make_fixed(481, 0);
+    trifans[4].y = make_fixed(400, 0);
+    trifans[5].x = make_fixed(475, 0);
+    trifans[5].y = make_fixed(437, 0);
+    trifans[6].x = make_fixed(430, 0);
+    trifans[6].y = make_fixed(444, 0);
+    trifans[7].x = make_fixed(400, 0);
+    trifans[7].y = make_fixed(430, 0);
 
     /* 
      * Map the window
@@ -269,9 +331,9 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
 
 
     /* Composite the first pict_surface onto the window picture */
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], alpha_pict, window_pict,
-            0, 0, 0, 0, 100, 100,
-            200, 200);
+    XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], no_picture /* alpha_pict */, window_pict,
+            0, 0, 0, 0, 200, 200,
+            400, 400);
     XCBFlush(conn);
     sleep(1);
 /*
@@ -281,23 +343,40 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     XCBFlush(conn);
     sleep(1);
 */
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[1], alpha_pict, window_pict,
+    XCBRenderComposite(conn, PictOpOver, pict_surfaces[1], no_picture /* alpha_pict */, window_pict,
             0, 0, 0, 0, 0, 0,
-            200, 200);
+            400, 400);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[2], alpha_pict, window_pict,
-            0, 0, 0, 0, 100, 0,
-            200, 200);
+    XCBRenderComposite(conn, PictOpOver, pict_surfaces[2], no_picture /* alpha_pict */, window_pict,
+            0, 0, 0, 0, 200, 0,
+            400, 400);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[3], alpha_pict, window_pict,
-            0, 0, 0, 0, 0, 100,
-            200, 200);
+    XCBRenderComposite(conn, PictOpOver, pict_surfaces[3],  no_picture /* alpha_pict */, window_pict,
+            0, 0, 0, 0, 0, 200,
+            400, 400);
+    XCBFlush(conn);
+    sleep(1);
+
+    XCBRenderTrapezoids(conn, PictOpOver, pict_surfaces[0], window_pict, alpha_mask_format, 0, 0, 1, &traps[0]);
+    XCBFlush(conn);
+    sleep(1);
+
+    XCBRenderTriangles(conn, PictOpOver, pict_surfaces[1], window_pict, no_format, 0, 0, 1, &triangles[0]);
+    XCBFlush(conn);
+    sleep(1);
+    
+    XCBRenderTriStrip(conn, PictOpOver, pict_surfaces[2], window_pict, no_format, 0, 0, 9, &tristrips[0]);
+    XCBFlush(conn);
+    sleep(1);
+    
+    XCBRenderTriFan(conn, PictOpOver, pict_surfaces[3], window_pict, no_format, 0, 0, 8, &trifans[0]);
     XCBFlush(conn);
     sleep(2);
+    
     
     /* Free up all of the resources we used */
     for(index = 0; index < 4; index++)

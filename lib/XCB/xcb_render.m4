@@ -5,13 +5,16 @@ for licensing information.
 ')
 BEGINEXTENSION(RENDER, Render)
 
-HEADERONLY(`
+
 XIDTYPE(PICTURE)
 XIDTYPE(PICTFORMAT)
 XIDTYPE(GLYPHSET)
 
+HEADERONLY(`
 typedef INT32 FIXED;
 typedef CARD32 GLYPH;
+
+#define make_fixed(i,f) (FIXED)((i) << 16) | ((f) & 0xffff)
 
 COMMENT(PictType modes)
 #define PictTypeIndexed         0
@@ -32,7 +35,7 @@ COMMENT(PictOp modes)
 #define PictOpXor               11
 #define PictOpAdd               12
 #define PictOpSaturate          13
-') /* HEADERONLY */
+') 
 
 STRUCT(COLOR, `
     FIELD(CARD16, `red')
@@ -88,7 +91,7 @@ STRUCT(PICTSCREEN, `
 /* XXX: DITHERINFO */
 
 
-STRUCT(POINTFIXED, `
+STRUCT(POINTFIX, `
     FIELD(FIXED, `x')
     FIELD(FIXED, `y')
 ')
@@ -101,12 +104,23 @@ STRUCT(POINTFIXED, `
 /* XXX: QUAD */
 
 STRUCT(TRIANGLE, `
-    FIELD(POINTFIXED, `p1')
-    FIELD(POINTFIXED, `p2')
-    FIELD(POINTFIXED, `p3')
+    FIELD(POINTFIX, `p1')
+    FIELD(POINTFIX, `p2')
+    FIELD(POINTFIX, `p3')
 ')
 
-/* XXX: TRAP */
+STRUCT(LINEFIXED, `
+    FIELD(POINTFIX, `p1')
+    FIELD(POINTFIX, `p2')
+')
+
+STRUCT(TRAP, `
+    FIELD(FIXED, `top')
+    FIELD(FIXED, `bottom')
+    FIELD(LINEFIXED, `left')
+    FIELD(LINEFIXED, `right')
+')
+
 /* XXX: COLORTRIANGLE */
 /* XXX: COLORTRAP */
 
@@ -267,55 +281,57 @@ VOIDREQUEST(RenderScale, `
     PARAM(CARD16, `height')
 ')
 
-/* XXX: Don't see RenderTrapezoids in renderproto.h
 VOIDREQUEST(RenderTrapezoids, `
     OPCODE(10)
     PARAM(CARD8, `op')
-    PARAM(CARD8, `op')
+    PAD(3)
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    PARAM(PICTURE, 'dst')
     LOCALPARAM(CARD16, `traps_len')
     LISTPARAM(TRAP, `traps', `traps_len')
 ')
-*/
 
 VOIDREQUEST(RenderTriangles, `
     OPCODE(11)
     PARAM(CARD8, `op')
+    PAD(3)
     PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    PARAM(PICTURE, `dst')
     LOCALPARAM(CARD16, `triangles_len')
     LISTPARAM(TRIANGLE, `triangles', `triangles_len')
 ')
 
-/* XXX: Don't see RenderTriStrip in renderproto.h
 VOIDREQUEST(RenderTriStrip, `
     OPCODE(12)
     PARAM(CARD8, `op')
+    PAD(3)
     PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    PARAM(PICTURE, 'dst')
     LOCALPARAM(CARD16, `points_len')
     LISTPARAM(POINTFIX, `points', `points_len')
 ')
-*/
 
-/* XXX: Don't see RenderTriFan in renderproto.h
 VOIDREQUEST(RenderTriFan, `
     OPCODE(13)
     PARAM(CARD8, `op')
+    PAD(3)
     PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
     PARAM(INT16, `src_x')
     PARAM(INT16, `src_y')
-    PARAM(PICTURE, 'dst')
     LOCALPARAM(CARD16, `points_len')
     LISTPARAM(POINTFIX, `points', `points_len')
 ')
-*/
 
 /* XXX: Don't see RenderColorTrapezoids in renderproto.h
 VOIDREQUEST(RenderColorTrapezoids, `
