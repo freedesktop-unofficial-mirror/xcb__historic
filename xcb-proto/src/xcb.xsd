@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (C) 2004 Josh Triplett.  All Rights Reserved.
+See the file COPYING in this package for licensing information.
+-->
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
   <!-- The root element -->

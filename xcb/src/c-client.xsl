@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (C) 2004 Josh Triplett.  All Rights Reserved.
+See the file COPYING in this package for licensing information.
+-->
 <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                version="1.0"
                xmlns:e="http://exslt.org/common">
