@@ -1,4 +1,4 @@
-#undef TEST_GET_WINDOW_ATTRIBUTES
+#define TEST_GET_WINDOW_ATTRIBUTES
 #define TEST_GET_GEOMETRY
 #define TEST_QUERY_TREE
 #define TEST_THREADS
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     pthread_t event_thread;
 #endif
 
-    c = XP_Connect();
+    c = XCB_Connect_Basic();
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE
@@ -79,65 +79,65 @@ int main(int argc, char **argv)
     mask |= CWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XP_CreateWindow(c, /* depth */ 16, window, c->roots[0].data->windowId,
+    XCB_CreateWindow(c, /* depth */ 16, window, c->roots[0].data->windowId,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
         /* visual */ c->roots[0].data->rootVisualID, mask, values);
-    XP_MapWindow(c, window);
+    XCB_MapWindow(c, window);
 
     /* Send off a collection of requests */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
-    attr[0] = XP_GetWindowAttributes(c, window);
+    attr[0] = XCB_GetWindowAttributes(c, window);
 #endif
 #ifdef TEST_GET_GEOMETRY
-    geom[0] = XP_GetGeometry(c, c->roots[0].data->windowId);
-    geom[1] = XP_GetGeometry(c, window);
+    geom[0] = XCB_GetGeometry(c, c->roots[0].data->windowId);
+    geom[1] = XCB_GetGeometry(c, window);
 #endif
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
-    tree[0] = XP_QueryTree(c, c->roots[0].data->windowId);
+    tree[0] = XCB_QueryTree(c, c->roots[0].data->windowId);
 # endif
-    tree[1] = XP_QueryTree(c, window);
+    tree[1] = XCB_QueryTree(c, window);
 #endif
 
     /* Start reading replies and possibly events */
 #ifdef TEST_GET_GEOMETRY
-    geomrep[0] = XP_GetGeometry_Get_Reply(c, geom[0], 0);
+    geomrep[0] = XCB_GetGeometry_Reply(c, geom[0], 0);
     formatGetGeometryReply(c->roots[0].data->windowId, geomrep[0]);
     free(geomrep[0]);
 #endif
 
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
-    treerep[0] = XP_QueryTree_Get_Reply(c, tree[0], 0);
+    treerep[0] = XCB_QueryTree_Reply(c, tree[0], 0);
     formatQueryTreeReply(c->roots[0].data->windowId, treerep[0]);
     free(treerep[0]);
 # endif
 #endif
 
 #ifdef TEST_GET_GEOMETRY
-    geomrep[1] = XP_GetGeometry_Get_Reply(c, geom[1], 0);
+    geomrep[1] = XCB_GetGeometry_Reply(c, geom[1], 0);
     formatGetGeometryReply(window, geomrep[1]);
     free(geomrep[1]);
 #endif
 
     /* Mix in some more requests */
 #ifdef TEST_QUERY_TREE
-    treerep[1] = XP_QueryTree_Get_Reply(c, tree[1], 0);
+    treerep[1] = XCB_QueryTree_Reply(c, tree[1], 0);
     formatQueryTreeReply(window, treerep[1]);
 
     if(treerep[1]->parent && treerep[1]->parent != c->roots[0].data->windowId)
     {
-        tree[2] = XP_QueryTree(c, treerep[1]->parent);
+        tree[2] = XCB_QueryTree(c, treerep[1]->parent);
 
 # ifdef TEST_GET_GEOMETRY
-        geom[2] = XP_GetGeometry(c, treerep[1]->parent);
-        geomrep[2] = XP_GetGeometry_Get_Reply(c, geom[2], 0);
+        geom[2] = XCB_GetGeometry(c, treerep[1]->parent);
+        geomrep[2] = XCB_GetGeometry_Reply(c, geom[2], 0);
         formatGetGeometryReply(treerep[1]->parent, geomrep[2]);
         free(geomrep[2]);
 # endif
 
-        treerep[2] = XP_QueryTree_Get_Reply(c, tree[2], 0);
+        treerep[2] = XCB_QueryTree_Reply(c, tree[2], 0);
         formatQueryTreeReply(treerep[1]->parent, treerep[2]);
         free(treerep[2]);
     }
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
     /* Get the last reply of the first batch */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
-    attrrep[0] = XP_GetWindowAttributes_Get_Reply(c, attr[0], 0);
+    attrrep[0] = XCB_GetWindowAttributes_Reply(c, attr[0], 0);
     formatGetWindowAttributesReply(window, attrrep[0]);
     free(attrrep[0]);
 #endif

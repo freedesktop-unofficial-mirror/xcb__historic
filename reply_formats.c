@@ -87,7 +87,7 @@ int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
 
     for(i = 0; i < reply->nChildren; ++i)
         printf("    window 0x%x\n",
-            (unsigned int) ((Window *) (reply + 1))[i]);
+            (unsigned int) XCB_QUERYTREE_CHILDREN(reply)[i]);
 
     fflush(stdout);
     return 1;

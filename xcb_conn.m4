@@ -16,7 +16,7 @@ _C`'#include <errno.h>
 _C
 _C`'#include "xcb_conn.h"
 
-_H`'#define XP_PAD(E) ((4-((E)%4))%4)
+_H`'#define XCB_PAD(E) ((4-((E)%4))%4)
 _H
 STRUCT(XCB_Reply_Data, `
     FIELD(int, `pending')
@@ -39,14 +39,14 @@ STRUCT(XCB_Event_Data, `
     POINTERFIELD(struct XCB_Event_Data, `next')
 ')
 _H
-STRUCT(XP_Depth, `
+STRUCT(XCB_Depth, `
     POINTERFIELD(xDepth, `data')
     POINTERFIELD(xVisualType, `visuals')
 ')
 _H
-STRUCT(XP_WindowRoot, `
+STRUCT(XCB_WindowRoot, `
     POINTERFIELD(xWindowRoot, `data')
-    POINTERFIELD(XP_Depth, `depths')
+    POINTERFIELD(XCB_Depth, `depths')
 ')
 _H
 STRUCT(XCB_Connection, `
@@ -66,21 +66,21 @@ STRUCT(XCB_Connection, `
 
     POINTERFIELD(char, `vendor')
     POINTERFIELD(xPixmapFormat, `pixmapFormats')
-    POINTERFIELD(XP_WindowRoot, `roots')
+    POINTERFIELD(XCB_WindowRoot, `roots')
     FIELD(xConnSetupPrefix, `setup_prefix')
     FIELD(xConnSetup, `setup')
 ')
 _H
 COOKIETYPE(`void')
 _H
-FUNCTION(`', `int XCB_Ones', `unsigned long mask', `
+FUNCTION(`int XCB_Ones', `unsigned long mask', `
     register unsigned long y;
     y = (mask >> 1) & 033333333333;
     y = mask - y - ((y >> 1) & 033333333333);
     return ((y + (y >> 3)) & 030707070707) % 077;
 ')
 _C
-FUNCTION(`', `CARD32 XCB_Generate_ID', `XCB_Connection *c', `
+FUNCTION(`CARD32 XCB_Generate_ID', `XCB_Connection *c', `
     CARD32 ret;
     pthread_mutex_lock(&c->locked);
     ret = (c->last_xid += c->setup.ridMask & -(c->setup.ridMask)) | c->setup.ridBase;
@@ -88,15 +88,15 @@ FUNCTION(`', `CARD32 XCB_Generate_ID', `XCB_Connection *c', `
     return ret;
 ')
 _C
-FUNCTION(`', `int XCB_Read', dnl
+FUNCTION(`int XCB_Read', dnl
 `XCB_Connection *c, unsigned char *buf, int len', `
     /* buffering here might be a win later */
     return read(c->fd, buf, len);
 ')
 
-/* PRE: c is locked */
-/* POST: c's queue has been flushed */
-FUNCTION(`', `int XCB_Flush', `XCB_Connection *c', `
+_C`'/* PRE: c is locked */
+_C`'/* POST: c's queue has been flushed */
+STATICFUNCTION(`int XCB_Flush_locked', `XCB_Connection *c', `
     int ret = 0;
     if(c->n_outqueue)
     {
@@ -105,13 +105,20 @@ FUNCTION(`', `int XCB_Flush', `XCB_Connection *c', `
     }
     return ret;
 ')
+_C
+FUNCTION(`int XCB_Flush', `XCB_Connection *c', `
+    pthread_mutex_lock(&c->locked);
+    XCB_Flush_locked(c);
+    pthread_mutex_unlock(&c->locked);
+    return 1;
+')  
 
 /* PRE: c is locked, vector points to valid memory, and count contains the
         number of entries in vector */
 /* POST: if all of the data given would fit in the buffer, it has been copied
          there; otherwise, the contents of the buffer followed by the data
          have been written. */
-FUNCTION(`', `int XCB_Write', dnl
+FUNCTION(`int XCB_Write', dnl
 `XCB_Connection *c, const struct iovec *vector, const size_t count', `
     int i, len;
 
@@ -153,7 +160,7 @@ ALLOC(struct iovec, v, count + 1)
 
 /* PRE: c is locked and cur points to valid memory */
 /* POST: cur is in the list */
-FUNCTION(`', `int XCB_Add_Reply_Data', dnl
+FUNCTION(`int XCB_Add_Reply_Data', dnl
 `XCB_Connection *c, XCB_Reply_Data *cur', `
     assert(cur);
     cur->next = 0;
@@ -169,7 +176,7 @@ FUNCTION(`', `int XCB_Add_Reply_Data', dnl
 /* PRE: c is locked and cur points to valid memory */
 /* POST: *cur points at the desired data or is 0; if prev was not 0,
          (*prev)->next points at the desired data or *prev is 0 */
-FUNCTION(`', `int XCB_Find_Reply_Data', dnl
+FUNCTION(`int XCB_Find_Reply_Data', dnl
 `XCB_Connection *c, int seqnum, XCB_Reply_Data **cur, XCB_Reply_Data **prev', `
     assert(cur);
     if(prev)
@@ -190,7 +197,7 @@ FUNCTION(`', `int XCB_Find_Reply_Data', dnl
         immediate predecessor to cur or is 0 if cur is the first item in
         the list */
 /* POST: cur is no longer in the list (but the caller has to free it) */
-FUNCTION(`', `int XCB_Remove_Reply_Data', dnl
+FUNCTION(`int XCB_Remove_Reply_Data', dnl
 `XCB_Connection *c, XCB_Reply_Data *cur, XCB_Reply_Data *prev', `
     assert(cur);
     assert(prev ? prev->next == cur : c->reply_data_head == cur);
@@ -208,7 +215,7 @@ FUNCTION(`', `int XCB_Remove_Reply_Data', dnl
 
 /* PRE: c is locked and cur points to valid memory */
 /* POST: cur is in the list */
-FUNCTION(`', `int XCB_Add_Event_Data', dnl
+FUNCTION(`int XCB_Add_Event_Data', dnl
 `XCB_Connection *c, XCB_Event_Data *cur', `
     assert(cur);
     cur->next = 0;
@@ -226,7 +233,7 @@ _C` * _only_ functions which touch the reply_data list. These two can be'
 _C` * checked for thread-safety while making optimizing assumptions. */'
 _C
 _C`'/* PRE: c is locked */
-FUNCTION(`static', `int XCB_Wait_Once', `XCB_Connection *c', `
+STATICFUNCTION(`int XCB_Wait_Once', `XCB_Connection *c', `
     unsigned char *buf;
 ALLOC(unsigned char, buf, 32)
 
@@ -284,7 +291,7 @@ ALLOC(XCB_Event_Data, cur, 1)
 ')
 
 /* PRE: c is unlocked */
-FUNCTION(`', `void *XCB_Wait_Seqnum', dnl
+FUNCTION(`void *XCB_Wait_Seqnum', dnl
 `XCB_Connection *c, int seqnum, xError **e', `
     void *ret = 0;
     XCB_Reply_Data *cur, *prev;
@@ -292,8 +299,11 @@ FUNCTION(`', `void *XCB_Wait_Seqnum', dnl
     if(e)
         *e = 0;
 
+    pthread_mutex_lock(&c->locked);
+    XCB_Flush_locked(c);
+    pthread_mutex_unlock(&c->locked);
+
     pthread_mutex_lock(&c->readlocked);
-    XCB_Flush(c);
     XCB_Find_Reply_Data(c, seqnum, &cur, &prev);
     if(!cur) /* nothing found to hand back */
         goto done;
@@ -339,7 +349,7 @@ done:
 ')
 
 /* It is the caller's responsibility to free the returned XCB_Event object. */
-FUNCTION(`', `XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
+FUNCTION(`XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
     XCB_Event *ret = 0;
     XCB_Event_Data *cur;
 
@@ -368,7 +378,7 @@ done:
     return ret;
 ')
 
-FUNCTION(`', `int XCB_Open', `const char *display, int *screen', `
+FUNCTION(`int XCB_Open', `const char *display, int *screen', `
     int fd = -1;
     char *buf, *colon, *dot;
 
@@ -420,7 +430,7 @@ ALLOC(char, buf, strlen(display) + 1)
     return fd;
 ')
 _C
-FUNCTION(`', `int XCB_Open_TCP', `const char *host, unsigned short port', `
+FUNCTION(`int XCB_Open_TCP', `const char *host, unsigned short port', `
     int fd;
     struct sockaddr_in addr = { AF_INET, htons(port) };
     /* CHECKME: never free return value of gethostbyname, right? */
@@ -435,7 +445,7 @@ FUNCTION(`', `int XCB_Open_TCP', `const char *host, unsigned short port', `
     return fd;
 ')
 _C
-FUNCTION(`', `int XCB_Open_Unix', `const char *file', `
+FUNCTION(`int XCB_Open_Unix', `const char *file', `
     int fd;
     struct sockaddr_un addr = { AF_UNIX };
     strcpy(addr.sun_path, file);
@@ -447,7 +457,7 @@ FUNCTION(`', `int XCB_Open_Unix', `const char *file', `
     return fd;
 ')
 _C
-FUNCTION(`', `XCB_Connection *XCB_Connect', `int fd', `
+FUNCTION(`XCB_Connection *XCB_Connect', `int fd', `
     XCB_Connection* c;
     size_t clen = sizeof(XCB_Connection);
 
@@ -477,7 +487,7 @@ ALLOC(XCB_Connection, c, 1)
         out->nbytesAuthProto = 0;
         out->nbytesAuthString = 0;
     }
-    XCB_Flush(c);
+    XCB_Flush_locked(c);
 
     /* Read the server response */
     read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix));
@@ -498,22 +508,22 @@ ALLOC(XCB_Connection, c, 1)
     /* Set up a collection of convenience pointers. */
     /* Initialize these since they are used before the next realloc. */
     c->vendor = (char *) (c + 1);
-    c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XP_PAD(c->setup.nbytesVendor));
+    c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XCB_PAD(c->setup.nbytesVendor));
 
     /* So, just how obscure *can* a person make memory management? */
     {
         xWindowRoot *root;
         xDepth *depth;
-        XP_Depth *xpdepth;
+        XCB_Depth *xpdepth;
         xVisualType *visual;
         int i, j, oldclen = clen;
 
-        clen += sizeof(XP_WindowRoot) * c->setup.numRoots;
+        clen += sizeof(XCB_WindowRoot) * c->setup.numRoots;
 
         root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
         for(i = 0; i < c->setup.numRoots; ++i)
         {
-            clen += sizeof(XP_Depth) * root->nDepths;
+            clen += sizeof(XCB_Depth) * root->nDepths;
 
             depth = (xDepth *) (root + 1);
             for(j = 0; j < root->nDepths; ++j)
@@ -529,10 +539,10 @@ ALLOC(XCB_Connection, c, 1)
 
         /* Re-initialize these since realloc probably moved them. */
         c->vendor = (char *) (c + 1);
-        c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XP_PAD(c->setup.nbytesVendor));
+        c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XCB_PAD(c->setup.nbytesVendor));
 
-        c->roots = (XP_WindowRoot *) (((char *) c) + oldclen);
-        xpdepth = (XP_Depth *) (c->roots + c->setup.numRoots);
+        c->roots = (XCB_WindowRoot *) (((char *) c) + oldclen);
+        xpdepth = (XCB_Depth *) (c->roots + c->setup.numRoots);
 
         root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
         for(i = 0; i < c->setup.numRoots; ++i)
@@ -551,6 +561,26 @@ ALLOC(XCB_Connection, c, 1)
             }
             root = (xWindowRoot *) depth;
         }
+    }
+
+    return c;
+')
+_C
+FUNCTION(`XCB_Connection *XCB_Connect_Basic', `', `
+    int fd, screen;
+    XCB_Connection *c;
+    fd = XCB_Open(getenv("DISPLAY"), &screen);
+    if(fd == -1)
+    {
+        perror("XCB_Open");
+        abort();
+    }
+
+    c = XCB_Connect(fd);
+    if(!c)
+    {
+        perror("XCB_Connect");
+        abort();
     }
 
     return c;
