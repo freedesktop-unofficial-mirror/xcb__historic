@@ -72,12 +72,11 @@
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
     <xsl:choose>
-      <xsl:when test="//*[(string($ext) and name()='extension' and @name=$ext)
-                          or (not(string($ext)) and name()='xcb')]/*
-                         [((name()='struct'
-                            or name()='union'
-                            or name()='xidtype') and @name=$type)
-                          or (name()='typedef' and @newname=$type)]">
+      <xsl:when test="//*[(string($ext) and self::extension and @name=$ext)
+                          or (not(string($ext)) and self::xcb)]/*
+                         [((self::struct or self::union
+                            or self::xidtype or self::enum) and @name=$type)
+                          or (self::typedef and @newname=$type)]">
         <xsl:text>XCB</xsl:text><xsl:value-of select="concat($ext, $type)" />
       </xsl:when>
       <xsl:when test="/xcb[not(@header='xcb_types')]">
