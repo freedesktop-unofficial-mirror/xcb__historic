@@ -1,4 +1,11 @@
-2004-09-28  Jamey Sharp  <jamey@minilop.net>
+2004-09-29  Jamey Sharp  <jamey@minilop.net>
+
+	* src/client-c.xcb:
+	* src/xcb_util.c:
+	* src/xcbext.h:
+	Renamed XCBOnes to XCBPopcount as per new API spec.
+
+2004-09-29  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcbext.h:
 	* src/xcb.h.m4:

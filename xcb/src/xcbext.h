@@ -28,7 +28,7 @@ CARD32 XCBGenerateID(XCBConnection *c);
 
 /* xcb_util.c */
 
-int XCBOnes(unsigned long mask);
+int XCBPopcount(unsigned long mask);
 
 #ifdef __cplusplus
 }

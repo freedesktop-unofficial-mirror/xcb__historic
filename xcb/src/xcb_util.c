@@ -19,7 +19,7 @@
 #include "xcb.h"
 #include "xcbext.h"
 
-int XCBOnes(unsigned long mask)
+int XCBPopcount(unsigned long mask)
 {
     unsigned long y;
     y = (mask >> 1) & 033333333333;

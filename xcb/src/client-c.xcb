@@ -250,7 +250,7 @@ dnl function in the order the X server expects.
 dnl VALUEPARAM(bitmask type, bitmask name, value array name)
 define(`VALUEPARAM', `
 PARAM(`$1', `$2')
-LISTPARAM(CARD32, `$3', `XCBOnes($2)')
+LISTPARAM(CARD32, `$3', `XCBPopcount($2)')
 ')
 
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
