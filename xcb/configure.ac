@@ -8,8 +8,6 @@ AC_INIT([libXCB],
 AC_CONFIG_SRCDIR([xcb.pc.in])
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
 
-AM_MAINTAINER_MODE
-
 AC_CONFIG_HEADERS([src/config.h])
 
 AC_PROG_LIBTOOL
