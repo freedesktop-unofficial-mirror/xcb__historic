@@ -1522,14 +1522,5 @@ VOIDREQUEST(NoOperation, `
     OPCODE(127)
 ')
 
-dnl Pseudo-requests: these functions don't map directly to protocol requests,
-dnl but depend on requests in the core protocol, so they're here.
-
-FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
-    XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
-    free(reply);
-    return (reply != 0);
-')
-
 POPDIV()
 ENDXCBGEN
