@@ -1,16 +1,16 @@
 
 MAINTAINERCLEANFILES = Makefile.in
 
-lib_LTLIBRARIES = libXCBConvenient.la
+lib_LTLIBRARIES = libXCBAux.la
 
-xcbinclude_HEADERS = xcb_convenient.h
+xcbinclude_HEADERS = xcb_aux.h
 
 AM_CFLAGS = -Wall
 INCLUDES = $(XCB_CFLAGS)
 LDADD = $(XCB_LIBS)
 
-libXCBConvenient_la_SOURCES = xcb_convenient.c
+libXCBAux_la_SOURCES = xcb_aux.c
 
-pkgconfig_DATA = xcb-convenient.pc
+pkgconfig_DATA = xcb-aux.pc
 
-EXTRA_DIST=xcb-convenient.pc.in
+EXTRA_DIST=xcb-aux.pc.in
