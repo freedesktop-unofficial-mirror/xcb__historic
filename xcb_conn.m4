@@ -3,7 +3,6 @@
  */
 
 XCBGEN(XCB_CONN)
-_H
 _H`'#include <sys/uio.h>
 _C`'#include <sys/types.h>
 _C`'#include <sys/socket.h>
@@ -23,10 +22,9 @@ _H`'#define NEED_REPLIES
 _H`'#define ANSICPP
 _H`'#include <X11/X.h>
 _H`'#include <X11/Xproto.h>
-_C
-_C`'#include "xcb_conn.h"
 
 _H`'#define XCB_PAD(E) ((4-((E)%4))%4)
+_H`'#define X_TCP_PORT 6000	/* add display number */
 _H
 STRUCT(XCB_Reply_Data, `
     FIELD(pthread_cond_t, `cond')
@@ -109,12 +107,30 @@ FUNCTION(`CARD32 XCB_Generate_ID', `XCB_Connection *c', `
     pthread_mutex_unlock(&c->locked);
     return ret;
 ')
+_C
+FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
+    void *out;
+    if(c->n_outvec || c->n_outqueue + size > sizeof(c->outqueue))
+        XCB_Flush_locked(c);
+
+    out = c->outqueue + c->n_outqueue;
+    c->n_outqueue += size;
+    assert(c->n_outqueue <= sizeof(c->outqueue));
+    return out;
+')
 
 /* PRE: c is locked and cur points to valid memory */
 /* POST: cur is in the list */
-FUNCTION(`void XCB_Add_Reply_Data', `XCB_Connection *c, XCB_Reply_Data *cur', `
-    assert(cur);
+FUNCTION(`void XCB_Add_Reply_Data', `XCB_Connection *c, int seqnum', `
+    XCB_Reply_Data *cur;
+ALLOC(XCB_Reply_Data, cur, 1)
+    pthread_cond_init(&cur->cond, 0);
+    cur->pending = 0;
+    cur->error = 0;
+    cur->seqnum = seqnum;
+    cur->data = 0;
     cur->next = 0;
+
     if(c->reply_data_tail)
         c->reply_data_tail->next = cur;
     else
@@ -127,7 +143,7 @@ FUNCTION(`void XCB_Add_Reply_Data', `XCB_Connection *c, XCB_Reply_Data *cur', `
 /* PRE: c is locked and cur points to valid memory */
 /* POST: *cur points at the desired data or is 0; if prev was not 0,
          (*prev)->next points at the desired data or *prev is 0 */
-FUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
+STATICFUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
     XCB_Reply_Data *cur = c->reply_data_head;
     while(cur)
     {
@@ -140,7 +156,7 @@ FUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum',
 
 /* PRE: c is locked */
 /* POST: cur is no longer in the list (but the caller has to free it) */
-FUNCTION(`int XCB_Remove_Reply_Data', `XCB_Connection *c, int seqnum', `
+STATICFUNCTION(`int XCB_Remove_Reply_Data', `XCB_Connection *c, int seqnum', `
     XCB_Reply_Data *prev = 0, *cur = c->reply_data_head;
 
     while(cur)
@@ -167,7 +183,7 @@ FUNCTION(`int XCB_Remove_Reply_Data', `XCB_Connection *c, int seqnum', `
 
 /* PRE: c is locked and cur points to valid memory */
 /* POST: cur is in the list */
-FUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cur', `
+STATICFUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cur', `
     assert(cur);
     cur->next = 0;
     if(c->event_data_tail)
@@ -179,7 +195,7 @@ FUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cur', `
     return;
 ')
 _C
-STATICFUNCTION(`int blocking_read', `int fd, char *buf, int nread',`
+STATICFUNCTION(`int blocking_read', `int fd, void *buf, int nread',`
     int count = nread;
     while (count > 0) {
 	int n = read(fd, buf, count);

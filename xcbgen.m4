@@ -42,6 +42,11 @@ dnl UNINDENT()
 define(`UNINDENT', `popdef(`TAB')')
 
 
+dnl Transliterates lowercase characters to uppercase.
+dnl TOUPPER(string)
+define(`TOUPPER', `translit($1, `a-z', `A-Z')')
+
+
 dnl Exactly one of _H and _C should be set on the command line.
 dnl When _H is set, _C lines will be thrown away.
 dnl Similarly, when _C is set, _H lines will be thrown away.
@@ -101,6 +106,7 @@ define(`STRUCTDIV', 4)  dnl Body of structure declared
                         dnl with STRUCT or UNION macros
 
 dnl 
+define(`FIELDQTY', 0)  dnl Count of fields in a struct (or request)
 define(`PARTQTY',  0)  dnl Count of variable length elements in request
 define(`PARAMQTY', 0)  dnl Count of parameters to request (currently tests
                        dnl only for zero/nonzero)
@@ -126,13 +132,15 @@ dnl probably be either CARD16 or CARD32, depending on the specified width
 dnl of the bitmask. The value array must be given to the generated
 dnl function in the order the X server expects.
 dnl VALUEPARAM(bitmask type, bitmask name, value array name)
-define(`VALUEPARAM', `PUSHDIV(OUTDIV)
+define(`VALUEPARAM', `FIELD($1, `$2')`'dnl
+PUSHDIV(OUTDIV)
 TAB()out->`$2' = `$2';
 TAB()out->length += XCB_Ones(`$2');
 TAB()parts[PARTQTY].iov_base = `$3';
 TAB()parts[PARTQTY].iov_len = XCB_Ones(`$2') * 4;
 define(`PARTQTY', eval(1+PARTQTY))dnl
 divert(PARMDIV), $1 `$2', CARD32 *`$3'dnl
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
 POPDIV()')
 
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
@@ -147,22 +155,16 @@ TAB()parts[PARTQTY].iov_len = (`$3') * sizeof($1);
 define(`PARTQTY', eval(1+PARTQTY))dnl
 POPDIV()')
 
-dnl Defines a field which should be filled in with the length of a string
-dnl parameter. The string parameter must be defined by a corresponding
-dnl LISTPARAM(char, ...), and the field name is available for use in the
-dnl expression of a LISTPARAM or EXPRFIELD.
-dnl STRLENFIELD(string name, field name)
-define(`STRLENFIELD', `PUSHDIV(VARDIV)dnl
-TAB()int `$2' = strlen(`$1');
+dnl Defines a field which should be filled in with the given expression.
+dnl The field name is available for use in the expression of a LISTPARAM
+dnl or a following EXPRFIELD.
+dnl EXPRFIELD(field type, field name, expression)
+define(`EXPRFIELD', `FIELD($1, `$2')`'dnl
+PUSHDIV(VARDIV)dnl
+TAB()$1 `$2' = `$3';
 divert(OUTDIV)dnl
 TAB()out->`$2' = `$2';
-POPDIV()')
-
-dnl Defines a field which should be filled in with the given expression.
-dnl The field name is *not* available for use in further expressions.
-dnl EXPRFIELD(field name, expression)
-define(`EXPRFIELD', `PUSHDIV(OUTDIV)dnl
-TAB()out->`$1' = `$2';
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
 POPDIV()')
 
 dnl Defines a parameter with no associated field. The name can be used in
@@ -172,52 +174,33 @@ define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
 
 dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
-define(`PARAM', `PUSHDIV(PARMDIV), $1 `$2'`'dnl
+define(`PARAM', `FIELD($1, `$2')`'dnl
+PUSHDIV(PARMDIV), $1 `$2'`'dnl
 divert(OUTDIV)dnl
 TAB()out->`$2' = `$2';
 define(`PARAMQTY', eval(1+PARAMQTY))dnl
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
 POPDIV()')
 
+dnl Sets the major number for all instances of this request to the given code.
+dnl TODO: for extensions, set the major number to the extension major number,
+dnl       and the minor number to this given number.
+dnl OPCODE(number)
+define(`OPCODE', `FIELD(CARD8, `majorOpcode')`'dnl
+PUSHDIV(OUTDIV)dnl
+TAB()out->majorOpcode = `$1';
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
+POPDIV()')
 
+dnl PAD(bytes)
+define(`PAD', `ARRAYFIELD(CARD8, `pad', $1)dnl
+ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
-dnl Creates a function named XCB_<name> returning XCB_void_cookie and
-dnl accepting whatever parameters are necessary to deliver the given PARAMs
-dnl and FIELDs to the X server.
-dnl VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
-define(`VOIDREQUEST',`dnl
-PUSHDIV(-1) INDENT() $2 UNINDENT() POPDIV()dnl
-FUNCTION(`XCB_void_cookie XCB_'$1, `XCB_Connection *c`'undivert(PARMDIV)', `
-#ifndef sz_x`$1'Req
-#define x`$1'Req ifelse(PARAMQTY,1,`xResourceReq',`xReq')
-#endif
-
-    XCB_void_cookie ret;
-    x`$1'Req *out;
-undivert(VARDIV)`'dnl
-ifelse(PARTQTY,0,`dnl',`    struct iovec parts[PARTQTY];')
-
-    pthread_mutex_lock(&c->locked);
-    if(c->n_outvec || c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
-        XCB_Flush_locked(c);
-    assert(c->n_outqueue <= sizeof(c->outqueue) - SIZEOF(x`$1'Req));
-
-    out = (x`$1'Req *) (c->outqueue + c->n_outqueue);
-    out->reqType = X_`$1';
-    out->length = SIZEOF(x`$1'Req) / 4;
-    c->n_outqueue += SIZEOF(x`$1'Req);
-
-undivert(OUTDIV)dnl
-ifelse(PARAMQTY,0,`dnl')
-    ret.seqnum = ++c->seqnum;
-ifelse(PARTQTY,0,`dnl',`    XCB_Write(c, parts, PARTQTY);')
-    pthread_mutex_unlock(&c->locked);
-
-    return ret;
-define(`PARTQTY',0)dnl
-define(`PARAMQTY',0)dnl
-')')
-
-
+dnl LENGTHFIELD()
+define(`LENGTHFIELD', `FIELD(CARD16, `length')`'dnl
+PUSHDIV(OUTDIV)dnl
+TAB()out->length = (sizeof(*out) + XCB_PAD(sizeof(*out))) / 4;
+POPDIV()')
 
 dnl Generates a C pre-processor macro providing access to a variable-length
 dnl portion of a reply. If another reply field follows, the length name
@@ -225,19 +208,17 @@ dnl must be provided. The length name is the name of a field in the
 dnl fixed-length portion of the response which contains the number of
 dnl elements in this section.
 dnl REPLYFIELD(field type, field name, opt length name)
-define(`REPLYFIELD', `define(`THISFIELD', translit($2,`a-z',`A-Z'))
-PUSHDIV(OUTDIV)dnl
-#define `XCB_'REQ`_'THISFIELD`(reply)' (($1 *) (dnl
-ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')))
-POPDIV()define(`LASTFIELD',THISFIELD)define(`LASTLEN',$3)')
-
-dnl Internal macro which I can't seem to get rid of. Icky.
-define(`UNWRAPREPLYFIELD', `dnl
-PUSHDIV(-1) $1 POPDIV()dnl
-_H`'undivert(OUTDIV)`'dnl
-')
+define(`REPLYFIELD', `PUSHDIV(OUTDIV)dnl
+_H`'#define `XCB_'REQ`_'TOUPPER($2)`(reply) (($1 *) ('ifdef(`LASTFIELD', `XCB_'REQ`_'LASTFIELD`(reply) + reply->'LASTLEN, `reply + 1')`))'
+POPDIV()define(`LASTFIELD', TOUPPER($2))ifelse($#, 3, `define(`LASTLEN', $3)')')
 
 
+
+dnl Creates a function named XCB_<name> returning XCB_void_cookie and
+dnl accepting whatever parameters are necessary to deliver the given PARAMs
+dnl and FIELDs to the X server.
+dnl VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
+define(`VOIDREQUEST', `REQUESTFUNCTION(void, $1, `$2')')
 
 dnl Creates a function named XCB_<name> returning XCB_<name>_cookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
@@ -247,48 +228,7 @@ dnl x<name>Reply from Xproto.h which forces a cookie returned from
 dnl XCB_<name>, waiting for the response from the server if necessary.
 dnl If any REPLYFIELDs are given, they must be quoted.
 dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYFIELDs)
-define(`REQUEST',`dnl
-PUSHDIV(-1) INDENT() $2 UNINDENT() POPDIV()dnl
-COOKIETYPE($1)
-_H
-FUNCTION(`XCB_'$1`_cookie XCB_'$1, `XCB_Connection *c`'undivert(PARMDIV)', `
-#ifndef sz_x`$1'Req
-#define x`$1'Req ifelse(PARAMQTY,1,`xResourceReq',`xReq')
-#endif
-
-    XCB_`'$1`'_cookie ret;
-    x`$1'Req *out;
-undivert(VARDIV)`'dnl
-    XCB_Reply_Data *reply_data;
-ifelse(PARTQTY,0,`dnl',`    struct iovec parts[PARTQTY];')
-
-    pthread_mutex_lock(&c->locked);
-    if(c->n_outvec || c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
-        XCB_Flush_locked(c);
-    assert(c->n_outqueue <= sizeof(c->outqueue) - SIZEOF(x`$1'Req));
-
-    out = (x`$1'Req *) (c->outqueue + c->n_outqueue);
-    out->reqType = X_`$1';
-    out->length = SIZEOF(x`$1'Req) / 4;
-    c->n_outqueue += SIZEOF(x`$1'Req);
-
-undivert(OUTDIV)dnl
-ifelse(PARAMQTY,0,`dnl')
-    ret.seqnum = ++c->seqnum;
-ifelse(PARTQTY,0,`dnl',`    XCB_Write(c, parts, PARTQTY);')
-ALLOC(XCB_Reply_Data, reply_data, 1)
-    pthread_cond_init(&reply_data->cond, 0);
-    reply_data->pending = 0;
-    reply_data->error = 0;
-    reply_data->seqnum = ret.seqnum;
-    reply_data->data = 0;
-    XCB_Add_Reply_Data(c, reply_data);
-    pthread_mutex_unlock(&c->locked);
-
-    return ret;
-define(`PARTQTY',0)dnl
-define(`PARAMQTY',0)dnl
-')
+define(`REQUEST',`REQUESTFUNCTION($1, $1, `$2')
 
 /* It is the caller''`s responsibility to free the returned
  * x'$1`Reply object. */
@@ -296,9 +236,45 @@ FUNCTION(`x'$1`Reply *XCB_'$1`_Reply', dnl
 `XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
     return (x'$1`Reply *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
 ')`'dnl
-pushdef(`REQ', translit($1, `a-z', `A-Z'))dnl
-UNWRAPREPLYFIELD(`$3')`'dnl
+pushdef(`REQ', TOUPPER($1))dnl
+PUSHDIV(-1)
+$3
+POPDIV()dnl
+undivert(OUTDIV)`'dnl
 undefine(`LASTFIELD')undefine(`LASTLEN')popdef(`REQ')dnl')
+
+
+dnl Internal function shared by REQUEST and VOIDREQUEST, implementing the
+dnl common portions of those macros.
+dnl REQUESTFUNCTION(return type, request name, parameters)
+define(`REQUESTFUNCTION',`dnl
+ifelse($1, void, `dnl', `COOKIETYPE($1)')
+INDENT()dnl
+STATICSTRUCT(XCB_`$2'_Req, `
+    $3
+    ifelse(FIELDQTY, 1, `PAD(1)') dnl ensure a length field is included
+')
+UNINDENT()dnl
+_C
+FUNCTION(`XCB_'$1`_cookie XCB_'$2, `XCB_Connection *c`'undivert(PARMDIV)', `
+    XCB_`$1'_cookie ret;
+    XCB_`$2'_Req *out;
+undivert(VARDIV)`'dnl
+ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
+
+    pthread_mutex_lock(&c->locked);
+    out = (XCB_`$2'_Req *) XCB_Alloc_Out(c, (sizeof(*out) + XCB_PAD(sizeof(*out))));
+
+undivert(OUTDIV)`'dnl
+ifelse(PARAMQTY, 0, `dnl')
+    ret.seqnum = ++c->seqnum;
+ifelse(PARTQTY, 0, `dnl', `    XCB_Write(c, parts, PARTQTY);')
+ifelse($1, void, `dnl', `    XCB_Add_Reply_Data(c, ret.seqnum);')
+    pthread_mutex_unlock(&c->locked);
+
+    return ret;
+define(`PARTQTY', 0)define(`PARAMQTY', 0)')')
+
 
 dnl --- Structure macros ------------------------------------------------------
 
@@ -308,37 +284,54 @@ dnl UNION definitions.
 dnl Declares a field of the given type with the given name.
 dnl FIELD(type, name)
 define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
-    $1 $2;
+    `$1' `$2';
+define(`FIELDQTY', eval(1+FIELDQTY))dnl
 POPDIV()dnl')
 
 dnl Declares an array field with the given quantity of elements of the
 dnl given type.
 dnl ARRAYFIELD(type, name, quantity)
 define(`ARRAYFIELD', `PUSHDIV(STRUCTDIV)dnl
-    $1 $2[$3];
+    `$1' `$2'[`$3'];
+define(`FIELDQTY', eval(1+FIELDQTY))dnl
 POPDIV()dnl')
 
 dnl Declares a field with the given name which is a pointer to the given type.
 dnl POINTERFIELD(type, name)
 define(`POINTERFIELD', `PUSHDIV(STRUCTDIV)dnl
-    $1 *$2;
+    `$1' *`$2';
+define(`FIELDQTY', eval(1+FIELDQTY))dnl
 POPDIV()dnl')
 
 dnl STRUCT(name, 1 or more FIELDs)
 define(`STRUCT', `PUSHDIV(-1)
 $2
+define(`FIELDQTY',0)
 POPDIV()dnl
 _H`'typedef struct $1 {
 _H`'undivert(STRUCTDIV)dnl
-_H`'} $1;')
+_H`'} $1;
+_C`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_H')
+
+dnl STATICSTRUCT(name, 1 or more FIELDs)
+define(`STATICSTRUCT', `PUSHDIV(-1)
+$2
+define(`FIELDQTY',0)
+POPDIV()dnl
+_C`'typedef struct $1 {
+_C`'undivert(STRUCTDIV)dnl
+_C`'} $1;
+_H`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_C')
 
 dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)
 $2
+define(`FIELDQTY',0)
 POPDIV()dnl
 _H`'typedef union $1 {
 _H`'undivert(STRUCTDIV)dnl
-_H`'} $1;')
+_H`'} $1;
+_C`'PUSHDIV(-1)undivert(STRUCTDIV)POPDIV()_H')
 
 dnl Declares a struct named XCB_<name>_cookie with a single "int seqnum"
 dnl field.
@@ -353,7 +346,8 @@ define(`XCBGEN', `dnl
 ` */'
 
 _H`'#ifndef __$1_H
-_H`'#define __$1_H')
+_H`'#define __$1_H
+_C`'#include "patsubst(__file__, `\.m4$', `.h')"')
 
 dnl ENDXCBGEN()
 define(`ENDXCBGEN', `_H`'#endif')

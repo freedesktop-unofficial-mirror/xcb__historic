@@ -1,12 +1,9 @@
 XCBGEN(XP_CORE)
-_H
 _C`'#include <assert.h>
 _C`'#include <stdlib.h>
 _C`'#include <stdio.h> /* for perror */
 _C`'#include <string.h>
-_C
 _H`'#include "xcb_conn.h"
-_C`'#include "xp_core.h"
 _H
 _H`'typedef char CHAR2B[2];
 
@@ -23,6 +20,7 @@ FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
 /* The requests, in major number order. */
 
 VOIDREQUEST(CreateWindow, `
+    OPCODE(1)
     PARAM(CARD8, `depth')
     PARAM(Window, `wid')
     PARAM(Window, `parent')
@@ -30,100 +28,175 @@ VOIDREQUEST(CreateWindow, `
     PARAM(INT16, `y')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
-    PARAM(CARD16, `borderWidth')
+    PARAM(CARD16, `border_width')
     PARAM(CARD16, `class')
     PARAM(VisualID, `visual')
-    VALUEPARAM(CARD32, `mask', `values')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
 VOIDREQUEST(ChangeWindowAttributes, `
+    OPCODE(2)
+    PAD(1)
     PARAM(Window, `window')
-    VALUEPARAM(CARD32, `valueMask', `values')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
-REQUEST(GetWindowAttributes, `PARAM(Window, `id')')
+REQUEST(GetWindowAttributes, `
+    OPCODE(3)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
-VOIDREQUEST(DestroyWindow, `PARAM(Window, `id')')
+VOIDREQUEST(DestroyWindow, `
+    OPCODE(4)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
-VOIDREQUEST(DestroySubwindows, `PARAM(Window, `id')')
+VOIDREQUEST(DestroySubwindows, `
+    OPCODE(5)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
 VOIDREQUEST(ChangeSaveSet, `
+    OPCODE(6)
     PARAM(BYTE, `mode')
     PARAM(Window, `window')
 ')
 
 VOIDREQUEST(ReparentWindow, `
+    OPCODE(7)
+    PAD(1)
     PARAM(Window, `window')
     PARAM(Window, `parent')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
 ')
 
-VOIDREQUEST(MapWindow, `PARAM(Window, `id')')
+VOIDREQUEST(MapWindow, `
+    OPCODE(8)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
-VOIDREQUEST(MapSubwindows, `PARAM(Window, `id')')
+VOIDREQUEST(MapSubwindows, `
+    OPCODE(9)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
-VOIDREQUEST(UnmapWindow, `PARAM(Window, `id')')
+VOIDREQUEST(UnmapWindow, `
+    OPCODE(10)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
-VOIDREQUEST(UnmapSubwindows, `PARAM(Window, `id')')
+VOIDREQUEST(UnmapSubwindows, `
+    OPCODE(11)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
 VOIDREQUEST(ConfigureWindow, `
+    OPCODE(12)
+    PAD(1)
     PARAM(Window, `window')
-    VALUEPARAM(CARD16, `mask', `values')
+    VALUEPARAM(CARD16, `value_mask', `value_list')
 ')
 
 VOIDREQUEST(CirculateWindow, `
+    OPCODE(13)
     PARAM(CARD8, `direction')
     PARAM(Window, `window')
 ')
 
-REQUEST(GetGeometry, `PARAM(Drawable, `id')')
-
-REQUEST(QueryTree, `PARAM(Window, `id')', `REPLYFIELD(Window, `children')')
-
-REQUEST(InternAtom, `
-    PARAM(BOOL, `onlyIfExists')
-    STRLENFIELD(`name', `nbytes')
-    LISTPARAM(char, `name', `nbytes')
+REQUEST(GetGeometry, `
+    OPCODE(14)
+    PAD(1)
+    PARAM(Drawable, `drawable')
 ')
 
-REQUEST(GetAtomName, `PARAM(Atom, `id')', `REPLYFIELD(CARD8, `name')')
+REQUEST(QueryTree, `
+    OPCODE(15)
+    PAD(1)
+    PARAM(Window, `window')
+', `
+    REPLYFIELD(Window, `children')
+')
+
+REQUEST(InternAtom, `
+    OPCODE(16)
+    PARAM(BOOL, `only_if_exists')
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PAD(2)
+    LISTPARAM(char, `name', `name_len')
+')
+
+REQUEST(GetAtomName, `
+    OPCODE(17)
+    PAD(1)
+    PARAM(Atom, `atom')
+', `
+    REPLYFIELD(CARD8, `name')
+')
 
 VOIDREQUEST(ChangeProperty, `
+    OPCODE(18)
     PARAM(CARD8, `mode')
     PARAM(Window, `window')
     PARAM(Atom, `property')
     PARAM(Atom, `type')
     PARAM(CARD8, `format')
-    PARAM(CARD32, `nUnits')
-    LISTPARAM(BYTE, `data', `nUnits * format / 8')
+    PAD(3)
+    PARAM(CARD32, `data_len')
+    LISTPARAM(BYTE, `data', `data_len * format / 8')
 ')
 
 VOIDREQUEST(DeleteProperty, `
+    OPCODE(19)
+    PAD(1)
     PARAM(Window, `window')
     PARAM(Atom, `property')
 ')
 
 REQUEST(GetProperty, `
+    OPCODE(20)
     PARAM(BOOL, `delete')
     PARAM(Window, `window')
     PARAM(Atom, `property')
     PARAM(Atom, `type')
-    PARAM(CARD32, `longOffset')
-    PARAM(CARD32, `longLength')
-', `REPLYFIELD(BYTE, `value')')
+    PARAM(CARD32, `long_offset')
+    PARAM(CARD32, `long_length')
+', `
+    REPLYFIELD(BYTE, `value')
+')
 
-REQUEST(ListProperties, `PARAM(Window, `id')', `REPLYFIELD(Atom, `atoms')')
+REQUEST(ListProperties, `
+    OPCODE(21)
+    PAD(1)
+    PARAM(Window, `window')
+', `
+    REPLYFIELD(Atom, `atoms')
+')
 
 VOIDREQUEST(SetSelectionOwner, `
-    PARAM(Window, `window')
+    OPCODE(22)
+    PAD(1)
+    PARAM(Window, `owner')
     PARAM(Atom, `selection')
     PARAM(Time, `time')
 ')
 
-REQUEST(GetSelectionOwner, `PARAM(Atom, `id')')
+REQUEST(GetSelectionOwner, `
+    OPCODE(23)
+    PAD(1)
+    PARAM(Atom, `selection')
+')
 
 VOIDREQUEST(ConvertSelection, `
+    OPCODE(24)
+    PAD(1)
     PARAM(Window, `requestor')
     PARAM(Atom, `selection')
     PARAM(Atom, `target')
@@ -132,159 +205,217 @@ VOIDREQUEST(ConvertSelection, `
 ')
 
 VOIDREQUEST(SendEvent, `
+    OPCODE(25)
     PARAM(BOOL, `propagate')
     PARAM(Window, `destination')
-    PARAM(CARD32, `eventMask')
-    dnl FIXME: may fail under WORD64
+    PARAM(CARD32, `event_mask')
     PARAM(xEvent, `event')
 ')
 
 REQUEST(GrabPointer, `
-    PARAM(BOOL, `ownerEvents')
-    PARAM(Window, `grabWindow')
-    PARAM(CARD16, `eventMask')
-    PARAM(BYTE, `pointerMode')
-    PARAM(BYTE, `keyboardMode')
-    PARAM(Window, `confineTo')
+    OPCODE(26)
+    PARAM(BOOL, `owner_events')
+    PARAM(Window, `grab_window')
+    PARAM(CARD16, `event_mask')
+    PARAM(BYTE, `pointer_mode')
+    PARAM(BYTE, `keyboard_mode')
+    PARAM(Window, `confine_to')
     PARAM(Cursor, `cursor')
     PARAM(Time, `time')
 ')
 
-VOIDREQUEST(UngrabPointer, `PARAM(Time, `id')')
+VOIDREQUEST(UngrabPointer, `
+    OPCODE(27)
+    PAD(1)
+    PARAM(Time, `time')
+')
 
 VOIDREQUEST(GrabButton, `
-    PARAM(BOOL, `ownerEvents')
-    PARAM(Window, `grabWindow')
-    PARAM(CARD16, `eventMask')
-    PARAM(CARD8, `pointerMode')
-    PARAM(CARD8, `keyboardMode')
-    PARAM(Window, `confineTo')
+    OPCODE(28)
+    PARAM(BOOL, `owner_events')
+    PARAM(Window, `grab_window')
+    PARAM(CARD16, `event_mask')
+    PARAM(CARD8, `pointer_mode')
+    PARAM(CARD8, `keyboard_mode')
+    PARAM(Window, `confine_to')
     PARAM(Cursor, `cursor')
     PARAM(CARD8, `button')
+    PAD(1)
     PARAM(CARD16, `modifiers')
 ')
 
 VOIDREQUEST(UngrabButton, `
+    OPCODE(29)
     PARAM(CARD8, `button')
-    PARAM(Window, `grabWindow')
+    PARAM(Window, `grab_window')
     PARAM(CARD16, `modifiers')
+    PAD(2)
 ')
 
 VOIDREQUEST(ChangeActivePointerGrab, `
+    OPCODE(30)
+    PAD(1)
     PARAM(Cursor, `cursor')
     PARAM(Time, `time')
-    PARAM(CARD16, `eventMask')
+    PARAM(CARD16, `event_mask')
 ')
 
 REQUEST(GrabKeyboard, `
-    PARAM(BOOL, `ownerEvents')
-    PARAM(Window, `grabWindow')
+    OPCODE(31)
+    PARAM(BOOL, `owner_events')
+    PARAM(Window, `grab_window')
     PARAM(Time, `time')
-    PARAM(BYTE, `pointerMode')
-    PARAM(BYTE, `keyboardMode')
+    PARAM(BYTE, `pointer_mode')
+    PARAM(BYTE, `keyboard_mode')
 ')
 
-VOIDREQUEST(UngrabKeyboard, `PARAM(Time, `id')')
+VOIDREQUEST(UngrabKeyboard, `
+    OPCODE(32)
+    PAD(1)
+    PARAM(Time, `time')
+')
 
 VOIDREQUEST(GrabKey, `
-    PARAM(BOOL, `ownerEvents')
-    PARAM(Window, `grabWindow')
+    OPCODE(33)
+    PARAM(BOOL, `owner_events')
+    PARAM(Window, `grab_window')
     PARAM(CARD16, `modifiers')
     PARAM(KeyCode, `key')
-    PARAM(CARD8, `pointerMode')
-    PARAM(CARD8, `keyboardMode')
+    PARAM(CARD8, `pointer_mode')
+    PARAM(CARD8, `keyboard_mode')
 ')
 
 VOIDREQUEST(UngrabKey, `
+    OPCODE(34)
     PARAM(CARD8, `key')
-    PARAM(Window, `grabWindow')
+    PARAM(Window, `grab_window')
     PARAM(CARD16, `modifiers')
 ')
 
 VOIDREQUEST(AllowEvents, `
+    OPCODE(35)
     PARAM(CARD8, `mode')
     PARAM(Time, `time')
 ')
 
-VOIDREQUEST(GrabServer)
+VOIDREQUEST(GrabServer, `
+    OPCODE(36)
+')
 
-VOIDREQUEST(UngrabServer)
+VOIDREQUEST(UngrabServer, `
+    OPCODE(37)
+')
 
-REQUEST(QueryPointer, `PARAM(Window, `id')')
+REQUEST(QueryPointer, `
+    OPCODE(38)
+    PAD(1)
+    PARAM(Window, `window')
+')
 
 REQUEST(GetMotionEvents, `
+    OPCODE(39)
+    PAD(1)
     PARAM(Window, `window')
     PARAM(Time, `start')
     PARAM(Time, `stop')
-', `REPLYFIELD(xTimecoord, `events')')
-
-REQUEST(TranslateCoords, `
-    PARAM(Window, `srcWid')
-    PARAM(Window, `dstWid')
-    PARAM(INT16, `srcX')
-    PARAM(INT16, `srcY')
+', `
+    REPLYFIELD(xTimecoord, `events')
 ')
 
+dnl REQUEST(TranslateCoordinates, `
+dnl     OPCODE(40)
+dnl     PAD(1)
+dnl     PARAM(Window, `src_window')
+dnl     PARAM(Window, `dst_window')
+dnl     PARAM(INT16, `src_x')
+dnl     PARAM(INT16, `src_y')
+dnl ')
+
 VOIDREQUEST(WarpPointer, `
-    PARAM(Window, `srcWid')
-    PARAM(Window, `dstWid')
-    PARAM(INT16, `srcX')
-    PARAM(INT16, `srcY')
-    PARAM(CARD16, `srcWidth')
-    PARAM(CARD16, `srcHeight')
-    PARAM(INT16, `dstX')
-    PARAM(INT16, `dstY')
+    OPCODE(41)
+    PAD(1)
+    PARAM(Window, `src_window')
+    PARAM(Window, `dst_window')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(CARD16, `src_width')
+    PARAM(CARD16, `src_height')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
 ')
 
 VOIDREQUEST(SetInputFocus, `
-    PARAM(CARD8, `revertTo')
+    OPCODE(42)
+    PARAM(CARD8, `revert_to')
     PARAM(Window, `focus')
     PARAM(Time, `time')
 ')
 
-REQUEST(GetInputFocus)
-
-REQUEST(QueryKeymap)
-
-VOIDREQUEST(OpenFont, `
-    PARAM(Font, `fid')
-    STRLENFIELD(`name', `nbytes')
-    LISTPARAM(char, `name', `nbytes')
+REQUEST(GetInputFocus, `
+    OPCODE(43)
 ')
 
-VOIDREQUEST(CloseFont, `PARAM(Font, `id')')
+REQUEST(QueryKeymap, `
+    OPCODE(44)
+')
 
-REQUEST(QueryFont, `PARAM(Font, `id')', `
+VOIDREQUEST(OpenFont, `
+    OPCODE(45)
+    PAD(1)
+    PARAM(Font, `fid')
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    LISTPARAM(char, `name', `name_len')
+')
+
+VOIDREQUEST(CloseFont, `
+    OPCODE(46)
+    PAD(1)
+    PARAM(Font, `font')
+')
+
+REQUEST(QueryFont, `
+    OPCODE(47)
+    PAD(1)
+    PARAM(Font, `font')
+', `
     REPLYFIELD(xFontProp, `properties', `nFontProps')
     REPLYFIELD(xCharInfo, `char_infos')
 ')
 
 REQUEST(QueryTextExtents, `
-    PARAM(Font, `fid')
-    LOCALPARAM(CARD16, `nchars')
-    EXPRFIELD(`oddLength', `nchars & 1')
-    LISTPARAM(CHAR2B, `string', `nchars')
+    OPCODE(48)
+    EXPRFIELD(BOOL, `odd_length', `string_len & 1')
+    PARAM(Font, `font')
+    LOCALPARAM(CARD16, `string_len')
+    LISTPARAM(CHAR2B, `string', `string_len')
 ')
 
 dnl FIXME: ListFonts needs an iterator for the reply - a pointer won't do.
 REQUEST(ListFonts, `
-    PARAM(CARD16, `maxNames')
-    STRLENFIELD(`pattern', `nbytes')
-    LISTPARAM(char, `pattern', `nbytes')
+    OPCODE(49)
+    PAD(1)
+    PARAM(CARD16, `max_names')
+    EXPRFIELD(CARD16, `pattern_len', `strlen(pattern)')
+    LISTPARAM(char, `pattern', `pattern_len')
 ')
 
 /* The ListFontsWithInfo request is not supported by XCB. */
 
 VOIDREQUEST(SetFontPath, `
-    PARAM(CARD16, `nFonts')
-    LOCALPARAM(CARD16, `nbytes')
-    LISTPARAM(char, `path', `nbytes')
+    OPCODE(51)
+    PAD(1)
+    PARAM(CARD16, `font_qty')
+    LOCALPARAM(CARD16, `path_len')
+    LISTPARAM(char, `path', `path_len')
 ')
 
 dnl FIXME: GetFontPath needs an iterator for the reply - a pointer won't do.
-REQUEST(GetFontPath)
+REQUEST(GetFontPath, `
+    OPCODE(52)
+')
 
 VOIDREQUEST(CreatePixmap, `
+    OPCODE(53)
     PARAM(CARD8, `depth')
     PARAM(Pixmap, `pid')
     PARAM(Drawable, `drawable')
@@ -292,44 +423,62 @@ VOIDREQUEST(CreatePixmap, `
     PARAM(CARD16, `height')
 ')
 
-VOIDREQUEST(FreePixmap, `PARAM(Pixmap, `id')')
+VOIDREQUEST(FreePixmap, `
+    OPCODE(54)
+    PAD(1)
+    PARAM(Pixmap, `pixmap')
+')
 
 VOIDREQUEST(CreateGC, `
-    PARAM(GContext, `gc')
+    OPCODE(55)
+    PAD(1)
+    PARAM(GContext, `cid')
     PARAM(Drawable, `drawable')
-    VALUEPARAM(CARD32, `mask', `values')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
 VOIDREQUEST(ChangeGC, `
+    OPCODE(56)
+    PAD(1)
     PARAM(GContext, `gc')
-    VALUEPARAM(CARD32, `mask', `values')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
 VOIDREQUEST(CopyGC, `
-    PARAM(GContext, `srcGC')
-    PARAM(GContext, `dstGC')
-    PARAM(CARD32, `mask')
+    OPCODE(57)
+    PAD(1)
+    PARAM(GContext, `src_gc')
+    PARAM(GContext, `dst_gc')
+    PARAM(CARD32, `value_mask')
 ')
 
 VOIDREQUEST(SetDashes, `
+    OPCODE(58)
+    PAD(1)
     PARAM(GContext, `gc')
-    PARAM(CARD16, `dashOffset')
-    PARAM(CARD16, `nDashes')
-    LISTPARAM(CARD8, `dashes', `nDashes')
+    PARAM(CARD16, `dash_offset')
+    PARAM(CARD16, `dashes_len')
+    LISTPARAM(CARD8, `dashes', `dashes_len')
 ')
 
 VOIDREQUEST(SetClipRectangles, `
+    OPCODE(59)
     PARAM(BYTE, `ordering')
     PARAM(GContext, `gc')
-    PARAM(INT16, `xOrigin')
-    PARAM(INT16, `yOrigin')
-    LOCALPARAM(CARD16, `nRectangles')
-    LISTPARAM(xRectangle, `rectangles', `nRectangles')
+    PARAM(INT16, `clip_x_origin')
+    PARAM(INT16, `clip_y_origin')
+    LOCALPARAM(CARD16, `rectangles_len')
+    LISTPARAM(xRectangle, `rectangles', `rectangles_len')
 ')
 
-VOIDREQUEST(FreeGC, `PARAM(GContext, `id')')
+VOIDREQUEST(FreeGC, `
+    OPCODE(60)
+    PAD(1)
+    PARAM(GContext, `gc')
+')
 
 VOIDREQUEST(ClearArea, `
+    OPCODE(61)
     PARAM(BOOL, `exposures')
     PARAM(Window, `window')
     PARAM(INT16, `x')
@@ -339,173 +488,220 @@ VOIDREQUEST(ClearArea, `
 ')
 
 VOIDREQUEST(CopyArea, `
-    PARAM(Drawable, `srcDrawable')
-    PARAM(Drawable, `dstDrawable')
+    OPCODE(62)
+    PAD(1)
+    PARAM(Drawable, `src_drawable')
+    PARAM(Drawable, `dst_drawable')
     PARAM(GContext, `gc')
-    PARAM(INT16, `srcX')
-    PARAM(INT16, `srcY')
-    PARAM(INT16, `dstX')
-    PARAM(INT16, `dstY')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
 ')
 
 VOIDREQUEST(CopyPlane, `
-    PARAM(Drawable, `srcDrawable')
-    PARAM(Drawable, `dstDrawable')
+    OPCODE(63)
+    PAD(1)
+    PARAM(Drawable, `src_drawable')
+    PARAM(Drawable, `dst_drawable')
     PARAM(GContext, `gc')
-    PARAM(INT16, `srcX')
-    PARAM(INT16, `srcY')
-    PARAM(INT16, `dstX')
-    PARAM(INT16, `dstY')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
-    PARAM(CARD32, `bitPlane')
+    PARAM(CARD32, `bit_plane')
 ')
 
 VOIDREQUEST(PolyPoint, `
-    PARAM(BYTE, `coordMode')
+    OPCODE(64)
+    PARAM(BYTE, `coordinate_mode')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nPoints')
-    LISTPARAM(xPoint, `points', `nPoints')
+    LOCALPARAM(CARD16, `points_len')
+    LISTPARAM(xPoint, `points', `points_len')
 ')
 
 VOIDREQUEST(PolyLine, `
-    PARAM(BYTE, `coordMode')
+    OPCODE(65)
+    PARAM(BYTE, `coordinate_mode')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nPoints')
-    LISTPARAM(xPoint, `points', `nPoints')
+    LOCALPARAM(CARD16, `points_len')
+    LISTPARAM(xPoint, `points', `points_len')
 ')
 
 VOIDREQUEST(PolySegment, `
+    OPCODE(66)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nSegments')
-    LISTPARAM(xSegment, `segments', `nSegments')
+    LOCALPARAM(CARD16, `segments_len')
+    LISTPARAM(xSegment, `segments', `segments_len')
 ')
 
 VOIDREQUEST(PolyRectangle, `
+    OPCODE(67)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nRectangles')
-    LISTPARAM(xRectangle, `rectangles', `nRectangles')
+    LOCALPARAM(CARD16, `rectangles_len')
+    LISTPARAM(xRectangle, `rectangles', `rectangles_len')
 ')
 
 VOIDREQUEST(PolyArc, `
+    OPCODE(68)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nArcs')
-    LISTPARAM(xArc, `arcs', `nArcs')
+    LOCALPARAM(CARD16, `arcs_len')
+    LISTPARAM(xArc, `arcs', `arcs_len')
 ')
 
 VOIDREQUEST(FillPoly, `
+    OPCODE(69)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(CARD8, `shape')
-    PARAM(CARD8, `coordMode')
-    LOCALPARAM(CARD16, `nPoints')
-    LISTPARAM(xPoint, `points', `nPoints')
+    PARAM(CARD8, `coordinate_mode')
+    LOCALPARAM(CARD16, `points_len')
+    LISTPARAM(xPoint, `points', `points_len')
 ')
 
 VOIDREQUEST(PolyFillRectangle, `
+    OPCODE(70)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nRectangles')
-    LISTPARAM(xRectangle, `rectangles', `nRectangles')
+    LOCALPARAM(CARD16, `rectangles_len')
+    LISTPARAM(xRectangle, `rectangles', `rectangles_len')
 ')
 
 VOIDREQUEST(PolyFillArc, `
+    OPCODE(71)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
-    LOCALPARAM(CARD16, `nArcs')
-    LISTPARAM(xArc, `arcs', `nArcs')
+    LOCALPARAM(CARD16, `arcs_len')
+    LISTPARAM(xArc, `arcs', `arcs_len')
 ')
 
 VOIDREQUEST(PutImage, `
+    OPCODE(72)
     PARAM(CARD8, `format')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
-    PARAM(INT16, `dstX')
-    PARAM(INT16, `dstY')
-    PARAM(CARD8, `leftPad')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
+    PARAM(CARD8, `left_pad')
     PARAM(CARD8, `depth')
-    LOCALPARAM(CARD16, `nbytes')
-    LISTPARAM(BYTE, `data', `nbytes')
+    LOCALPARAM(CARD16, `data_len')
+    LISTPARAM(BYTE, `data', `data_len')
 ')
 
 REQUEST(GetImage, `
+    OPCODE(73)
     PARAM(CARD8, `format')
     PARAM(Drawable, `drawable')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
-    PARAM(CARD32, `planeMask')
+    PARAM(CARD32, `plane_mask')
 ', `REPLYFIELD(BYTE, `data')')
 
 VOIDREQUEST(PolyText8, `
+    OPCODE(74)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD16, `nbytes')
-    LISTPARAM(BYTE, `items', `nbytes')
+    LOCALPARAM(CARD16, `items_len')
+    LISTPARAM(BYTE, `items', `items_len')
 ')
 
 VOIDREQUEST(PolyText16, `
+    OPCODE(75)
+    PAD(1)
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD16, `nbytes')
-    LISTPARAM(BYTE, `items', `nbytes')
+    LOCALPARAM(CARD16, `items_len')
+    LISTPARAM(BYTE, `items', `items_len')
 ')
 
 VOIDREQUEST(ImageText8, `
+    OPCODE(76)
+    EXPRFIELD(BYTE, `string_len', `strlen(string)')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    STRLENFIELD(`string', `nChars')
-    LISTPARAM(char, `string', `nChars')
+    LISTPARAM(char, `string', `string_len')
 ')
 
 VOIDREQUEST(ImageText16, `
-    PARAM(BYTE, `nChars')
+    OPCODE(77)
+    PARAM(BYTE, `string_len')
     PARAM(Drawable, `drawable')
     PARAM(GContext, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LISTPARAM(CHAR2B, `string', `nChars')
+    LISTPARAM(CHAR2B, `string', `string_len')
 ')
 
 VOIDREQUEST(CreateColormap, `
+    OPCODE(78)
     PARAM(BYTE, `alloc')
     PARAM(Colormap, `mid')
     PARAM(Window, `window')
     PARAM(VisualID, `visual')
 ')
 
-VOIDREQUEST(FreeColormap, `PARAM(Colormap, `id')')
-
-VOIDREQUEST(CopyColormapAndFree, `
-    PARAM(Colormap, `mid')
-    PARAM(Colormap, `srcCmap')
+VOIDREQUEST(FreeColormap, `
+    OPCODE(79)
+    PAD(1)
+    PARAM(Colormap, `cmap')
 ')
 
-VOIDREQUEST(InstallColormap, `PARAM(Colormap, `id')')
+VOIDREQUEST(CopyColormapAndFree, `
+    OPCODE(80)
+    PAD(1)
+    PARAM(Colormap, `mid')
+    PARAM(Colormap, `src_cmap')
+')
 
-VOIDREQUEST(UninstallColormap, `PARAM(Colormap, `id')')
+VOIDREQUEST(InstallColormap, `
+    OPCODE(81)
+    PAD(1)
+    PARAM(Colormap, `cmap')
+')
 
-REQUEST(ListInstalledColormaps, `PARAM(Window, `id')', `
+VOIDREQUEST(UninstallColormap, `
+    OPCODE(82)
+    PAD(1)
+    PARAM(Colormap, `cmap')
+')
+
+REQUEST(ListInstalledColormaps, `
+    OPCODE(83)
+    PAD(1)
+    PARAM(Window, `window')
+', `
     REPLYFIELD(Colormap, `cmaps', `nColormaps')
 ')
 
 REQUEST(AllocColor, `
+    OPCODE(84)
+    PAD(1)
     PARAM(Colormap, `cmap')
     PARAM(CARD16, `red')
     PARAM(CARD16, `green')
@@ -513,12 +709,15 @@ REQUEST(AllocColor, `
 ')
 
 REQUEST(AllocNamedColor, `
+    OPCODE(85)
+    PAD(1)
     PARAM(Colormap, `cmap')
-    STRLENFIELD(`name', `nbytes')
-    LISTPARAM(char, `name', `nbytes')
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    LISTPARAM(char, `name', `name_len')
 ')
 
 REQUEST(AllocColorCells, `
+    OPCODE(86)
     PARAM(BOOL, `contiguous')
     PARAM(Colormap, `cmap')
     PARAM(CARD16, `colors')
@@ -529,77 +728,251 @@ REQUEST(AllocColorCells, `
 ')
 
 REQUEST(AllocColorPlanes, `
+    OPCODE(87)
     PARAM(BOOL, `contiguous')
     PARAM(Colormap, `cmap')
     PARAM(CARD16, `colors')
-    PARAM(CARD16, `red')
-    PARAM(CARD16, `green')
-    PARAM(CARD16, `blue')
+    PARAM(CARD16, `reds')
+    PARAM(CARD16, `greens')
+    PARAM(CARD16, `blues')
 ', `
     REPLYFIELD(CARD32, `pixels', `nPixels')
 ')
 
 VOIDREQUEST(FreeColors, `
+    OPCODE(88)
+    PAD(1)
     PARAM(Colormap, `cmap')
-    VALUEPARAM(CARD32, `planeMask', `pixels')
+    VALUEPARAM(CARD32, `plane_mask', `pixels')
 ')
     
 VOIDREQUEST(StoreColors, `
+    OPCODE(89)
+    PAD(1)
     PARAM(Colormap, `cmap')
-    LOCALPARAM(CARD16, `nItems')
-    LISTPARAM(xColorItem, `items', `nItems')
+    LOCALPARAM(CARD16, `items_len')
+    LISTPARAM(xColorItem, `items', `items_len')
 ')
 
 VOIDREQUEST(StoreNamedColor, `
+    OPCODE(90)
     PARAM(CARD8, `flags')
     PARAM(Colormap, `cmap')
     PARAM(CARD32, `pixel')
-    STRLENFIELD(`name', `nbytes')
-    LISTPARAM(char, `name', `nbytes')
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    LISTPARAM(char, `name', `name_len')
 ')
 
-dnl TODO: QueryColors
-dnl TODO: LookupColor
-dnl TODO: CreateCursor
-dnl TODO: CreateGlyphCursor
-dnl TODO: FreeCursor
-dnl TODO: RecolorCursor
-dnl TODO: QueryBestSize
-dnl TODO: QueryExtension
-dnl TODO: ListExtensions
-dnl TODO: ChangeKeyboardMapping
-dnl TODO: GetKeyboardMapping
-dnl TODO: ChangeKeyboardControl
-dnl TODO: GetKeyboardControl
-dnl
-VOIDREQUEST(Bell, `PARAM(INT8, `percent')')
+REQUEST(QueryColors, `
+    OPCODE(91)
+    PAD(1)
+    PARAM(Colormap, `cmap')
+    LOCALPARAM(CARD16, `pixels_len')
+    LISTPARAM(CARD32, `pixels', `pixels_len')
+')
 
-dnl TODO: ChangePointerControl
-dnl TODO: GetPointerControl
-dnl TODO: SetScreenSaver
-dnl TODO: GetScreenSaver
-dnl TODO: ChangeHosts
-dnl TODO: ListHosts
-dnl TODO: SetAccessControl
-dnl TODO: SetCloseDownMode
-dnl TODO: KillClient
-dnl
+REQUEST(LookupColor, `
+    OPCODE(92)
+    PAD(1)
+    PARAM(Colormap, `cmap')
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    LISTPARAM(char, `name', `name_len')
+')
+
+VOIDREQUEST(CreateCursor, `
+    OPCODE(93)
+    PAD(1)
+    PARAM(Cursor, `cid')
+    PARAM(Pixmap, `source')
+    PARAM(Pixmap, `mask')
+    PARAM(CARD16, `fore_red')
+    PARAM(CARD16, `fore_green')
+    PARAM(CARD16, `fore_blue')
+    PARAM(CARD16, `back_red')
+    PARAM(CARD16, `back_green')
+    PARAM(CARD16, `back_blue')
+    PARAM(CARD16, `x')
+    PARAM(CARD16, `y')
+')
+
+VOIDREQUEST(CreateGlyphCursor, `
+    OPCODE(94)
+    PAD(1)
+    PARAM(Cursor, `cid')
+    PARAM(Font, `source_font')
+    PARAM(Font, `mask_font')
+    PARAM(CARD16, `source_char')
+    PARAM(CARD16, `mask_char')
+    PARAM(CARD16, `fore_red')
+    PARAM(CARD16, `fore_green')
+    PARAM(CARD16, `fore_blue')
+    PARAM(CARD16, `back_red')
+    PARAM(CARD16, `back_green')
+    PARAM(CARD16, `back_blue')
+')
+
+VOIDREQUEST(FreeCursor, `
+    OPCODE(95)
+    PAD(1)
+    PARAM(Cursor, `cursor')
+')
+
+VOIDREQUEST(RecolorCursor, `
+    OPCODE(96)
+    PAD(1)
+    PARAM(Cursor, `cursor')
+    PARAM(CARD16, `fore_red')
+    PARAM(CARD16, `fore_green')
+    PARAM(CARD16, `fore_blue')
+    PARAM(CARD16, `back_red')
+    PARAM(CARD16, `back_green')
+    PARAM(CARD16, `back_blue')
+')
+
+REQUEST(QueryBestSize, `
+    OPCODE(97)
+    PARAM(CARD8, `class')
+    PARAM(Drawable, `drawable')
+    PARAM(CARD16, `width')
+    PARAM(CARD16, `height')
+')
+
+REQUEST(QueryExtension, `
+    OPCODE(98)
+    PAD(1)
+    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    LISTPARAM(char, `name', `name_len')
+')
+
+dnl FIXME: ListExtensions needs an iterator for the reply - a pointer won't do.
+REQUEST(ListExtensions, `
+    OPCODE(99)
+')
+
+VOIDREQUEST(ChangeKeyboardMapping, `
+    OPCODE(100)
+    PARAM(CARD8, `keycode_count')
+    PARAM(KeyCode, `first_keycode')
+    PARAM(CARD8, `keysyms_per_keycode')
+    LISTPARAM(KeySym, `keysyms', `keycode_count * keysyms_per_keycode')
+')
+
+REQUEST(GetKeyboardMapping, `
+    OPCODE(101)
+    PAD(1)
+    PARAM(KeyCode, `first_keycode')
+    PARAM(CARD8, `count')
+')
+
+VOIDREQUEST(ChangeKeyboardControl, `
+    OPCODE(102)
+    PAD(1)
+    VALUEPARAM(CARD32, `value_mask', `value_list')
+')
+
+REQUEST(GetKeyboardControl, `
+    OPCODE(103)
+')
+
+VOIDREQUEST(Bell, `
+    OPCODE(104)
+    PARAM(INT8, `percent')
+')
+
+VOIDREQUEST(ChangePointerControl, `
+    OPCODE(105)
+    PAD(1)
+    PARAM(INT16, `acceleration_numerator')
+    PARAM(INT16, `acceleration_denominator')
+    PARAM(INT16, `threshold')
+    PARAM(BOOL, `do_acceleration')
+    PARAM(BOOL, `do_threshold')
+')
+
+REQUEST(GetPointerControl, `
+    OPCODE(106)
+')
+
+VOIDREQUEST(SetScreenSaver, `
+    OPCODE(107)
+    PAD(1)
+    PARAM(INT16, `timeout')
+    PARAM(INT16, `interval')
+    PARAM(CARD8, `prefer_blanking')
+    PARAM(CARD8, `allow_exposures')
+')
+
+REQUEST(GetScreenSaver, `
+    OPCODE(108)
+')
+
+VOIDREQUEST(ChangeHosts, `
+    OPCODE(109)
+    PARAM(CARD8, `mode')
+    PARAM(CARD8, `family')
+    PAD(1)
+    EXPRFIELD(CARD16, `address_len', `strlen(address)')
+    LISTPARAM(char, `address', `address_len')
+')
+
+REQUEST(ListHosts, `
+    OPCODE(110)
+')
+
+VOIDREQUEST(SetAccessControl, `
+    OPCODE(111)
+    PARAM(CARD8, `mode')
+')
+
+VOIDREQUEST(SetCloseDownMode, `
+    OPCODE(112)
+    PARAM(CARD8, `mode')
+')
+
+VOIDREQUEST(KillClient, `
+    OPCODE(113)
+    PAD(1)
+    PARAM(CARD32, `resource')
+')
+
 VOIDREQUEST(RotateProperties, `
+    OPCODE(114)
     PARAM(Window, `window')
     PARAM(CARD16, `nAtoms')
     PARAM(INT16, `nPositions')
     LISTPARAM(Atom, `atoms', `nAtoms')
 ')
 
-dnl TODO: ForceScreenSaver
-dnl TODO: SetPointerMapping
-dnl TODO: GetPointerMapping
-dnl TODO: SetModifierMapping
-dnl TODO: GetModifierMapping
-dnl 
+VOIDREQUEST(ForceScreenSaver, `
+    OPCODE(115)
+    PARAM(CARD8, `mode')
+')
+
+REQUEST(SetPointerMapping, `
+    OPCODE(116)
+    PARAM(CARD8, `map_len')
+    LISTPARAM(CARD8, `map', `map_len')
+')
+
+REQUEST(GetPointerMapping, `
+    OPCODE(117)
+')
+
+REQUEST(SetModifierMapping, `
+    OPCODE(118)
+    PARAM(CARD8, `keycodes_per_modifier')
+    LISTPARAM(KeyCode, `keycodes', `8 * keycodes_per_modifier')
+')
+
+REQUEST(GetModifierMapping, `
+    OPCODE(119)
+')
+
 dnl FIXME: NoOperation should allow specifying payload length
 dnl but geez, malloc()ing a 262140 byte buffer just so I have something
 dnl to hand to write(2) seems silly...!
-VOIDREQUEST(NoOperation)
+VOIDREQUEST(NoOperation, `
+    OPCODE(127)
+')
 _H
 ENDXCBGEN
