@@ -71,7 +71,7 @@
 	<li><a class="subsection" href="#wmprop">Window properties</a></li>
 	<li><a class="subsection" href="#wmname">Setting the window name and icon name</a></li>
 	<li>Setting preferred window size(s)</li>
-	<li>Setting miscellaneous window manager hintss</li>
+	<li>Setting miscellaneous window manager hints</li>
 	<li>Setting an application's icon</li>
       </ol>
     <li><a class="section" href="#winop">Simple window operations</a></li>
@@ -228,7 +228,7 @@
       This also implies that the program may not perform operations
       that might take a long time while handling an event (such as
       opening a network connection to some remote server, or
-      connecting to a database server, or even perfrming a long file
+      connecting to a database server, or even performing a long file
       copy operation). Instead, it needs to perform all these
       operations in an asynchronous manner. This may be done by using
       various asynchronous models to perform the longish operations,
@@ -293,7 +293,7 @@
 	</p>
         <li class="subtitle"><a name="events">Events</a></li>
 	<p>
-	A structure is used to pass evnts received from the X
+	A structure is used to pass events received from the X
 	server. XCB supports a large amount of event types (33 when
 	this tutorial was written). This structure contains the type
 	of event received, as well as the data associated with the
@@ -848,7 +848,7 @@ XCBVoidCookie XCBChangeGC (XCBConnection *c,           /* The XCB Connection */
 	  <li>GCArcMode</li>
 	</ul>
 	<p>
-	It is possible to set several several attributes at the same
+	It is possible to set several attributes at the same
 	time (for example setting the attributes of a font and the
 	color which will be used to display a string), by OR'ing these
 	values in <span class="code">value_mask</span>. Then
@@ -1009,7 +1009,7 @@ typedef struct {
 	ellipse, and (width, height) the radius. It's more logical.
 	</p>
 	<p>
-	The corresponding function which fill inside the goemetrical
+	The corresponding function which fill inside the geometrical
 	object are listed below, without  further explanation, as they
 	are used as the above functions.
 	</p>
@@ -1321,12 +1321,12 @@ XCBConfigureWindow (c, win, XCBCWEventMask, values);
 </pre>
 	<div class="emph">
 	<p>
-	Note: A common bug progammers do is adding code to handle new
+	Note: A common bug programmers do is adding code to handle new
 	event types in their program, while forgetting to add the
 	masks for these events in the creation of the window. Such a
 	programmer then should sit down for hours debugging his
-	program, wondering "why doesn't my program notice that i
-	released the button ??", only to find that they registered for
+	program, wondering "Why doesn't my program notice that I
+	released the button?", only to find that they registered for
 	button press events but not for button release events.
 	</p>
 	</div>
@@ -1400,10 +1400,10 @@ XCBConfigureWindow (c, win, XCBCWEventMask, values);
 	<p>
 	You should note the implicit assumption hidden here: the
 	contents of our window is lost when it is being obscured
-	(covered) by ither windows. One may wonder why the X server
+	(covered) by either windows. One may wonder why the X server
 	does not save this contents. The answer is: to save
 	memory. After all, the number of windows on a display at a
-	given time may be very large, ans storing the contents of all
+	given time may be very large, and storing the contents of all
 	of them might require a lot of memory. Actually, there is a
 	way to tell the X server to store  the contents of a window in
 	special cases, as we will see later.
@@ -1429,11 +1429,11 @@ typedef struct {
 </pre>
         <li class="subtitle"><a name="userinput">Getting user input</a></li>
 	<p>
-	User input traditionnally comes from two sources: the mouse
+	User input traditionally comes from two sources: the mouse
 	and the keyboard. Various event types exist to notify us of
 	user input (a key being presses on the keyboard, a key being
 	released on the keyboard, the mouse moving over our window,
-	the wouse entering (or leaving) our window, and so on.
+	the mouse entering (or leaving) our window, and so on.
 	</p>
 	<ol>
   	  <li class="subsubtitle"><a name="mousepressrelease">Mouse button press and release events</a></li>
@@ -1476,7 +1476,7 @@ typedef XCBButtonPressEvent XCBButtonReleaseEvent;
 	  The <span class="code">time</span> field may be used to calculate "double-click"
 	  situations by an application (e.g. if the mouse button was
 	  clicked two times in a duration shorter than a given amount
-	  of time, assume this was a double clik).
+	  of time, assume this was a double click).
 	  </p>
           <p>
 	  The <span class="code">state</span> field is a mask of the buttons held down during
@@ -1838,7 +1838,7 @@ main (int argc, char *argv[])
       </ol>
       <li class="title"><a name="font">Handling text and fonts</a></li>
       <p>
-      Besides drawing graphics on a window, we often wnat to draw
+      Besides drawing graphics on a window, we often want to draw
       text. Text strings have two major properties: the characters to
       be drawn and the font with which they are drawn. In order to
       draw text, we need to first request the X server to load a
@@ -1864,11 +1864,11 @@ typedef struct {
       <li class="title"><a name="wm">Interacting with the window manager</a></li>
       <p>
       After we have seen how to create windows and draw on them, we
-      takr one step back, and look at how our windows are interacting
+      take one step back, and look at how our windows are interacting
       with their environment (the full screen and the other
       windows). First of all, our application needs to interact with
       the window manager. The window manager is responsible to
-      decorating dranwn windows (i.e. adding a frame, an iconify
+      decorating drawn windows (i.e. adding a frame, an iconify
       button, a system menu, a title bar, etc), as well as handling
       icons shown when windows are being iconified. It also handles
       ordering of windows on the screen, and other administrative
@@ -2023,8 +2023,8 @@ gcc prog.c -o prog `pkg-config --cflags --libs xcb_atom`
 	dialog box window in our program, instead of creating it every
 	time the user asks to open it, we can create the window once,
 	in an un-mapped mode, and when the user asks to open it, we
-	simply map the window on the screen. When the user clcked the
-	'OK' or 'Cancel' buton, we simply un-map the window. This is
+	simply map the window on the screen. When the user clicked the
+	'OK' or 'Cancel' button, we simply un-map the window. This is
 	much faster than creating and destroying the window, however,
 	the cost is wasted resources, both on the client side, and on
 	the X server side.
@@ -2107,7 +2107,7 @@ XCBConfigureWindow (c, win, CWX | CWY, values);
 	</p>
         <li class="subtitle"><a name="winsize">Resizing a window</a></li>
 	<p>
-	Yet another operation we can do is to whange the size of a
+	Yet another operation we can do is to change the size of a
 	window. This is done using the following code:
 	</p>
 	<pre class="code">
@@ -2133,7 +2133,7 @@ XCBConfigureWindow (c, win, CWX | CWY | CWWidth | CWHeight, values);
 </pre>
         <li class="subtitle"><a name="winstack">Changing windows stacking order: raise and lower</a></li>
 	<p>
-	Untilnow, we changed properties of a single window. We'll see
+	Until now, we changed properties of a single window. We'll see
 	that there are properties that relate to the window and other
 	windows. One of hem is the stacking order. That is, the order
 	in which the windows are layered on top of each other. The
@@ -2157,14 +2157,14 @@ const static CARD32 values[] = { Below };
 /* Move the window on the bottom of the stack */
 XCBConfigureWindow (c, win, CWStackMode, values);
 </pre>
-        <li class="subtitle"><a name="wingetinfo">Getting informations about a window</a></li>
+        <li class="subtitle"><a name="wingetinfo">Getting information about a window</a></li>
 	<p>
 	Just like we can set various attributes of our windows, we can
 	also ask the X server supply the current values of these
 	attributes. For example, we can chewk where a window is
 	located on the screen, what is its current size, wheter it is
-	mapped or not, etc. The structure that contains some of these
-	informations is
+	mapped or not, etc. The structure that contains some of this
+	information is
 	</p>
 	<pre class="code">
 typedef struct {
@@ -2387,10 +2387,10 @@ XCBGetWindowAttributesRep   *XCBGetWindowAttributesReply (XCBConnection         
         <li class="subtitle"><a name="colormap">Color maps</a></li>
 	<p>
 	In the beginning, there were not enough colors. Screen
-	controllors could only support a limited number of colors
-	simultaneously (initilly 2, then 4, 16 and 256). Because of
+	controllers could only support a limited number of colors
+	simultaneously (initially 2, then 4, 16 and 256). Because of
 	this, an application could not just ask to draw in a "light
-	pruple-red" color, and expect that color to be available. Each
+	purple-red" color, and expect that color to be available. Each
 	application allocated the colors it needed, and when all the
 	color entries (4, 16, 256 colors) were in use, the next color
 	allocation would fail.
@@ -2419,13 +2419,13 @@ XCBGetWindowAttributesRep   *XCBGetWindowAttributesReply (XCBConnection         
 	color map entry with a color that is closest to the one you
 	were asking for. This would mean that the actual drawing on
 	the screen would be done using colors similar to what you
-	wanted, but not hte same.
+	wanted, but not the same.
 	</p>
 	<p>
 	On today's more modern screens where one runs an X server with
 	support for 16 million colors, this limitation looks a little
 	silly, but remember that there are still older computers with
-	older graphics cards out htere. Using color map, support for
+	older graphics cards out there. Using color map, support for
 	these screen becomes transparent to you. On a display
 	supporting 16 million colors, any color entry allocation
 	request would succeed. On a display supporting a limited
@@ -2437,11 +2437,11 @@ XCBGetWindowAttributesRep   *XCBGetWindowAttributesReply (XCBConnection         
 	<p>
 	When you draw using XCB, you can choose to use the standard
 	color map of the screen your window is displayed on, or you
-	can allocate a new color map and applyit to a window. In the
+	can allocate a new color map and apply it to a window. In the
 	latter case, each time the mouse moves onto your window, the
 	screen color map will be replaced by your window's color map,
 	and you'll see all the other windows on screen change their
-	colors into something quite bizzar. In fact, this is the
+	colors into something quite bizzare. In fact, this is the
 	effect you get with X applications that use the "-install"
 	command line option.
 	</p>
@@ -2660,7 +2660,7 @@ main (int argc, char *argv[])
       </p>
       <p>
       One thing to note before delving further, is that XCB (nor Xlib)
-      supplies no means of manipulating popular image formats, sugh as
+      supplies no means of manipulating popular image formats, such as
       gif, png, jpeg or tiff. It is up to the programmer (or to higher
       level graphics libraries) to translate these image formats into
       formats that the X server is familiar with (x bitmaps and x
@@ -2707,7 +2707,7 @@ typedef union {
 </pre>
         <p>
 	in order to avoid confusion between a window and a pixmap.The
-	operations that will work indeferently on a window or a pixmap
+	operations that will work indifferently on a window or a pixmap
 	will require a <span class="code">XCBDRAWABLE</span>
 	</p>
 	<div class="emph">
@@ -2770,7 +2770,7 @@ XCBVoidCookie XCBCopyArea (XCBConnection *c,             /* Pointer to the XCBCo
 </pre>
 	<p>
 	As you can see, we could copy the whole pixmap, as well as
-	only a given rectangle of the pixmap. This is usefull to
+	only a given rectangle of the pixmap. This is useful to
 	optimize the drawing speed: we could copy only what we have
 	modified in the pixmap.
 	</p>
