@@ -156,7 +156,7 @@ REQUEST(GetPriority, `
     PARAM(CARD32, `id')
 ', `
     PAD(1)
-    PARAM(INT32, `priority')
+    FIELD(INT32, `priority')
 ')
 
 EVENT(CounterNotify, 0, `
