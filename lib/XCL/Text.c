@@ -5,12 +5,8 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 
-/* FIXME: PolyText8 doesn't work, somehow. Make it work. */
 int XDrawString(register Display *dpy, Drawable drawable, GC gc, int x, int y, const char *string, int length)
 {
-#if 1
-	return XDrawImageString(dpy, drawable, gc, x, y, string, length);
-#else
     int Datalength, nbytes;
     unsigned char *buf, *bufp;
     
@@ -44,5 +40,4 @@ int XDrawString(register Display *dpy, Drawable drawable, GC gc, int x, int y, c
 
     free(buf);
     return 0;
-#endif
 }
