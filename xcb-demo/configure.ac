@@ -11,5 +11,6 @@ dnl AM_PROG_LIBTOOL
 dnl AC_PROG_MAKE_SET
 
 PKG_CHECK_MODULES(XCB, xcb)
+PKG_CHECK_MODULES(XCBIMAGE, xcb-image)
 
-AC_OUTPUT([Makefile])
+AC_OUTPUT([Makefile tests/Makefile])
