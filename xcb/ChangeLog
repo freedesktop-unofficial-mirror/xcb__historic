@@ -1,5 +1,13 @@
 2004-09-28  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcbint.h:
+	* src/xcb_conn.c:
+	Add internal sanity check macros for sequence
+	numbers, and invoke them every time _xcb_conn_wait
+	is entered.
+
+2004-09-28  Jamey Sharp  <jamey@minilop.net>
+
 	* src/client-c.xcb:
 	Allow LISTPARAMs to omit the length argument. When
 	generating C code, a LOCALPARAM is automatically
