@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: XCBImage
+Description: XCB image convenience library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} @XCB_LIBS@ @LIBS@
+Cflags: -I${includedir} @XCB_CFLAGS@

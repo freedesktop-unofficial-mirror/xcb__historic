@@ -9,6 +9,11 @@ AC_PROG_LIBTOOL
 xcbincludedir='${includedir}/X11/XCB'
 AC_SUBST(xcbincludedir)
 
+pkgconfigdir='${libdir}/pkgconfig'
+AC_SUBST(pkgconfigdir)
+
 PKG_CHECK_MODULES(XCB, xcb)
 
-AC_OUTPUT([Makefile image/Makefile])
+AC_OUTPUT([Makefile
+	image/Makefile image/xcb-image.pc
+	])

@@ -8,6 +8,10 @@ LDADD = $(XCB_LIBS)
 
 libXCBImage_la_SOURCES = xcb_image.c
 
+pkgconfig_DATA = xcb-image.pc
+
+EXTRA_DIST=xcb-image.pc.in
+
 noinst_PROGRAMS = test_xcb_image test_xcb_image_shm
 
 test_xcb_image_LDADD = $(LDADD) -L. -lXCBImage
