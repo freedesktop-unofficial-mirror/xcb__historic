@@ -36,23 +36,21 @@
 #include "xcbint.h"
 
 typedef struct XCBReplyData {
-    pthread_cond_t cond;
-    int pending;
-    int error;
     unsigned int request;
     void *data;
+    char pending;
+    char error;
 } XCBReplyData;
 
 static void free_reply_data(XCBReplyData *data)
 {
-    pthread_cond_destroy(&data->cond);
     free(data->data);
     free(data);
 }
 
-static int match_pending(const void *ignored, const void *data)
+static int match_pointer(const void *a, const void *b)
 {
-    return ((XCBReplyData *) data)->pending;
+    return a == b;
 }
 
 static int match_reply(const void *request, const void *data)
@@ -62,10 +60,10 @@ static int match_reply(const void *request, const void *data)
 
 static void wake_up_next_reader(XCBConnection *c)
 {
-    XCBReplyData *cur = _xcb_list_find(c->in.replies, match_pending, 0);
+    pthread_cond_t *cur = _xcb_list_peek_head(c->in.readers);
     int pthreadret;
     if(cur)
-        pthreadret = pthread_cond_signal(&cur->cond);
+        pthreadret = pthread_cond_signal(cur);
     else
         pthreadret = pthread_cond_signal(&c->in.event_cond);
     assert(pthreadret == 0);
@@ -75,6 +73,7 @@ static void wake_up_next_reader(XCBConnection *c)
 
 void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **e)
 {
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     void *ret = 0;
     XCBReplyData *cur;
     if(e)
@@ -95,14 +94,18 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
 
     ++cur->pending;
 
+    _xcb_list_append(c->in.readers, &cond);
+
     /* If this request has not been read yet, wait for it. */
     while((signed int) (c->in.request_read - request) < 0)
-        if(_xcb_conn_wait(c, /*should_write*/ 0, &cur->cond) <= 0)
+        if(_xcb_conn_wait(c, /*should_write*/ 0, &cond) <= 0)
         {
             /* Do not remove the reply record on I/O error. */
             --cur->pending;
             goto done;
         }
+
+    _xcb_list_remove(c->in.readers, match_pointer, &cond);
 
     /* No need to update pending flag - about to delete cur anyway. */
 
@@ -120,6 +123,7 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
     free(cur);
 
 done:
+    pthread_cond_destroy(&cond);
     wake_up_next_reader(c);
     pthread_mutex_unlock(&c->iolock);
     return ret;
@@ -199,7 +203,8 @@ int _xcb_in_init(_xcb_in *in)
 
     in->replies = _xcb_list_new();
     in->events = _xcb_list_new();
-    if(!in->replies || !in->events)
+    in->readers = _xcb_list_new();
+    if(!in->replies || !in->events || !in->readers)
         return 0;
 
     in->unexpected_reply_handler = 0;
@@ -230,11 +235,10 @@ int _xcb_in_expect_reply(XCBConnection *c, unsigned int request)
     if(!data)
         return 0;
 
-    pthread_cond_init(&data->cond, 0);
-    data->pending = 0;
-    data->error = 0;
     data->request = request;
     data->data = 0;
+    data->pending = 0;
+    data->error = 0;
 
     _xcb_list_append(c->in.replies, data);
     return 1;
@@ -297,7 +301,6 @@ int _xcb_in_read_packet(XCBConnection *c)
         assert(rep->data == 0);
         rep->error = (buf[0] == 0);
         rep->data = buf;
-        pthread_cond_signal(&rep->cond);
     }
     else /* event or error without a reply record */
     {

@@ -1,3 +1,15 @@
+2005-03-22  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_in.c, src/xcbint.h:
+	My recent Xlib patch stressed XCB's pending reply queue in ways
+	it has never been stressed before, with thousands of entries.
+	Profiling revealed that wake_up_next_reader was taking most of
+	the cycles of my test app with its linear search of the reply
+	queue. So I gave it its own 'readers' queue, which can have at
+	most one entry per thread, and which can be no more than the
+	number of pending replies. In the current implementation the
+	readers queue uses only constant-time operations, too.
+
 2005-03-20  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_in.c:

@@ -109,6 +109,7 @@ typedef struct _xcb_in {
 
     _xcb_list *replies;
     _xcb_list *events;
+    _xcb_list *readers;
 
     XCBUnexpectedReplyFunc unexpected_reply_handler;
     void *unexpected_reply_data;
