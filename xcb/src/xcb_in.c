@@ -112,7 +112,7 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
     if(cur->data && ((XCBGenericRep *) cur->data)->response_type == 0)
     {
         if(!e)
-            _xcb_list_append(c->in.events, (XCBGenericEvent *) cur->data);
+            _xcb_queue_enqueue(c->in.events, (XCBGenericEvent *) cur->data);
         else
             *e = (XCBGenericError *) cur->data;
     }
@@ -139,7 +139,7 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 
     pthread_mutex_lock(&c->iolock);
     /* _xcb_list_remove_head returns 0 on empty list. */
-    while(!(ret = _xcb_list_remove_head(c->in.events)))
+    while(!(ret = _xcb_queue_dequeue(c->in.events)))
         if(_xcb_conn_wait(c, /*should_write*/ 0, &c->in.event_cond) <= 0)
             break;
 
@@ -161,7 +161,7 @@ XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error)
         *error = 0;
     /* FIXME: follow X meets Z architecture changes. */
     if(_xcb_in_read(c) >= 0)
-        ret = _xcb_list_remove_head(c->in.events);
+        ret = _xcb_queue_dequeue(c->in.events);
     else if(error)
         *error = -1;
     else
@@ -186,7 +186,7 @@ int _xcb_in_init(_xcb_in *in)
     in->request_read = 0;
 
     in->replies = _xcb_list_new();
-    in->events = _xcb_list_new();
+    in->events = _xcb_queue_new();
     in->readers = _xcb_list_new();
     if(!in->replies || !in->events || !in->readers)
         return 0;
@@ -201,7 +201,7 @@ void _xcb_in_destroy(_xcb_in *in)
 {
     pthread_cond_destroy(&in->event_cond);
     _xcb_list_delete(in->replies, (XCBListFreeFunc) free_reply_data);
-    _xcb_list_delete(in->events, free);
+    _xcb_queue_delete(in->events, free);
     _xcb_list_delete(in->readers, 0);
 }
 
@@ -282,7 +282,7 @@ int _xcb_in_read_packet(XCBConnection *c)
     }
     else /* event or error without a reply record */
     {
-        _xcb_list_append(c->in.events, (XCBGenericEvent *) buf);
+        _xcb_queue_enqueue(c->in.events, (XCBGenericEvent *) buf);
         pthread_cond_signal(&c->in.event_cond);
     }
 

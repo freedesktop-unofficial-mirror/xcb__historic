@@ -1,6 +1,13 @@
 2005-03-25  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_in.c, src/xcb_list.c, src/xcbint.h:
+	Add a queue ADT. Currently implemented using the list ADT, but
+	analysis will probably suggest a better data structure. The
+	split is intended to help that analysis.
+
+2005-03-25  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_in.c, src/xcb_list.c, src/xcbint.h:
 	Remove _xcb_list_length. (Two callers in xcb_in didn't actually
 	care about the returned value beyond "empty" or "non-empty",
 	which they can get other ways.) _xcb_in_events_length became
