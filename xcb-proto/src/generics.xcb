@@ -3,7 +3,7 @@ dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 dnl
 dnl macros.m4: Generic macros useful in m4
-divert(-1) dnl Discard any text until a divert(0).
+pushdef(`DIVNUM', divnum)divert(-1) dnl Discard any text until a POPDIV().
 
 dnl -- Macros defined here
 
@@ -117,4 +117,4 @@ UNIMPLEMENTED(`OPCODE')
 UNIMPLEMENTED(`REPLY')
 UNIMPLEMENTED(`ARRAYREPLY')
 
-divert(0)`'dnl
+POPDIV()`'dnl
