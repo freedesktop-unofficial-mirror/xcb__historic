@@ -7,6 +7,9 @@
 #include <X11/Xutil.h>
 #include <stdio.h>
 
+#undef USEPUTIMAGE
+#undef USEPUTPIXEL
+
 #if defined(Lynx) && defined(ROUNDUP)
 #undef ROUNDUP
 #endif
@@ -14,6 +17,7 @@
 /* assumes pad is a power of 2 */
 #define ROUNDUP(nbytes, pad) (((nbytes) + ((pad) - 1)) & ~(long)((pad) - 1))
 
+#ifdef USEPUTIMAGE
 static unsigned char const _reverse_byte[0x100] = {
 	0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
 	0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
@@ -540,20 +544,6 @@ static int const HalfOrderWord[12] = {
 		     + (((bitmap_bit_order == MSBFirst) ? 0 : 3)		\
 		     + ((byte_order == MSBFirst) ? 0 : 6)))
 
-#if 0 /* not needed, ever */
-/* Cancel a GetReq operation, before doing _XSend or Data */
-
-#if (defined(__STDC__) && !defined(UNIXCPP)) || defined(ANSICPP)
-#define UnGetReq(name)\
-    dpy->bufptr -= SIZEOF(x##name##Req);\
-    dpy->request--
-#else
-#define UnGetReq(name)\
-    dpy->bufptr -= SIZEOF(x/**/name/**/Req);\
-    dpy->request--
-#endif
-#endif
-
 struct SendImageParams
 {
     Display *dpy;
@@ -586,8 +576,8 @@ static void SendImage(dpy, is_xyimage, p, depth)
     long bytes_per_line = p->image->bytes_per_line;
     long bytes_per_src_plane = bytes_per_line * p->image->height;
     long bytes_per_dest_plane;
-    unsigned char *src, *dest, *buf;
-    unsigned char *extra = 0;
+    unsigned char *src, *dest;
+    unsigned char *buf = 0, *extra = 0;
     register int j;
 
     p->total_xoffset = (unsigned)(p->total_xoffset - p->leftPad) >> 3;
@@ -627,7 +617,7 @@ static void SendImage(dpy, is_xyimage, p, depth)
     }
 
     length = ROUNDUP(length, 4);
-    if ((buf = _XAllocScratch(dpy, (unsigned long) (length))) == NULL) {
+    if ((buf = malloc(length)) == NULL) {
 	goto done;	
     }
 
@@ -683,6 +673,8 @@ static void SendImage(dpy, is_xyimage, p, depth)
 	length, buf);
 
 done:
+    if (buf)
+	Xfree(buf);
     if (extra)
 	Xfree(extra);
 }
@@ -767,7 +759,11 @@ PutSubImage(p, req_xoffset, req_yoffset, x, y, req_width, req_height)
     }
 }
 
+#ifdef USEPUTPIXEL
 extern void _XInitImageFuncPtrs();
+#endif
+
+#endif /* USEPUTIMAGE */
 
 int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
 							      req_height)
@@ -779,10 +775,10 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
     unsigned int req_width, req_height;
     int req_xoffset, req_yoffset;
 {
+#ifdef USEPUTIMAGE
     long width = req_width;
     long height = req_height;
     char *tmp = 0;
-    XImage img;
     struct SendImageParams p;
 
     if (req_xoffset < 0) {
@@ -855,7 +851,9 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
 		p.dest_bits_per_pixel = format->bits_per_pixel;
 		p.dest_scanline_pad = format->scanline_pad;
 	    }
+#ifdef USEPUTPIXEL
 	if (p.dest_bits_per_pixel != image->bits_per_pixel) {
+	    XImage img;
 	    register long i, j;
 	    /* XXX slow, but works */
 	    img.width = width;
@@ -883,6 +881,7 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
 	    p.image = &img;
 	    req_xoffset = req_yoffset = 0;
 	}
+#endif /* USEPUTPIXEL */
     }
 
     LockDisplay(dpy);
@@ -893,5 +892,6 @@ int XPutImage(dpy, d, gc, image, req_xoffset, req_yoffset, x, y, req_width,
 
     UnlockDisplay(dpy);
     Xfree(tmp);
+#endif /* USEPUTIMAGE */
     return 0;
 }
