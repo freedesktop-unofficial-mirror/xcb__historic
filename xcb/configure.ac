@@ -30,6 +30,8 @@ done
 AC_SUBST(XCBPROTO_VPATH)
 
 AC_HEADER_STDC
+AC_SEARCH_LIBS(gethostbyname, nsl)
+AC_SEARCH_LIBS(connect, socket)
 
 xcbincludedir='${includedir}/X11/XCB'
 AC_SUBST(xcbincludedir)
