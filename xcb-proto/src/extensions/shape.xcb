@@ -10,22 +10,22 @@ TYPEDEF(CARD8, SHAPE_OP)
 TYPEDEF(CARD8, SHAPE_KIND)
 
 EVENT(`Notify', 0, `
-    REPLY(SHAPE_KIND, `shape_kind')
-    REPLY(WINDOW, `affected_window')
-    REPLY(INT16, `extents_x')
-    REPLY(INT16, `extents_y')
-    REPLY(CARD16, `extents_width')
-    REPLY(CARD16, `extents_height')
-    REPLY(TIMESTAMP, `server_time')
-    REPLY(BOOL, `shaped')
+    FIELD(SHAPE_KIND, `shape_kind')
+    FIELD(WINDOW, `affected_window')
+    FIELD(INT16, `extents_x')
+    FIELD(INT16, `extents_y')
+    FIELD(CARD16, `extents_width')
+    FIELD(CARD16, `extents_height')
+    FIELD(TIMESTAMP, `server_time')
+    FIELD(BOOL, `shaped')
 ')
 
 REQUEST(QueryVersion, `
     OPCODE(0)
 ', `
     PAD(1)
-    REPLY(CARD16, `major_version')
-    REPLY(CARD16, `minor_version')
+    FIELD(CARD16, `major_version')
+    FIELD(CARD16, `minor_version')
 ')
 
 VOIDREQUEST(Rectangles, `
@@ -78,17 +78,17 @@ REQUEST(QueryExtents, `
     PARAM(WINDOW, `destination_window')
 ', `
     PAD(1)
-    REPLY(BOOL, `bounding_shaped')
-    REPLY(BOOL, `clip_shaped')
+    FIELD(BOOL, `bounding_shaped')
+    FIELD(BOOL, `clip_shaped')
     PAD(2)
-    REPLY(INT16, `bounding_shape_extents_x')
-    REPLY(INT16, `bounding_shape_extents_y')
-    REPLY(CARD16, `bounding_shape_extents_width')
-    REPLY(CARD16, `bounding_shape_extents_height')
-    REPLY(INT16, `clip_shape_extents_x')
-    REPLY(INT16, `clip_shape_extents_y')
-    REPLY(CARD16, `clip_shape_extents_width')
-    REPLY(CARD16, `clip_shape_extents_height')
+    FIELD(INT16, `bounding_shape_extents_x')
+    FIELD(INT16, `bounding_shape_extents_y')
+    FIELD(CARD16, `bounding_shape_extents_width')
+    FIELD(CARD16, `bounding_shape_extents_height')
+    FIELD(INT16, `clip_shape_extents_x')
+    FIELD(INT16, `clip_shape_extents_y')
+    FIELD(CARD16, `clip_shape_extents_width')
+    FIELD(CARD16, `clip_shape_extents_height')
 ')
 
 VOIDREQUEST(SelectInput, `
@@ -101,7 +101,7 @@ REQUEST(InputSelected, `
     OPCODE(7)
     PARAM(WINDOW, `destination_window')
 ', `
-    REPLY(BOOL, `enabled')
+    FIELD(BOOL, `enabled')
 ')
 
 REQUEST(GetRectangles, `
@@ -109,8 +109,8 @@ REQUEST(GetRectangles, `
     PARAM(WINDOW, `window')
     PARAM(SHAPE_KIND, `source_kind')
 ', `
-    REPLY(BYTE, `ordering')
-    REPLY(CARD32, `rectangles_len')
+    FIELD(BYTE, `ordering')
+    FIELD(CARD32, `rectangles_len')
     ARRAYREPLY(RECTANGLE, `rectangles', `R->rectangles_len')
 ')
 

@@ -67,15 +67,15 @@ REQUEST(Initialize, `
     OPCODE(0)
 ', `
     PAD(1)
-    REPLY(CARD8, `major_version')
-    REPLY(CARD8, `minor_version')
+    FIELD(CARD8, `major_version')
+    FIELD(CARD8, `minor_version')
 ')
 
 REQUEST(ListSystemCounters, `
     OPCODE(1)
 ', `
     PAD(1)
-    REPLY(CARD32, `counters_len')
+    FIELD(CARD32, `counters_len')
     PAD(20)
     LISTFIELD(SYSTEMCOUNTER, `counters', `R->counters_len')
 ')
@@ -96,7 +96,7 @@ REQUEST(QueryCounter, `
     PARAM(COUNTER, `counter')
 ', `
     PAD(1)
-    REPLY(INT64, `counter_value')
+    FIELD(INT64, `counter_value')
 ')
 
 VOIDREQUEST(Await, `
@@ -139,10 +139,10 @@ REQUEST(QueryAlarm, `
     PARAM(ALARM, `alarm')
 ', `
     PAD(1)
-    REPLY(TRIGGER, `trigger')
-    REPLY(INT64, `delta')
-    REPLY(BOOL, `events')
-    REPLY(ALARMSTATE, `state')
+    FIELD(TRIGGER, `trigger')
+    FIELD(INT64, `delta')
+    FIELD(BOOL, `events')
+    FIELD(ALARMSTATE, `state')
 ')
 
 VOIDREQUEST(SetPriority, `
@@ -160,21 +160,21 @@ REQUEST(GetPriority, `
 ')
 
 EVENT(CounterNotify, 0, `
-    REPLY(CARD8, `kind')
-    REPLY(COUNTER, `counter')
-    REPLY(INT64, `wait_value')
-    REPLY(INT64, `counter_value')
-    REPLY(TIMESTAMP, `timestamp')
-    REPLY(CARD16, `count')
-    REPLY(BOOL, `destroyed')
+    FIELD(CARD8, `kind')
+    FIELD(COUNTER, `counter')
+    FIELD(INT64, `wait_value')
+    FIELD(INT64, `counter_value')
+    FIELD(TIMESTAMP, `timestamp')
+    FIELD(CARD16, `count')
+    FIELD(BOOL, `destroyed')
 ')
 
 EVENT(AlarmNotify, 1, `
-    REPLY(CARD8, `kind')
-    REPLY(ALARM, `alarm')
-    REPLY(INT64, `counter_value')
-    REPLY(INT64, `alarm_value')
-    REPLY(TIMESTAMP, `timestamp')
+    FIELD(CARD8, `kind')
+    FIELD(ALARM, `alarm')
+    FIELD(INT64, `counter_value')
+    FIELD(INT64, `alarm_value')
+    FIELD(TIMESTAMP, `timestamp')
 ')
     
 

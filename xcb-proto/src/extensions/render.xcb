@@ -198,8 +198,8 @@ REQUEST(`QueryVersion', `
     PARAM(CARD32, `client_minor_version')
 ', `
     PAD(1)
-    REPLY(CARD32, `major_version')
-    REPLY(CARD32, `minor_version')
+    FIELD(CARD32, `major_version')
+    FIELD(CARD32, `minor_version')
     PAD(16)
 ')
 
@@ -207,11 +207,11 @@ REQUEST(`QueryPictFormats', `
     OPCODE(1)
 ', `
     PAD(1)
-    REPLY(CARD32, `num_formats')
-    REPLY(CARD32, `num_screens')
-    REPLY(CARD32, `num_depths')
-    REPLY(CARD32, `num_visuals')
-    REPLY(CARD32, `num_subpixel') dnl new in version 0.6
+    FIELD(CARD32, `num_formats')
+    FIELD(CARD32, `num_screens')
+    FIELD(CARD32, `num_depths')
+    FIELD(CARD32, `num_visuals')
+    FIELD(CARD32, `num_subpixel') dnl new in version 0.6
     PAD(4)
     LISTFIELD(PICTFORMINFO, `formats', `R->num_formats')
     LISTFIELD(PICTSCREEN, `screens', `R->num_screens')
@@ -224,7 +224,7 @@ REQUEST(`QueryPictIndexValues', `
     PARAM(PICTFORMAT, `format')
 ', `
     PAD(1)
-    REPLY(CARD32, `num_values')
+    FIELD(CARD32, `num_values')
     PAD(20)
     LISTFIELD(INDEXVALUE, `values', `R->num_values')
 ')
@@ -462,8 +462,8 @@ REQUEST(`QueryFilters', `
     PARAM(DRAWABLE, `drawable')
 ', `
     PAD(1)
-    REPLY(CARD32, `num_aliases')
-    REPLY(CARD32, `num_filters')
+    FIELD(CARD32, `num_aliases')
+    FIELD(CARD32, `num_filters')
     PAD(16)
     ARRAYFIELD(CARD16, `aliases', `R->num_aliases')
     LISTFIELD(STR, `filters', `R->num_filters')

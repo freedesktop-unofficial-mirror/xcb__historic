@@ -12,16 +12,16 @@ REQUEST(GetVersion, `
     PARAM(CARD16, `client_minor_version')
 ', `
     PAD(1)
-    REPLY(CARD16, `server_major_version')
-    REPLY(CARD16, `server_minor_version')
+    FIELD(CARD16, `server_major_version')
+    FIELD(CARD16, `server_minor_version')
 ')
 
 REQUEST(GetXIDRange, `
     OPCODE(1)
 ', `
     PAD(1)
-    REPLY(XID, `start_id')
-    REPLY(CARD32, `count')
+    FIELD(XID, `start_id')
+    FIELD(CARD32, `count')
 ')
 
 REQUEST(GetXIDList, `
@@ -29,7 +29,7 @@ REQUEST(GetXIDList, `
     PARAM(CARD32, `count')
 ', `
     PAD(1)
-    REPLY(CARD32, `ids_len')
+    FIELD(CARD32, `ids_len')
     PAD(20)
     ARRAYREPLY(XID, `ids', `R->ids_len')
 ')

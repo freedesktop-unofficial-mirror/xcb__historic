@@ -9,12 +9,12 @@ XIDTYPE(SEG)
 
 EVENT(`Completion', 0, `
     PAD(1)
-    REPLY(DRAWABLE, `drawable')
-    REPLY(SEG, `shmseg')
-    REPLY(CARD16, `minor_event')
-    REPLY(BYTE, `major_event')
+    FIELD(DRAWABLE, `drawable')
+    FIELD(SEG, `shmseg')
+    FIELD(CARD16, `minor_event')
+    FIELD(BYTE, `major_event')
     PAD(1)
-    REPLY(CARD32, `offset')
+    FIELD(CARD32, `offset')
 ')
 
 ERRORCOPY(`BadSeg', 0, `Value')
@@ -22,12 +22,12 @@ ERRORCOPY(`BadSeg', 0, `Value')
 REQUEST(QueryVersion, `
     OPCODE(0)
 ', `
-    REPLY(BOOL, `shared_pixmaps')
-    REPLY(CARD16, `major_version')
-    REPLY(CARD16, `minor_version')
-    REPLY(CARD16, `uid')
-    REPLY(CARD16, `gid')
-    REPLY(CARD8, `pixmap_format')
+    FIELD(BOOL, `shared_pixmaps')
+    FIELD(CARD16, `major_version')
+    FIELD(CARD16, `minor_version')
+    FIELD(CARD16, `uid')
+    FIELD(CARD16, `gid')
+    FIELD(CARD8, `pixmap_format')
 ')
 
 VOIDREQUEST(Attach, `
@@ -75,9 +75,9 @@ REQUEST(GetImage, `
     PARAM(SEG, `shmseg')
     PARAM(CARD32, `offset')
 ', `
-    REPLY(CARD8, `depth')
-    REPLY(VISUALID, `visual')
-    REPLY(CARD32, `size')
+    FIELD(CARD8, `depth')
+    FIELD(VISUALID, `visual')
+    FIELD(CARD32, `size')
 ')
 
 VOIDREQUEST(CreatePixmap, `

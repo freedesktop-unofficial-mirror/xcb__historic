@@ -9,7 +9,7 @@ REQUEST(Enable, `
     OPCODE(0)
 ', `
     PAD(1)
-    REPLY(CARD32, `maximum_request_length')
+    FIELD(CARD32, `maximum_request_length')
 ')
 
 ENDEXTENSION

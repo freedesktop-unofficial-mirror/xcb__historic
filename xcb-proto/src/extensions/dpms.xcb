@@ -11,24 +11,24 @@ REQUEST(GetVersion, `
     PARAM(CARD16, `client_minor_version')
 ', `
     PAD(1)
-    REPLY(CARD16, `server_major_version')
-    REPLY(CARD16, `server_minor_version')
+    FIELD(CARD16, `server_major_version')
+    FIELD(CARD16, `server_minor_version')
 ')
 
 REQUEST(Capable, `
     OPCODE(1)
 ', `
     PAD(1)
-    REPLY(BOOL, `capable')
+    FIELD(BOOL, `capable')
 ')
 
 REQUEST(GetTimeouts, `
     OPCODE(2)
 ', `
     PAD(1)
-    REPLY(CARD16, `standby_timeout')
-    REPLY(CARD16, `suspend_timeout')
-    REPLY(CARD16, `off_timeout')
+    FIELD(CARD16, `standby_timeout')
+    FIELD(CARD16, `suspend_timeout')
+    FIELD(CARD16, `off_timeout')
 ')
 
 VOIDREQUEST(SetTimeouts, `
@@ -55,8 +55,8 @@ REQUEST(Info, `
     OPCODE(7)
 ', `
     PAD(1)
-    REPLY(CARD16, `power_level')
-    REPLY(BOOL, `state')
+    FIELD(CARD16, `power_level')
+    FIELD(BOOL, `state')
 ')
 ENDEXTENSION
 ENDXCBGEN
