@@ -29,10 +29,6 @@ See the file COPYING in this package for licensing information.
   </xsl:variable>
   <xsl:variable name="pass1" select="e:node-set($pass1-rtf)" />
   
-  <xsl:template match="/" mode="pass1">
-    <xsl:apply-templates mode="pass1" />
-  </xsl:template>
-
   <xsl:template match="xcb" mode="pass1">
     <xcb header="{@header}">
       <xsl:apply-templates mode="pass1" />
@@ -45,7 +41,7 @@ See the file COPYING in this package for licensing information.
       <function type="const XCBQueryExtensionRep *" name="XCB{@name}Init">
         <field type="XCBConnection *" name="c" />
         <l>return XCBQueryExtensionCached(c, XCB<!--
-        --><xsl:call-template name="current-extension" />Id, 0);</l>
+        --><xsl:value-of select="@name" />Id, 0);</l>
       </function>
       <xsl:apply-templates mode="pass1" />
     </extension>
@@ -183,22 +179,6 @@ See the file COPYING in this package for licensing information.
     </xsl:if>
   </xsl:template>
 
-  <!-- Create the Iter structure for a structure with the given name.  If the
-       name is not supplied, it defaults to the value of the name attribute of
-       the context node. -->
-  <xsl:template name="make-iterator">
-    <xsl:param name="name" select="@name" />
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
-    <struct name="XCB{$ext}{$name}Iter">
-      <field type="XCB{$ext}{$name} *" name="data" />
-      <field type="int" name="rem" />
-      <field type="int" name="index" />
-    </struct>
-  </xsl:template>
-
   <xsl:template match="xidtype" mode="pass1">
     <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
@@ -207,13 +187,14 @@ See the file COPYING in this package for licensing information.
     <struct name="XCB{$ext}{@name}">
       <field type="CARD32" name="xid" />
     </struct>
+    <iterator ref="XCB{$ext}{@name}" />
+    <iterator-functions ref="XCB{$ext}{@name}" />
     <function type="XCB{$ext}{@name}" name="XCB{$ext}{@name}New">
       <field type="XCBConnection *" name="c" />
       <l>XCB<xsl:value-of select="concat($ext, @name)" /> ret;</l>
       <l>ret.xid = XCBGenerateID(c);</l>
       <l>return ret;</l>
     </function>
-    <xsl:call-template name="make-iterator" />
   </xsl:template>
 
   <xsl:template match="struct|union" mode="pass1">
@@ -227,7 +208,8 @@ See the file COPYING in this package for licensing information.
       </xsl:if>
       <xsl:apply-templates select="*" mode="field" />
     </struct>
-    <xsl:call-template name="make-iterator" />
+    <iterator ref="XCB{$ext}{@name}" />
+    <iterator-functions ref="XCB{$ext}{@name}" />
   </xsl:template>
 
   <xsl:template match="event|eventcopy|error|errorcopy" mode="pass1">
@@ -400,6 +382,124 @@ See the file COPYING in this package for licensing information.
     </field>
   </xsl:template>
 
+  <!-- Second pass: Process the variable. -->
+  <xsl:variable name="result-rtf">
+    <xsl:apply-templates select="$pass1/*" mode="pass2" />
+  </xsl:variable>
+  <xsl:variable name="result" select="e:node-set($result-rtf)" />
+
+  <xsl:template match="xcb" mode="pass2">
+    <xcb header="{@header}">
+      <xsl:apply-templates mode="pass2"
+                           select="//constant|//enum|//struct
+                                   |//typedef|//iterator" />
+      <xsl:apply-templates mode="pass2"
+                           select="//function|//iterator-functions" />
+    </xcb>
+  </xsl:template>
+
+  <!-- Generic rules for nodes that don't need further processing: copy node
+       with attributes, and recursively process the child nodes. -->
+  <xsl:template match="*" mode="pass2">
+    <xsl:copy>
+      <xsl:copy-of select="@*" />
+      <xsl:apply-templates mode="pass2" />
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="struct" mode="pass2">
+    <xsl:if test="@kind='union' and list">
+      <xsl:message terminate="yes">Unions must be fixed length.</xsl:message>
+    </xsl:if>
+    <struct name="{@name}">
+      <xsl:if test="@kind">
+        <xsl:attribute name="kind">
+          <xsl:value-of select="@kind" />
+        </xsl:attribute>
+      </xsl:if>
+      <!-- FIXME: This should go by size, not number of fields. -->
+      <xsl:copy-of select="node()[not(self::middle)
+                   and position() &lt; 3]" />
+      <xsl:if test="middle and (count(*[not(self::middle)]) &lt; 2)">
+        <pad bytes="{2 - count(*[not(self::middle)])}" />
+      </xsl:if>
+      <xsl:copy-of select="middle/*" />
+      <xsl:copy-of select="node()[not(self::middle) and (position() > 2)]" />
+    </struct>
+  </xsl:template>
+
+  <xsl:template match="do-request" mode="pass2">
+    <xsl:variable name="ext-retval"><!--
+      --><xsl:call-template name="current-extension" /><!--
+    --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
+    <xsl:variable name="struct"
+                  select="e:node-set($pass1//struct[@name=current()/@ref])" />
+    <l>struct iovec parts[<xsl:value-of select="1+count($struct/list)" />];</l>
+    <l><xsl:value-of select="../@type" /> ret;</l>
+    <l><xsl:value-of select="@ref" /> out;</l>
+
+    <xsl:if test="$ext">
+      <l>const XCBQueryExtensionRep *extension = XCB<!--
+      --><xsl:value-of select="$ext" />Init(c);</l>
+      <l>const CARD8 major_opcode = extension->major_opcode;</l>
+      <l>const CARD8 minor_opcode = <xsl:value-of select="@opcode"/>;</l>
+    </xsl:if>
+
+    <xsl:if test="not($ext)">
+      <l>const CARD8 major_opcode = <xsl:value-of select="@opcode" />;</l>
+    </xsl:if>
+
+    <xsl:for-each select="$struct/exprfield">
+      <l><xsl:call-template name="type-and-name" /> = <!--
+      --><xsl:apply-templates mode="output-expression" />;</l>
+    </xsl:for-each>
+
+    <xsl:if test="$ext">
+      <l />
+      <l>assert(extension &amp;&amp; extension->present);</l>
+    </xsl:if>
+
+    <l />
+    <xsl:for-each select="$struct/*[self::field|self::exprfield]">
+      <l>out.<xsl:value-of select="@name" /> = <!--
+      --><xsl:value-of select="@name" />;</l>
+    </xsl:for-each>
+
+    <l />
+    <l>parts[0].iov_base = &amp;out;</l>
+    <l>parts[0].iov_len = sizeof(out);</l>
+
+    <xsl:for-each select="$struct/list">
+      <l>parts[<xsl:number />].iov_base = (void *) <!--
+      --><xsl:value-of select="@name" />;</l>
+      <l>parts[<xsl:number />].iov_len = <!--
+      --><xsl:apply-templates mode="output-expression" /><!--
+      --><xsl:if test="not(@type = 'void')">
+        <xsl:text> * sizeof(</xsl:text>
+        <xsl:value-of select="@type" />
+        <xsl:text>)</xsl:text>
+      </xsl:if>;</l>
+    </xsl:for-each>
+
+    <l>XCBSendRequest(c, &amp;ret.sequence, /* isvoid */ <!--
+    --><xsl:choose>
+      <xsl:when test="@has-reply = 'yes'">0</xsl:when>
+      <xsl:otherwise>1</xsl:otherwise>
+    </xsl:choose>, parts, /* partqty */ <!--
+    --><xsl:value-of select="1+count($struct/list)" />);</l>
+    <l>return ret;</l>
+  </xsl:template>
+
+  <xsl:template match="iterator" mode="pass2">
+    <struct name="{@ref}Iter">
+      <field type="{@ref} *" name="data" />
+      <field type="int" name="rem" />
+      <field type="int" name="index" />
+    </struct>
+  </xsl:template>
+
+  <!-- Output the results. -->
   <xsl:template match="/">
     <xsl:if test="not(function-available('e:node-set'))">
       <xsl:message terminate="yes"><!--
@@ -413,11 +513,10 @@ See the file COPYING in this package for licensing information.
       --></xsl:message>
     </xsl:if>
     
-    <!-- Second pass: Process the variable. -->
-    <xsl:apply-templates select="$pass1/*" mode="pass2" />
+    <xsl:apply-templates select="$result/*" mode="output" />
   </xsl:template>
 
-  <xsl:template match="xcb" mode="pass2">
+  <xsl:template match="xcb" mode="output">
     <xsl:variable name="guard"><!--
       -->__<xsl:value-of select="$ucase-header" />_H<!--
     --></xsl:variable>
@@ -442,9 +541,7 @@ See the file COPYING in this package for licensing information.
 
 </xsl:text></xsl:if>
 
-    <xsl:apply-templates mode="pass2"
-                         select="//constant|//enum|//struct|//typedef" />
-    <xsl:apply-templates mode="pass2" select="//function" />
+    <xsl:apply-templates mode="output" />
 
 <xsl:if test="$h">
 <xsl:text>
@@ -453,7 +550,7 @@ See the file COPYING in this package for licensing information.
 </xsl:if>
   </xsl:template>
 
-  <xsl:template match="constant" mode="pass2">
+  <xsl:template match="constant" mode="output">
     <xsl:if test="(@type = 'number') and $h">
       <xsl:text>#define </xsl:text>
       <xsl:value-of select="@name" />
@@ -481,7 +578,7 @@ See the file COPYING in this package for licensing information.
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="typedef" mode="pass2">
+  <xsl:template match="typedef" mode="output">
     <xsl:if test="$h">
       <xsl:text>typedef </xsl:text>
       <xsl:value-of select="@oldname" />
@@ -493,24 +590,13 @@ See the file COPYING in this package for licensing information.
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="struct" mode="pass2">
+  <xsl:template match="struct" mode="output">
     <xsl:if test="$h">
-      <xsl:variable name="fields">
-        <!-- FIXME: This should go by size, not number of fields. -->
-        <xsl:copy-of select="node()[not(self::middle)
-                                    and position() &lt; 3]" />
-        <xsl:if test="middle and (count(*[not(self::middle)]) &lt; 2)">
-          <pad bytes="{2 - count(*[not(self::middle)])}" />
-        </xsl:if>
-        <xsl:copy-of select="middle/*" />
-        <xsl:copy-of select="node()[not(self::middle) and (position() > 2)]" />
-      </xsl:variable>
-
       <xsl:text>typedef </xsl:text>
       <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
       <xsl:text> {
 </xsl:text>
-      <xsl:for-each select="e:node-set($fields)/*[self::field or self::pad]">
+      <xsl:for-each select="field|pad">
         <xsl:text>    </xsl:text>
         <xsl:apply-templates select="." />
         <xsl:text>;
@@ -524,7 +610,7 @@ See the file COPYING in this package for licensing information.
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="enum" mode="pass2">
+  <xsl:template match="enum" mode="output">
     <xsl:if test="$h">
       <xsl:text>typedef enum {
     </xsl:text>
@@ -550,7 +636,7 @@ See the file COPYING in this package for licensing information.
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="function" mode="pass2">
+  <xsl:template match="function" mode="output">
     <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
@@ -575,100 +661,9 @@ See the file COPYING in this package for licensing information.
       <xsl:text>
 {
 </xsl:text>
-      <xsl:for-each select="l|do-request">
-        <xsl:if test="self::l">
-          <xsl:text>    </xsl:text><xsl:value-of select="." /><xsl:text>
+      <xsl:for-each select="l[text()]">
+        <xsl:text>    </xsl:text><xsl:value-of select="." /><xsl:text>
 </xsl:text>
-        </xsl:if>
-        <xsl:if test="self::do-request">
-          <xsl:variable name="struct"
-                        select="e:node-set($pass1
-                                           //struct[@name=current()/@ref])" />
-<xsl:text>    struct iovec parts[</xsl:text>
-<xsl:value-of select="1+count($struct/list)" />
-<xsl:text>];
-    </xsl:text><xsl:value-of select="../@type" /><xsl:text> ret;
-    </xsl:text><xsl:value-of select="@ref" /><xsl:text> out;
-</xsl:text>
-
-<xsl:if test="$ext">
-<xsl:text>    const XCBQueryExtensionRep *extension = XCB</xsl:text>
-<xsl:value-of select="$ext" />
-<xsl:text>Init(c);
-    const CARD8 major_opcode = extension->major_opcode;
-    const CARD8 minor_opcode = </xsl:text><xsl:value-of select="@opcode"/>
-<xsl:text>;
-</xsl:text>
-</xsl:if>
-
-<xsl:if test="not($ext)">
-<xsl:text>    const CARD8 major_opcode = </xsl:text>
-<xsl:value-of select="@opcode" />
-<xsl:text>;
-</xsl:text>
-</xsl:if>
-
-<xsl:for-each select="$struct/exprfield">
-  <xsl:text>    </xsl:text>
-  <xsl:call-template name="type-and-name" />
-  <xsl:text> = </xsl:text>
-  <xsl:apply-templates mode="output-expression" />
-  <xsl:text>;
-</xsl:text>
-</xsl:for-each>
-
-<xsl:if test="$ext">
-<xsl:text>    assert(extension &amp;&amp; extension->present);
-</xsl:text>
-</xsl:if>
-
-<xsl:text>
-</xsl:text>
-<xsl:for-each select="$struct/*[self::field|self::exprfield]">
-  <xsl:text>    out.</xsl:text>
-  <xsl:value-of select="@name" />
-  <xsl:text> = </xsl:text>
-  <xsl:value-of select="@name" />
-  <xsl:text>;
-</xsl:text>
-</xsl:for-each>
-
-<xsl:text>
-    parts[0].iov_base = &amp;out;
-    parts[0].iov_len = sizeof(out);
-</xsl:text>
-
-<xsl:for-each select="$struct/list">
-  <xsl:text>    parts[</xsl:text>
-  <xsl:number />
-  <xsl:text>].iov_base = (void *) </xsl:text>
-  <xsl:value-of select="@name" />
-  <xsl:text>;
-</xsl:text>
-  <xsl:text>    parts[</xsl:text>
-  <xsl:number />
-  <xsl:text>].iov_len = </xsl:text>
-  <xsl:apply-templates mode="output-expression" />
-  <xsl:if test="not(@type = 'void')">
-    <xsl:text> * sizeof(</xsl:text>
-    <xsl:value-of select="@type" />
-    <xsl:text>)</xsl:text>
-  </xsl:if>
-  <xsl:text>;
-</xsl:text>
-</xsl:for-each>
-
-<xsl:text>    XCBSendRequest(c, &amp;ret.sequence, /* isvoid */ </xsl:text>
-    <xsl:choose>
-      <xsl:when test="@has-reply = 'yes'">0</xsl:when>
-      <xsl:otherwise>1</xsl:otherwise>
-    </xsl:choose>
-    <xsl:text>, parts, /* partqty */ </xsl:text>
-    <xsl:value-of select="1+count($struct/list)" />
-    <xsl:text>);
-    return ret;
-</xsl:text>
-        </xsl:if>
       </xsl:for-each>
       <xsl:text>}
 
