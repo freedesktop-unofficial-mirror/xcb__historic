@@ -4,6 +4,7 @@ EXTHEADERS = \
 		extensions/bigreq.h \
 		extensions/composite.h \
 		extensions/damage.h \
+		extensions/glx.h \
 		extensions/shm.h \
 		extensions/shape.h \
 		extensions/randr.h \
@@ -17,6 +18,7 @@ EXTSOURCES = \
 		extensions/bigreq.c \
 		extensions/composite.c \
 		extensions/damage.c \
+		extensions/glx.c \
 		extensions/shm.c \
 		extensions/shape.c \
 		extensions/randr.c \

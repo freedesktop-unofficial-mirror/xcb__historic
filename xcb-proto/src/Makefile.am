@@ -5,6 +5,7 @@ nobase_xcbinclude_HEADERS = xcb.xsd                  \
                             extensions/composite.xml \
                             extensions/damage.xml    \
                             extensions/dpms.xml      \
+                            extensions/glx.xml       \
                             extensions/randr.xml     \
                             extensions/render.xml    \
                             extensions/shape.xml     \
