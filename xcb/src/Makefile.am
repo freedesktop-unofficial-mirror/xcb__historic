@@ -24,6 +24,12 @@ COREPROTO = xcb.h xproto.c xcb_types.c
 
 xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb $(EXTHEADERS)
 
+TESTS = check_all
+noinst_PROGRAMS = check_all
+check_all_SOURCES = check_all.c check_suites.h check_public.c
+check_all_CFLAGS = @CHECK_CFLAGS@
+check_all_LDADD = -lXCB @CHECK_LIBS@
+
 CFLAGS =
 AM_CFLAGS = -include config.h $(CDEBUGFLAGS) $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
 libXCB_la_LIBADD = $(XCBPROTO_LIBS) $(XPROTO_LIBS) $(XAU_LIBS)

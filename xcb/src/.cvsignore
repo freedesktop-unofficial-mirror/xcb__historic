@@ -15,3 +15,4 @@ xcb_types.c
 xcb_types.h
 extensions
 X11
+check_all

@@ -7,6 +7,7 @@ AC_INIT([libXCB],
         [xcb@pdx.freedesktop.org])
 AC_CONFIG_SRCDIR([xcb.pc.in])
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
+AM_PATH_CHECK()
 
 AC_CONFIG_HEADERS([src/config.h])
 
