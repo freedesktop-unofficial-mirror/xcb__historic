@@ -67,13 +67,14 @@ expect a reply.
 
 REQUEST(name, 0 or more PARAMs, 0 or more REPLYs)
 
-Creates a function named XCB\_<name> returning XCB\_<name>\_cookie
-and accepting whatever parameters are necessary to deliver the given
-PARAMs and FIELDs to the X server. Declares the struct XCB\_<name>\_cookie.
-Creates a function named XCB\_<name>\_Reply returning a pointer to
-XCB\_<name>\_Rep which forces a cookie returned from XCB\_<name>,
-waiting for the response from the server if necessary. If any REPLYs
-are given, they must be quoted.
+Creates a function named XCB\_<name> whose return result is
+an XCB\_<name>\_cookie and whose parameters are whatever is
+necessary to deliver the given PARAMs and FIELDs to the X
+server. Declares the struct XCB\_<name>\_cookie.  Creates a
+function named XCB\_<name>\_Reply returning a pointer to
+XCB\_<name>\_Rep which forces a cookie returned from
+XCB\_<name>, waiting for the response from the server if
+necessary. If any REPLYs are given, they must be quoted.
 
 
 \subsection{Request Parameters and Fields}
