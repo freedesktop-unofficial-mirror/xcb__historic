@@ -34,7 +34,9 @@ static char *authnames[N_AUTH_PROTOS] = {
     "MIT-MAGIC-COOKIE-1",
 };
 
-int XCBNextNonce()
+#ifdef HAS_AUTH_XA1
+
+static int next_nonce(void)
 {
     static int nonce = 0;
     static pthread_mutex_t nonce_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -44,8 +46,6 @@ int XCBNextNonce()
     pthread_mutex_unlock(&nonce_mutex);
     return ret;
 }
-
-#ifdef HAS_AUTH_XA1
 
 /*
  * This code and the code it calls is taken from libXdmcp,
@@ -204,7 +204,7 @@ if (authname_match(AUTH_XA1, authptr->name, authptr->name_length)) {
             break;
         case AF_UNIX:
             /*block*/ {
-                long fakeaddr = htonl(0xffffffff - nonce);
+                long fakeaddr = htonl(0xffffffff - next_nonce());
                 short fakeport = htons(getpid());
                 APPEND(info->data, j, fakeaddr);
                 APPEND(info->data, j, fakeport);
@@ -233,7 +233,7 @@ if (authname_match(AUTH_XA1, authptr->name, authptr->name_length)) {
 return 0;   /* Unknown authorization type */
 }
 
-int XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
+int XCBGetAuthInfo(int fd, XCBAuthInfo *info)
 {
     /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
        xtrans/Xtransutils.c */

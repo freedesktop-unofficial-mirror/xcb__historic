@@ -70,8 +70,7 @@ typedef struct XCBAuthInfo {
     char *data;
 } XCBAuthInfo;
 
-int XCBNextNonce(void);
-int XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
+int XCBGetAuthInfo(int fd, XCBAuthInfo *info);
 
 
 /* xcb_out.c */

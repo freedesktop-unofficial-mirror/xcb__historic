@@ -125,7 +125,7 @@ XCBConnection *XCBConnectBasic()
         abort();
     }
 
-    XCBGetAuthInfo(fd, XCBNextNonce(), &auth);
+    XCBGetAuthInfo(fd, &auth);
     c = XCBConnect(fd, &auth);
     if(!c)
     {

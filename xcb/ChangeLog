@@ -1,5 +1,14 @@
 2004-07-06  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb.h.m4:
+	* src/xcb_auth.c:
+	* src/xcb_util.c:
+	Removed XCBNextNonce, and the nonce parameter of
+	XCBGetAuthInfo, from the API. XCB can compute
+	that just fine without help from the application.
+
+2004-07-06  Jamey Sharp  <jamey@minilop.net>
+
 	* src/Makefile.am:
 	Importing part of patches, adding SYNC, by
 	Mikko Markus Torni <mikko.markus.torni@iki.fi>.
