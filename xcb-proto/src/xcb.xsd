@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <!-- The root element -->
+  <xsd:element name="xcb">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+          <xsd:group ref="macro" minOccurs="0" maxOccurs="unbounded" />
+          <xsd:element ref="extension" />
+        </xsd:choice>
+      </xsd:sequence>
+      <xsd:attribute name="header" type="xsd:string" />
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- An extension.  Protocol descriptions not within an extension tag are
+       part of the core protocol. -->
+  <xsd:element name="extension">
+    <xsd:complexType>
+      <xsd:group ref="macro" minOccurs="0" maxOccurs="unbounded" />
+      <xsd:attribute name="xname" type="xsd:string" />
+      <xsd:attribute name="name" type="xsd:string" />
+    </xsd:complexType>
+  </xsd:element>
+  
+  <!-- Padding -->
+  <xsd:element name="pad">
+    <xsd:complexType>
+      <xsd:attribute name="bytes" type="xsd:integer" />
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- Type for fields or parameters with attributes "name" and "type" -->
+  <xsd:complexType name="var">
+    <xsd:attribute name="name" type="xsd:string" />
+    <xsd:attribute name="type" type="xsd:string" />
+  </xsd:complexType>
+
+  <!-- field replaces FIELD, PARAM, and REPLY. -->
+  <xsd:element name="field" type="var" />
+
+  <!-- list replaces ARRAYFIELD, LISTPARAM, and ARRAYREPLY. -->
+  <xsd:element name="list">
+    <xsd:complexType>
+      <xsd:complexContent>
+        <xsd:extension base="var">
+          <xsd:attribute name="length" type="expression" />
+        </xsd:extension>
+      </xsd:complexContent>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- Parameters in requests that are not sent with the request. -->
+  <xsd:element name="localfield" type="var" />
+  
+  <!-- Expressions -->
+  <xsd:complexType name="expression">
+    <xsd:group ref="operand" />
+  </xsd:complexType>
+  
+  <xsd:group name="operand">
+    <xsd:choice>
+      <xsd:element name="op">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:group ref="operand" />
+            <xsd:group ref="operand" />
+          </xsd:sequence>
+          <xsd:attribute name="op">
+            <xsd:simpleType>
+              <xsd:restriction base="xsd:string">
+                <xsd:pattern value="[*/&amp;]" />                
+              </xsd:restriction>
+            </xsd:simpleType>
+          </xsd:attribute>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="fieldref" type="xsd:string" />
+      <xsd:element name="value" type="dec-or-hex-integer" />
+    </xsd:choice>
+  </xsd:group>
+  
+  <!-- Fields in requests that are calculated from other information, not
+       supplied by the caller. -->
+  <xsd:element name="exprfield" type="expression" />
+
+  <!-- BITMASK/LISTofVALUE parameter pairs. -->
+  <xsd:element name="valueparam">
+    <xsd:complexType>
+      <xsd:attribute name="value-mask-type" type="xsd:string" />
+      <xsd:attribute name="value-mask-name" type="xsd:string" />
+      <xsd:attribute name="value-list-name" type="xsd:string" />
+    </xsd:complexType>
+  </xsd:element>
+
+  <xsd:group name="fields">
+    <xsd:choice>
+      <xsd:element ref="pad" />
+      <xsd:element ref="field" />
+      <xsd:element ref="list" />
+    </xsd:choice>
+  </xsd:group>
+
+  <!-- Type for a structure -->
+  <xsd:complexType name="struct">
+    <xsd:group ref="fields" minOccurs="1" maxOccurs="unbounded" />
+    <xsd:attribute name="name" type="xsd:string" />
+  </xsd:complexType>
+
+  <!-- Type for a packet structure -->
+  <xsd:complexType name="packet-struct">
+    <xsd:complexContent>
+      <xsd:extension base="struct">
+        <xsd:attribute name="number" type="xsd:integer" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- Type for a packet structure copy -->
+  <xsd:complexType name="packet-struct-copy">
+    <xsd:attribute name="name" type="xsd:string" />
+    <xsd:attribute name="number" type="xsd:integer" />
+    <xsd:attribute name="ref" type="xsd:string" />
+  </xsd:complexType>
+
+  <!-- Type for hex integers -->
+  <xsd:simpleType name="hex-integer">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="0x[0-9a-fA-F]+" />
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Type for integers in either decimal or hex -->
+  <xsd:simpleType name="dec-or-hex-integer">
+    <xsd:union memberTypes="xsd:integer hex-integer" />
+  </xsd:simpleType>
+
+  <xsd:group name="macro">
+    <xsd:choice>
+      <xsd:element name="request">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+              <xsd:group ref="fields" />
+              <xsd:element ref="localfield" />
+              <xsd:element ref="exprfield" />
+              <xsd:element ref="valueparam" />
+            </xsd:choice>
+            <xsd:element name="reply" minOccurs="0" maxOccurs="1">
+              <xsd:complexType>
+                <xsd:group ref="fields" minOccurs="1" maxOccurs="unbounded" />
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+          <xsd:attribute name="name" type="xsd:string" />
+          <xsd:attribute name="opcode" type="xsd:integer" />
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="event" type="packet-struct" />
+      <xsd:element name="eventcopy" type="packet-struct-copy" />
+      <xsd:element name="error" type="packet-struct" />
+      <xsd:element name="errorcopy" type="packet-struct-copy" />
+      <xsd:element name="struct" type="struct" />
+      <xsd:element name="union" type="struct" />
+      <xsd:element name="xidtype">
+        <xsd:complexType>
+          <xsd:attribute name="name" type="xsd:string" />
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="enum">
+        <xsd:complexType>
+          <xsd:sequence minOccurs="1" maxOccurs="unbounded">
+            <xsd:element name="item">
+              <xsd:complexType>
+                <xsd:simpleContent>
+                  <xsd:extension base="xsd:string">
+                    <xsd:attribute name="value" type="dec-or-hex-integer"
+                               use="optional" />
+                  </xsd:extension>
+                </xsd:simpleContent>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+          <xsd:attribute name="name" type="xsd:string" />
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="typedef">
+        <xsd:complexType>
+          <xsd:attribute name="oldname" type="xsd:string" />
+          <xsd:attribute name="newname" type="xsd:string" />
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:choice>
+  </xsd:group>
+</xsd:schema>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xcb header="dpms">
+<!--
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+-->
+  <extension xname="DPMS" name="DPMS">
+
+    <request name="GetVersion" opcode="0">
+      <field type="CARD16" name="client_major_version" />
+      <field type="CARD16" name="client_minor_version" />
+      <reply>
+        <pad bytes="1" />
+        <field type="CARD16" name="server_major_version" />
+        <field type="CARD16" name="server_minor_version" />
+      </reply>
+    </request>
+    
+    <request name="Capable" opcode="1">
+      <reply>
+        <pad bytes="1" />
+        <field type="BOOL" name="capable" />
+      </reply>
+    </request>
+    
+    <request name="GetTimeouts" opcode="2">
+      <reply>
+        <pad bytes="1" />
+        <field type="CARD16" name="standby_timeout" />
+        <field type="CARD16" name="suspend_timeout" />
+        <field type="CARD16" name="off_timeout" />
+      </reply>
+    </request>
+    
+    <request name="SetTimeouts" opcode="3">
+      <field type="CARD16" name="standby_timeout" />
+      <field type="CARD16" name="suspend_timeout" />
+      <field type="CARD16" name="off_timeout" />
+    </request>
+    
+    <request name="Enable" opcode="4" />
+    
+    <request name="Disable" opcode="5" />
+    
+    <request name="ForceLevel" opcode="6">
+      <field type="CARD16" name="power_level" />
+    </request>
+    
+    <request name="Info" opcode="7">
+      <reply>
+        <pad bytes="1" />
+        <field type="CARD16" name="power_level" />
+        <field type="BOOL" name="state" />
+      </reply>
+    </request>
+
+  </extension>
+</xcb>
