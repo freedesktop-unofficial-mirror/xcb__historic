@@ -1,0 +1,23 @@
+Source: fd.o-xcb-proto
+Section: libdevel
+Priority: optional
+Maintainer: Jamey Sharp <sharpone@debian.org>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.0
+
+Package: fd.o-xcb-proto
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: X C Binding - protocol descriptions
+ Xlib has been the standard C binding for the X Window System protocol
+ for many years now. It is an excellent piece of work, but there are
+ applications for which it is not ideal. XCB builds on nearly two
+ decades of experience with X specifically and software engineering in
+ general in an effort to replace the aging Xlib code base.
+ .
+ For more information, please see http://freedesktop.org/Software/xcb .
+ .
+ xcb-proto contains descriptions of the X core protocol and selected
+ extensions in a domain-specific language. XCB uses these descriptions
+ to generate much of its code. You only need this package if you want to
+ compile XCB or any other library that uses these descriptions.

@@ -1,0 +1,19 @@
+Source: fd.o-xcb
+Section: libdevel
+Priority: optional
+Maintainer: Jamey Sharp <sharpone@debian.org>
+Build-Depends: debhelper (>= 4.0.0), fd.o-xproto, fd.o-xau, fd.o-xcb-proto
+Standards-Version: 3.6.0
+
+Package: fd.o-xcb
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: libxcb1, libxcb1-dev
+Description: X C Binding
+ Xlib has been the standard C binding for the X Window System protocol
+ for many years now. It is an excellent piece of work, but there are
+ applications for which it is not ideal. XCB builds on nearly two
+ decades of experience with X specifically and software engineering in
+ general in an effort to replace the aging Xlib code base.
+ .
+ For more information, please see http://freedesktop.org/Software/xcb .

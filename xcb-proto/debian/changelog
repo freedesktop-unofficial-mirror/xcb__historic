@@ -1,0 +1,6 @@
+fd.o-xcb-proto (0.8-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Jamey Sharp <sharpone@debian.org>  Thu, 18 Mar 2004 00:09:03 -0800
+
