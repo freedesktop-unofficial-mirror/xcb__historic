@@ -23,6 +23,11 @@
 /* X_TCP_PORT + display number = server port for TCP transport */
 #define X_TCP_PORT 6000
 
+/* Round up (sizeof (T) * E) to a multiple of 4 bytes */
+#define XCB_TYPE_CEIL(T,E) (sizeof (T) >= 4 ? (E) : \
+			    sizeof (T) == 2 ? (((E)+1) & ~1) : \
+			    sizeof (T) == 1 ? (((E)+3) & ~3) : \
+			    1/0)
 
 /* Opaque structures */
 

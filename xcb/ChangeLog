@@ -1,0 +1,9 @@
+2004-06-16  Keith Packard  <keithp@keithp.com>
+
+	* src/client-c.xcb:
+	* src/xcb.h.m4:
+	Must round datatype lengths to 4-byte boundary for
+	NEXTFIELD and End macros.  Created new XCB_TYPE_CEIL
+	macro for this purpose and used it in a couple of
+	places.  It is to be hoped that this represents all
+	of the locations that need changing...
