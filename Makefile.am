@@ -23,9 +23,13 @@ clean-local:
 
 sources: xcb_conn.h xcb_conn.c xp_core.h xp_core.c
 
-bin_PROGRAMS = main
+bin_PROGRAMS = main hypnomoire
 main_SOURCES = main.c reply_formats.c reply_formats.h
 main_LDADD = libxcb.la
 main_LDFLAGS = -lpthread
 
-main.o reply_formats.o: xcb_conn.h xp_core.h
+hypnomoire_SOURCES = hypnomoire.c reply_formats.c reply_formats.h
+hypnomoire_LDADD = libxcb.la
+hypnomoire_LDFLAGS = -lm -lpthread
+
+main.o reply_formats.o hypnomoire.o: xcb_conn.h xp_core.h

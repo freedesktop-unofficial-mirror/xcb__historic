@@ -184,7 +184,7 @@ _C
 STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const int prelocked, const int s, xError **e', `
     void *ret = 0;
     unsigned char *buf;
-    XCB_Reply_Data *cur = 0, *tmp;
+    XCB_Reply_Data *cur = 0, *tmp, *rep;
     fd_set rfds, wfds;
     int selret;
 
@@ -229,7 +229,10 @@ STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const
 
         if(c->selecting)
         {
+            c->event_pending = 1;
             pthread_cond_wait(&c->event_cond, &c->locked);
+            c->event_pending = 0;
+
             if(c->event_data_head)
                 goto extract_reply;
         }
@@ -243,7 +246,10 @@ STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const
 
         if(c->selecting)
         {
+            c->flush_pending = 1;
             pthread_cond_wait(&c->flush_cond, &c->locked);
+            c->flush_pending = 0;
+
             if(!c->n_outqueue)
                 goto done;
         }
@@ -260,29 +266,25 @@ ALLOC(unsigned char, buf, 32)
     while(1)
     {INDENT()
         FD_SET(c->fd, &rfds);
-        if(c->n_outqueue)
+        // if(c->n_outqueue)
             FD_SET(c->fd, &wfds);
 
         pthread_mutex_unlock(&c->locked);
         selret = select(c->fd + 1, &rfds, &wfds, 0, 0);
         pthread_mutex_lock(&c->locked);
 
-        if(selret <= 0) /* error: select failed */
-            break;
+        /* if(selret <= 0) */ /* error: select failed */
+        assert(selret > 0);
 
         if(FD_ISSET(c->fd, &rfds))
         {INDENT()
-            int seqnum;
-            XCB_Reply_Data *rep = 0;
-
             if(read(c->fd, buf, 32) < 32)
                 assert(0); /* FIXME: handle non-blocking I/O */
 
             if(!(buf[0] & ~1)) /* reply or error packet */
             {INDENT()
-                seqnum = ((xGenericReply *) buf)->sequenceNumber;
-                c->recvd_seqnum = seqnum;
-                rep = XCB_Find_Reply_Data(c, seqnum);
+                c->recvd_seqnum = ((xGenericReply *) buf)->sequenceNumber;
+                rep = XCB_Find_Reply_Data(c, c->recvd_seqnum);
 
                 if(buf[0] == 1) /* get the payload for a reply packet */
                 {INDENT()
@@ -296,6 +298,8 @@ REALLOC(unsigned char, buf, 32 + length * 4)
                     }UNINDENT()
                 }UNINDENT()
             }UNINDENT()
+            else
+                rep = 0;
 
             if(!rep)
             {INDENT()
@@ -308,7 +312,8 @@ ALLOC(XCB_Event_Data, event, 1)
                     XCB_Add_Event_Data(c, event);
                     if(cmd == WAIT_EVENT)
                         break;
-                    pthread_cond_signal(&c->event_cond);
+                    if(c->event_pending)
+                        pthread_cond_signal(&c->event_cond);
                 }UNINDENT()
 
                 /* else error: no reply record for a reply. Ignore. */
@@ -320,7 +325,7 @@ ALLOC(XCB_Event_Data, event, 1)
 
                 assert(rep->data == 0);
                 rep->data = buf;
-                if(cmd == WAIT_SEQNUM && !XCB_SEQ_EARLIER(seqnum, s))
+                if(cmd == WAIT_SEQNUM && !XCB_SEQ_EARLIER(c->recvd_seqnum, s))
                     break;
                 if(rep->pending)
                     pthread_cond_signal(&rep->cond);
@@ -342,7 +347,8 @@ ALLOC(XCB_Event_Data, event, 1)
             {
                 if(cmd == WAIT_FLUSH)
                     break;
-                pthread_cond_signal(&c->flush_cond);
+                if(c->flush_pending)
+                    pthread_cond_signal(&c->flush_cond);
             }
         }UNINDENT()
     }UNINDENT()
@@ -357,7 +363,7 @@ ALLOC(XCB_Event_Data, event, 1)
 
     if(c->event_pending)
         pthread_cond_signal(&c->event_cond);
-    else if(c->event_pending)
+    else if(c->flush_pending)
         pthread_cond_signal(&c->flush_cond);
     else
     {
@@ -581,19 +587,24 @@ ALLOC(XCB_Connection, c, 1)
 
     /* Read the server response */
     read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix));
-    /* 0 = failed, 2 = authenticate, 1 = success */
-    switch(c->setup_prefix.success)
-    {
-    case 0: /* failed */
-    case 2: /* authenticate */
-        free(c);
-        return 0; /* aw, screw you. */
-    }
 
     clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
     c = (XCB_Connection *) realloc(c, clen);
     assert(c);
     read(c->fd, &c->setup, c->setup_prefix.length * 4);
+
+    /* 0 = failed, 2 = authenticate, 1 = success */
+    switch(c->setup_prefix.success)
+    {
+    case 0: /* failed */
+        fflush(stderr);
+        write(STDERR_FILENO, &c->setup, c->setup_prefix.lengthReason);
+        write(STDERR_FILENO, "\n", sizeof("\n"));
+        /*FALLTHROUGH*/
+    case 2: /* authenticate */
+        free(c);
+        return 0;
+    }
 
     /* Set up a collection of convenience pointers. */
     /* Initialize these since they are used before the next realloc. */
