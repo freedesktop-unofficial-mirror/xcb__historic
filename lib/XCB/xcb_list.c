@@ -5,7 +5,7 @@
  */
 
 #include <assert.h>
-#include <xcb_list.h>
+#include <X11/XCB/xcb_list.h>
 
 #include <stdlib.h>
 

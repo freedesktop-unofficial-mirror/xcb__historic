@@ -6,10 +6,10 @@
 
 #ifndef __XCB_EVENT_H
 #define __XCB_EVENT_H
-#include <xcb_trace.h>
+#include <X11/XCB/xcb_trace.h>
 
 struct XCBConnection;
-#include <xcb_types.h>
+#include <X11/XCB/xcb_types.h>
 
 int XCBEventQueueIsEmpty(struct XCBConnection *c);
 int XCBEventQueueLength(struct XCBConnection *c);

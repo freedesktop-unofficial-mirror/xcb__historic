@@ -1,4 +1,4 @@
-#include <xcb.h>
+#include <X11/XCB/xcb.h>
 #include <stdio.h>
 
 XCBConnection *c;

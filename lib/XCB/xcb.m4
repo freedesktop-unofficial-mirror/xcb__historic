@@ -8,7 +8,7 @@ REQUIRE(stdlib)
 REQUIRE(stdio)
 REQUIRE(string)
 ')HEADERONLY(`
-REQUIRE(xcb_conn)
+REQUIRE(X11, XCB, xcb_conn)
 
 COMMENT(universal null resource or null atom)
 CONSTANT(CARD32, `None', `0L')
@@ -1554,6 +1554,6 @@ FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
 ')
 
 HEADERONLY(
-REQUIRE(xcb_extension)
+REQUIRE(X11, XCB, xcb_extension)
 )
 ENDXCBGEN

@@ -19,9 +19,9 @@ REQUIRE(errno)
 
 CPPUNDEF(`USENONBLOCKING')
 ')HEADERONLY(`dnl
-REQUIRE(xcb_list)
-REQUIRE(xcb_types)
-REQUIRE(xcb_io)
+REQUIRE(X11, XCB, xcb_list)
+REQUIRE(X11, XCB, xcb_types)
+REQUIRE(X11, XCB, xcb_io)
 REQUIRE(sys/uio)
 REQUIRE(pthread)
 

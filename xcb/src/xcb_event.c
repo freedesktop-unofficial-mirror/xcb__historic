@@ -5,11 +5,11 @@
  */
 
 #include <assert.h>
-#include <xcb_event.h>
+#include <X11/XCB/xcb_event.h>
 
 #include <stdlib.h>
-#include <xcb_conn.h>
-#include <xcb_list.h>
+#include <X11/XCB/xcb_conn.h>
+#include <X11/XCB/xcb_list.h>
 
 int XCBEventQueueIsEmpty(struct XCBConnection *c)
 {

@@ -6,7 +6,7 @@
 
 #ifndef __XCB_LIST_H
 #define __XCB_LIST_H
-#include <xcb_trace.h>
+#include <X11/XCB/xcb_trace.h>
 
 typedef struct XCBList XCBList;
 

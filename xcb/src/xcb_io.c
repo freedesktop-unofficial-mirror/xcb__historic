@@ -5,7 +5,7 @@
  */
 
 #include <assert.h>
-#include <xcb_io.h>
+#include <X11/XCB/xcb_io.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -6,7 +6,7 @@
 
 #ifndef __XCB_IO_H
 #define __XCB_IO_H
-#include <xcb_trace.h>
+#include <X11/XCB/xcb_trace.h>
 
 #include <sys/uio.h>
 #include <pthread.h>

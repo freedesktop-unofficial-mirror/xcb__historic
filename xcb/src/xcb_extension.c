@@ -4,7 +4,7 @@
  */
 
 #include <assert.h>
-#include <xcb_extension.h>
+#include <X11/XCB/xcb_extension.h>
 
 typedef struct XCBExtensionRecord {
     char *name;

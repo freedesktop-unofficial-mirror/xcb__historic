@@ -52,7 +52,7 @@ dnl The C name should be a valid C identifier which can be guessed easily
 dnl from the X name, as it will appear in programmer-visible names.
 dnl BEGINEXTENSION(X name, C name)
 define(`BEGINEXTENSION', `define(`EXTENSION', `XCB`'$2`'Id')dnl
-_H`'REQUIRE(xcb)
+_H`'REQUIRE(X11, XCB, xcb)
 
 _H`'extern const char EXTENSION[];
 _C`'const char EXTENSION[] = "`$1'";
@@ -406,10 +406,10 @@ define(`XCBGEN', `dnl
 HEADERONLY(`dnl
 #ifndef __`'TOUPPER($1)_H
 #define __`'TOUPPER($1)_H
-REQUIRE(xcb_trace)
+REQUIRE(X11, XCB, xcb_trace)
 ')SOURCEONLY(`dnl
 REQUIRE(assert)
-REQUIRE($1)')')
+REQUIRE(X11, XCB, $1)')')
 dnl Generates the standard suffix in the output code.
 dnl ENDXCBGEN()
 define(`ENDXCBGEN', `undivert(FUNCDIV)

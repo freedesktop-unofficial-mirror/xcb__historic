@@ -4,7 +4,7 @@
  * for licensing information.
  */
 
-#include <xcb.h>
+#include <X11/XCB/xcb.h>
 #include "reply_formats.h"
 #include <math.h>
 #include <stdlib.h> /* for free(3) */

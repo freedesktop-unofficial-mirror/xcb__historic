@@ -22,8 +22,8 @@
 
 #include <stdlib.h>
 
-#include <xcb.h>
-#include <xcb_event.h>
+#include <X11/XCB/xcb.h>
+#include <X11/XCB/xcb_event.h>
 #include "reply_formats.h"
 
 void try_events(XCBConnection *c);

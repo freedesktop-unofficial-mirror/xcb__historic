@@ -5,8 +5,8 @@
 
 #ifndef __XCB_EXTENSION_H
 #define __XCB_EXTENSION_H
-#include <xcb_trace.h>
-#include <xcb.h>
+#include <X11/XCB/xcb_trace.h>
+#include <X11/XCB/xcb.h>
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
