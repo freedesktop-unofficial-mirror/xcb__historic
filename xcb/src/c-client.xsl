@@ -361,8 +361,9 @@ See the file COPYING in this package for licensing information.
          declared, create that field as a CARD32. -->
     <xsl:for-each select=".//fieldref[not(current()/../*/@name=string(.))]">
       <!-- Only do this for the first reference of each undeclared field. -->
-      <xsl:if test="count(. | ancestor::list//fieldref
-                              [string(.)=string(current())][1]) = 1">
+      <xsl:if test="generate-id(.)
+                    = generate-id(ancestor::list/../list//fieldref
+                                  [string(.)=string(current())][1])">
         <field type="CARD32" name="{string(.)}" />
       </xsl:if>
     </xsl:for-each>
