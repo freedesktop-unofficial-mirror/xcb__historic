@@ -96,14 +96,12 @@ typedef CARD8           BOOL;
 
 /* Core protocol types */
 
-HEADERONLY(`dnl
 PACKETSTRUCT(Generic, `Rep', `')
 PACKETSTRUCT(Generic, `Event', `')
 PACKETSTRUCT(Generic, `Error', `')
 typedef XCBGenericEvent XCBEvent; /* deprecated name */
 
 COOKIETYPE(`Void')
-')dnl end HEADERONLY
 
 /* predeclare from xcb_conn */
 struct XCBConnection;
@@ -178,6 +176,25 @@ STRUCT(FORMAT, `
     PAD(5)
 ')
 
+STRUCT(VISUALTYPE, `
+    FIELD(VISUALID, `visual_id')
+    FIELD(CARD8, `class')
+    FIELD(CARD8, `bits_per_rgb_value')
+    FIELD(CARD16, `colormap_entries')
+    FIELD(CARD32, `red_mask')
+    FIELD(CARD32, `green_mask')
+    FIELD(CARD32, `blue_mask')
+    PAD(4)
+')
+
+STRUCT(DEPTH, `
+    FIELD(CARD8, `depth')
+    PAD(1)
+    FIELD(CARD16, `visuals_len')
+    PAD(4)
+    LISTFIELD(VISUALTYPE, `visuals', `R->visuals_len')
+')
+
 STRUCT(SCREEN, `
     FIELD(WINDOW, `root')
     FIELD(COLORMAP, `default_colormap')
@@ -195,26 +212,7 @@ STRUCT(SCREEN, `
     FIELD(BOOL, `save_unders')
     FIELD(CARD8, `root_depth')
     FIELD(CARD8, `allowed_depths_len')
-    dnl LISTFIELD(DEPTH, `allowed_depths', `R->allowed_depths_len')
-')
-
-STRUCT(DEPTH, `
-    FIELD(CARD8, `depth')
-    PAD(1)
-    FIELD(CARD16, `visuals_len')
-    PAD(4)
-    dnl LISTFIELD(VISUALTYPE, `visuals', `R->visuals_len')
-')
-
-STRUCT(VISUALTYPE, `
-    FIELD(VISUALID, `visual_id')
-    FIELD(CARD8, `class')
-    FIELD(CARD8, `bits_per_rgb_value')
-    FIELD(CARD16, `colormap_entries')
-    FIELD(CARD32, `red_mask')
-    FIELD(CARD32, `green_mask')
-    FIELD(CARD32, `blue_mask')
-    PAD(4)
+    LISTFIELD(DEPTH, `allowed_depths', `R->allowed_depths_len')
 ')
 
 STRUCT(XCBConnSetupReq, `
@@ -272,8 +270,8 @@ STRUCT(XCBConnSetupSuccessRep, `
     FIELD(KEYCODE, `max_keycode')
     PAD(4)
     dnl LISTFIELD(char, `vendor', `R->vendor_len')
-    dnl LISTFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
-    dnl LISTFIELD(SCREEN, `roots', `R->roots_len')
+    LISTFIELD(FORMAT, `pixmap_formats', `R->pixmap_formats_len')
+    LISTFIELD(SCREEN, `roots', `R->roots_len')
 ')
 
 /* Pre-defined constants */

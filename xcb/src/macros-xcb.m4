@@ -10,13 +10,23 @@ dnl -- Diversions used internally
 dnl List of parameters in a REQUEST
 define(`PARMDIV', ALLOCDIV)
 dnl Structure assignment code for binding out->* in REQUEST
-define(`OUTDIV', ALLOCDIV)
+define(`ASSNDIV', ALLOCDIV)
 dnl Variable-length list construction code in REQUEST
 define(`LISTDIV', ALLOCDIV)
 dnl Variable declarations for REQUEST bodies
 define(`VARDIV', ALLOCDIV)
 dnl List of values to check to ensure marshaling is OK in REQUEST
 define(`MARSHALDIV', ALLOCDIV)
+dnl Holds body of structure declared with STRUCT or UNION macros
+define(`STRUCTDIV', ALLOCDIV)
+dnl Functions associated with other structures
+define(`FUNCDIV', ALLOCDIV)
+
+dnl PAD, FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
+dnl UNION definitions.
+define(`FIELDQTY', 0)
+define(`PADQTY', 0)
+
 
 
 dnl -- Counters for various internal values
@@ -86,7 +96,7 @@ dnl EXPRFIELD(field type, field name, expression)
 define(`EXPRFIELD', `FIELD(`$1', `$2')
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
-divert(OUTDIV)dnl
+divert(ASSNDIV)dnl
 TAB()out->`$2' = `$2';
 POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
@@ -99,7 +109,7 @@ dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
 define(`PARAM', `FIELD($1, `$2')
 PUSHDIV(PARMDIV), $1 `$2'`'dnl
-divert(OUTDIV)dnl
+divert(ASSNDIV)dnl
 TAB()out->`$2' = `$2';
 POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
@@ -113,7 +123,7 @@ PUSHDIV(VARDIV)dnl
 TAB()const XCBQueryExtensionRep *extension = XCBQueryExtensionCached(c, EXTENSION, 0);
 TAB()const CARD8 major_opcode = extension->major_opcode;
 TAB()const CARD8 minor_opcode = `$1';
-divert(OUTDIV)dnl
+divert(ASSNDIV)dnl
 dnl TODO: better error handling here, please!
 TAB()assert(extension && extension->present);
 
@@ -125,7 +135,7 @@ POPDIV()
     FIELD(CARD8, `major_opcode')
 PUSHDIV(VARDIV)dnl
 TAB()const CARD8 major_opcode = `$1';
-divert(OUTDIV)dnl
+divert(ASSNDIV)dnl
 TAB()out->major_opcode = major_opcode;
 POPDIV()
 ')')
@@ -165,17 +175,24 @@ dnl must be provided. The length name is the name of a field in the
 dnl fixed-length portion of the response which contains the number of
 dnl elements in this section.
 dnl ARRAYREPLY(field type, field name, list length expr)
-define(`ARRAYREPLY', `PUSHDIV(OUTDIV)
-INLINEFUNCTION(`$1 *XCB'REQ`$2', `XCB'REQ`Rep *R', `
+define(`ARRAYREPLY', `PUSHDIV(FUNCDIV)
+INLINEFUNCTION(`$1 *'REQ`$2', REQ`Rep *R', `
     return ($1 *) (NEXTFIELD);
 ')
 POPDIV()
-define(`NEXTFIELD', `XCB'REQ`$2'`(R) + ($3)')')
+define(`NEXTFIELD', REQ`$2'`(R) + (`$3')')')
 
-dnl Generates an iterator for the variable-length portion of a reply.
-dnl TODO: um, write this.
-dnl LISTREPLY(field type, field name, list length expr, next field expr)
-define(`LISTREPLY', `')
+dnl Generates an iterator for the variable-length portion of a structure.
+dnl LISTFIELD(field type, field name, list length expr)
+define(`LISTFIELD', `PUSHDIV(FUNCDIV)
+FUNCTION(`$1Iter 'REQ`$2', REQ` *R', `
+TAB()$1Iter i;
+TAB()i.data = ($1 *) (NEXTFIELD);
+TAB()i.rem = ($3);
+TAB()return i;
+')
+POPDIV()
+define(`NEXTFIELD', `$1AfterIter(REQ`$2'((REQ *) R))')')
 
 
 dnl Creates a function named XCB<name> returning XCBVoidCookie and
@@ -196,7 +213,6 @@ define(`REQUEST',`REQUESTFUNCTION(`$1', `$1', `$2')
 _H
 pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
-undivert(OUTDIV)`'dnl
 INLINEFUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
 `XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericEvent **e', `
     XCBREPTRACER("$1");
@@ -230,7 +246,7 @@ TAB()out = (XCB`$2'Req *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(*out)));
 TAB()c->last_request = out;
 TAB()XCBREQTRACER("$2");
 
-undivert(OUTDIV)`'dnl
+undivert(ASSNDIV)`'dnl
 
 TAB()ret.seqnum = ++c->seqnum;
 ifelse($1, Void, `dnl', `    XCBAddReplyData(c, ret.seqnum);')
@@ -305,17 +321,45 @@ define(`REPMIDDLE', `
 
 dnl REQMIDDLE()
 define(`REQMIDDLE', `FIELD(CARD16, `length')
-PUSHDIV(OUTDIV)dnl
+PUSHDIV(ASSNDIV)dnl
 TAB()out->length = XCB_CEIL(sizeof(*out)) >> 2;
 POPDIV()')
 
+dnl STRUCT(name, 1 or more FIELDs)
+define(`STRUCT', `PUSHDIV(-1)
+define(`NEXTFIELD', `R + 1')
+define(`REQ', $1)
+$2
+POPDIV()dnl
+HEADERONLY(`typedef struct `$1' {
+undivert(STRUCTDIV)dnl
+} `$1';
+
+typedef struct `$1'Iter {INDENT()
+TAB()`$1' *data;
+TAB()int rem;
+UNINDENT()} `$1'Iter;
+')
+PUSHDIV(FUNCDIV)
+INLINEFUNCTION(`void `$1'Next', ``$1'Iter *i', `
+TAB()$1 *R = i->data;
+TAB()--i->rem;
+TAB()i->data = ($1 *) (NEXTFIELD());
+')
+FUNCTION(`void *`$1'AfterIter', ``$1'Iter i', `
+TAB()while(i.rem > 0)INDENT()
+TAB()`$1'Next(&i);UNINDENT()
+TAB()return (void *) i.data;
+')
+POPDIV()define(`FIELDQTY', 0)define(`PADQTY', 0)')
+
 dnl for kind in (Event, Error, Rep, Req)
 dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)
-define(`PACKETSTRUCT', `dnl
-pushdef(`REQ', `$1')dnl
-pushdef(`LENGTHFIELD', `TOUPPER($2)MIDDLE')dnl
+define(`PACKETSTRUCT', `PUSHDIV(-1)
+pushdef(`REQ', `XCB$1')
+pushdef(`LENGTHFIELD', `TOUPPER($2)MIDDLE')
+define(`NEXTFIELD', `R + 1')
 INDENT()dnl
-STRUCT(XCB`$1'`$2', `
 dnl Everything except requests has a response type.
 ifelse(`$2', `Req', , `REPLY(BYTE, `response_type')')
 dnl Only errors have an error code.
@@ -325,9 +369,12 @@ dnl Requests and replies always have length fields.
 ifelse(FIELDQTY, 1,
     `ifelse(`$2', `Req', `PAD(1)',
     `ifelse(`$2', `Rep', `PAD(1)')')')
-')_H
-UNINDENT()dnl
-popdef(`LENGTHFIELD')popdef(`REQ')_H')
+UNINDENT()
+POPDIV()dnl
+HEADERONLY(`typedef struct XCB`$1'`$2' {
+undivert(STRUCTDIV)dnl
+} XCB`$1'`$2';
+')popdef(`LENGTHFIELD')popdef(`REQ')define(`FIELDQTY', 0)define(`PADQTY', 0)_H')
 
 
 dnl -- Other macros
@@ -352,6 +399,8 @@ REQUIRE(assert)
 REQUIRE($1)')')
 dnl Generates the standard suffix in the output code.
 dnl ENDXCBGEN()
-define(`ENDXCBGEN', `_H`'#endif')
+define(`ENDXCBGEN', `
+undivert(FUNCDIV)`'dnl
+_H`'#endif')
 
 divert(0)`'dnl

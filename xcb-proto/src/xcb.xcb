@@ -798,6 +798,11 @@ REQUEST(QueryTextExtents, `
     REPLY(INT32, `overall_right')
 ')
 
+dnl STRUCT(STR, `
+dnl     FIELD(CARD8, `name_len')
+dnl     LISTFIELD(char, `name', `R->name_len')
+dnl ')
+
 dnl FIXME: ListFonts needs an iterator for the reply - a pointer won't do.
 REQUEST(ListFonts, `
     OPCODE(49)
@@ -809,7 +814,7 @@ REQUEST(ListFonts, `
     PAD(1)
     REPLY(CARD16, `names_len')
     PAD(22)
-    dnl LISTREPLY(STR, names, ...)
+    dnl LISTFIELD(STR, `names', `R->names_len')
 ')
 
 /* The ListFontsWithInfo request is not supported by XCB. */
@@ -1184,7 +1189,7 @@ REQUEST(AllocColorCells, `
 ', `
     PAD(1)
     REPLY(CARD16, `pixels_len')
-    REPLY(CARD16, `mask_len')
+    REPLY(CARD16, `masks_len')
     PAD(20)
     ARRAYREPLY(CARD32, `pixels', `R->pixels_len')
     ARRAYREPLY(CARD32, `masks', `R->masks_len')
@@ -1544,40 +1549,7 @@ FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
     return (reply != 0);
 ')
 
-STATICSTRUCT(XCBExtensionRecord, `
-    POINTERFIELD(char, `name')
-    POINTERFIELD(XCBQueryExtensionRep, `info')
-')
-_C
-STATICFUNCTION(`int match_extension_string', `const void *name, const void *data', `
-    return (((XCBExtensionRecord *) data)->name == name);
-')
-_C
-/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
- * from the cache. */
-FUNCTION(`const XCBQueryExtensionRep *XCBQueryExtensionCached',
-`XCBConnection *c, const char *name, XCBGenericEvent **e', `
-    XCBExtensionRecord *data = 0;
-    if(e)
-        *e = 0;
-    pthread_mutex_lock(&c->locked);
-
-    data = (XCBExtensionRecord *) XCBListRemove(c->extension_cache, match_extension_string, name);
-
-    if(data)
-        goto done; /* cache hit: return from the cache */
-
-    /* cache miss: query the server */
-    pthread_mutex_unlock(&c->locked);
-ALLOC(XCBExtensionRecord, `data', 1)
-    data->name = (char *) name;
-    data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
-    pthread_mutex_lock(&c->locked);
-
-done:
-    XCBListInsert(c->extension_cache, data);
-
-    pthread_mutex_unlock(&c->locked);
-    return data->info;
-')
+HEADERONLY(
+REQUIRE(xcb_extension)
+)
 ENDXCBGEN

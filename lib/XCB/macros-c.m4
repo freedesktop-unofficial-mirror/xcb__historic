@@ -123,34 +123,6 @@ dnl -- Type macros
 dnl TYPEDEF(old name, new name)
 define(`TYPEDEF', `HEADERONLY(`typedef $1 $2;')')
 
-dnl Holds body of structure declared with STRUCT or UNION macros
-define(`STRUCTDIV', ALLOCDIV)
-
-dnl PAD, FIELD, ARRAYFIELD, and POINTERFIELD can be used in either STRUCT or
-dnl UNION definitions.
-UNIMPLEMENTED(`FIELDQTY')
-UNIMPLEMENTED(`PADQTY')
-
-dnl STRUCT(name, 1 or more FIELDs)
-define(`STRUCT', `PUSHDIV(-1)
-pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
-$2
-popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()TYPEDEF(`struct $1 {
-undivert(STRUCTDIV)dnl
-}', `$1')')
-
-dnl STATICSTRUCT(name, 1 or more FIELDs)
-define(`STATICSTRUCT', `PUSHDIV(-1)
-pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
-$2
-popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()dnl
-HEADERONLY(`typedef struct `$1' `$1';')dnl
-SOURCEONLY(`struct `$1' {
-undivert(STRUCTDIV)dnl
-};')')
-
 dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)
 pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
