@@ -180,11 +180,16 @@ int _xcb_conn_wait(XCBConnection *c, const int should_write, pthread_cond_t *con
 {
     int ret = 1;
     fd_set rfds, wfds;
+    static __thread int already_here = 0;
+
+    assert(!already_here);
+    ++already_here;
 
     /* If the thing I should be doing is already being done, wait for it. */
     if(should_write ? c->out.writing : c->in.reading)
     {
         pthread_cond_wait(cond, &c->iolock);
+        --already_here;
         return 1;
     }
 
@@ -219,5 +224,6 @@ done:
         --c->out.writing;
     --c->in.reading;
 
+    --already_here;
     return ret;
 }

@@ -1,3 +1,13 @@
+2004-08-13  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_conn.c:
+	Add a sanity check: assert() that _xcb_conn_wait
+	will not be re-entered within the same thread. This
+	turns out not to be true in some current buggy code.
+	Xlib re-enters from _XAsyncReplyHandler in
+	src/xcl/display.c; and the X Test Suite seems to
+	catch SIGABRT and continue running.
+
 2004-08-10  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_out.c:
