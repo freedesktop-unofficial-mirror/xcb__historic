@@ -158,6 +158,17 @@ ALLOC(unsigned char, buf, length)
     return 1; /* I have something for you... */
 ')
 _C
+STATICFUNCTION(`int XCBReadWire', `XCBConnection *c', `
+    int num_packets = 0;
+    
+    while( XCBReadPacket((void *) c, c->handle) )
+    {
+        num_packets++;
+    }
+    
+    return num_packets;
+')
+_C
 FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e', `
     void *ret = 0;
     XCBReplyData *cur;
@@ -229,6 +240,19 @@ FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
 #if XCBTRACEEVENT
     fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret->response_type);
 #endif
+
+    return ret;
+')
+_C
+FUNCTION(`XCBGenericEvent *XCBPollEvent', `XCBConnection *c', `
+    XCBGenericEvent *ret = 0;
+    
+    XCBReadWire(c);
+
+    if(!XCBListIsEmpty(c->event_data))
+    {
+        ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
+    }
 
     return ret;
 ')
