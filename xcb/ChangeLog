@@ -1,3 +1,8 @@
+2005-03-31  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_in.c:
+	Fix X error handling to, uh, not hang.
+
 2005-03-30  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_in.c, src/xcbint.h:

@@ -38,12 +38,13 @@
 typedef struct XCBReplyData {
     unsigned int request;
     void *data;
+    XCBGenericError **error;
 } XCBReplyData;
 
 static int match_request_error(const void *request, const void *data)
 {
     const XCBGenericError *e = data;
-    return e->response_type == 0 && e->sequence == *(unsigned int *) request;
+    return e->response_type == 0 && e->sequence == ((*(unsigned int *) request) & 0xffff);
 }
 
 static int match_reply(const void *request, const void *data)
@@ -82,13 +83,22 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
     if(_xcb_list_find(c->in.readers, match_reply, &request))
         goto done; /* error */
 
+    if(e)
+    {
+        *e = _xcb_list_remove(c->in.events, match_request_error, &request);
+        if(*e)
+            goto done;
+    }
+
     reader.request = request;
     reader.data = &cond;
+    reader.error = e;
     _xcb_list_append(c->in.readers, &reader);
 
     /* If this request has not been read yet, wait for it. */
-    while((signed int) (c->in.request_read - request) < 0 ||
-            (c->in.request_read == request && _xcb_queue_is_empty(c->in.current_reply)))
+    while(!(e && *e) && ((signed int) (c->in.request_read - request) < 0 ||
+            (c->in.request_read == request &&
+	     _xcb_queue_is_empty(c->in.current_reply))))
         if(_xcb_conn_wait(c, /*should_write*/ 0, &cond) <= 0)
             goto done;
 
@@ -104,9 +114,6 @@ void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **
     }
     else
         ret = _xcb_queue_dequeue(c->in.current_reply);
-
-    if(!ret && e)
-        *e = _xcb_list_remove(c->in.events, match_request_error, &request);
 
 done:
     _xcb_list_remove(c->in.readers, match_reply, &request);
@@ -245,13 +252,23 @@ int _xcb_in_read_packet(XCBConnection *c)
         _xcb_queue_enqueue(c->in.current_reply, buf);
         if(reader)
             pthread_cond_signal(reader->data);
-    }
-    else /* event or error */
-    {
-        _xcb_queue_enqueue(c->in.events, buf);
-        pthread_cond_signal(&c->in.event_cond);
+        return 1;
     }
 
+    if(buf[0] == 0) /* response is an error */
+    {
+        XCBReplyData *reader = _xcb_list_find(c->in.readers, match_reply, &c->in.request_read);
+        if(reader && reader->error)
+        {
+            *reader->error = (XCBGenericError *) buf;
+            pthread_cond_signal(reader->data);
+            return 1;
+        }
+    }
+
+    /* event, or error without a waiting reader */
+    _xcb_queue_enqueue(c->in.events, buf);
+    pthread_cond_signal(&c->in.event_cond);
     return 1; /* I have something for you... */
 }
 
