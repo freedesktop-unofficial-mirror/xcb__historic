@@ -86,6 +86,8 @@ static int XCBWriteBuffer(XCBIOHandle *c)
 {
     int n;
     n = write(c->fd, c->outqueue, c->n_outqueue);
+    if(n < 0)
+        return errno == EAGAIN ? 1 : -1;
     c->n_outqueue -= n;
     if(c->n_outqueue)
         memmove(c->outqueue, c->outqueue + n, c->n_outqueue);
@@ -107,9 +109,21 @@ static int XCBWriteBuffer(XCBIOHandle *c)
     return 1;
 }
 
+static int XCBFillBuffer(XCBIOHandle *h)
+{
+    int ret;
+    ret = read(h->fd, h->inqueue + h->n_inqueue, sizeof(h->inqueue) - h->n_inqueue);
+    if(ret < 0 && errno != EAGAIN)
+        return errno == EAGAIN ? 1 : -1;
+    h->n_inqueue += ret;
+    while(ret > 0)
+        ret = h->reader(h->readerdata, h);
+    return 1;
+}
+
 int XCBWait(XCBIOHandle *c, const int should_write)
 {
-    int ret = 1, should_read;
+    int ret = 1;
     fd_set rfds, wfds;
 
     /* If the thing I should be doing is already being done, wait for it. */
@@ -119,21 +133,16 @@ int XCBWait(XCBIOHandle *c, const int should_write)
         return 1;
     }
 
-    /* If anyone gets here, somebody needs to be reading.
-     * Maybe it should be me, but only if it is nobody else. */
-    should_read = !c->reading;
-    if(should_read)
-        ++c->reading;
-    if(should_write)
-        ++c->writing;
-
     FD_ZERO(&rfds);
-    FD_ZERO(&wfds);
+    FD_SET(c->fd, &rfds);
+    ++c->reading;
 
-    if(should_read)
-        FD_SET(c->fd, &rfds);
+    FD_ZERO(&wfds);
     if(should_write)
+    {
         FD_SET(c->fd, &wfds);
+        ++c->writing;
+    }
 
     pthread_mutex_unlock(c->locked);
     ret = select(c->fd + 1, &rfds, &wfds, 0, 0);
@@ -143,15 +152,8 @@ int XCBWait(XCBIOHandle *c, const int should_write)
         goto done;
 
     if(FD_ISSET(c->fd, &rfds))
-    {
-        ret = read(c->fd, c->inqueue + c->n_inqueue, sizeof(c->inqueue) - c->n_inqueue);
-        if(ret < 0)
+        if((ret = XCBFillBuffer(c)) <= 0)
             goto done;
-        c->n_inqueue += ret;
-        while(ret > 0)
-            ret = c->reader(c->readerdata, c);
-        ret = 1;
-    }
 
     if(FD_ISSET(c->fd, &wfds))
         if((ret = XCBWriteBuffer(c)) <= 0)
@@ -163,8 +165,7 @@ done:
 
     if(should_write)
         --c->writing;
-    if(should_read)
-        --c->reading;
+    --c->reading;
 
     return ret;
 }
