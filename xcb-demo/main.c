@@ -20,6 +20,10 @@
 #include <stdio.h>
 #endif
 
+#ifdef TEST_ICCCM
+#include <string.h>
+#endif
+
 #include <stdlib.h>
 
 #include <X11/XCB/xcb.h>
