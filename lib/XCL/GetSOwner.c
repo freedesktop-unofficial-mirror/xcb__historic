@@ -5,14 +5,13 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 
-Window XGetSelectionOwner(register Display *dpy, Atom selection)
+Window XGetSelectionOwner(Display *dpy, Atom selection)
 {
-    XCBGetSelectionOwnerCookie c;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGetSelectionOwnerRep *r;
     Window ret;
 
-    c = XCBGetSelectionOwner(XCBConnectionOfDisplay(dpy), XCLATOM(selection));
-    r = XCBGetSelectionOwnerReply(XCBConnectionOfDisplay(dpy), c, 0);
+    r = XCBGetSelectionOwnerReply(c, XCBGetSelectionOwner(c, XCLATOM(selection)), 0);
     if (!r)
 	return None;
     ret = r->owner.xid;

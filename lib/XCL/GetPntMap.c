@@ -61,22 +61,14 @@ KeySym *XGetKeyboardMapping (Display *dpy,
 #endif
 			     int count, int *keysyms_per_keycode)
 {
-    register KeySym *mapping = NULL;
-    XCBGetKeyboardMappingCookie c;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGetKeyboardMappingRep *r;
 
-    c = XCBGetKeyboardMapping(XCBConnectionOfDisplay(dpy), XCLKEYCODE(first_keycode), count);
-    r = XCBGetKeyboardMappingReply(XCBConnectionOfDisplay(dpy), c, 0);
+    r = XCBGetKeyboardMappingReply(c, XCBGetKeyboardMapping(c, XCLKEYCODE(first_keycode), count), 0);
     if (!r)
 	return 0;
 
-    mapping = (KeySym *) Xmalloc(r->length * 4 * sizeof(KEYSYM));
-    if (mapping)
-    {
-	memcpy(mapping, XCBGetKeyboardMappingkeysyms(r), r->length * 4 * sizeof(KEYSYM));
-	*keysyms_per_keycode = r->keysyms_per_keycode;
-    }
-    free(r);
-    return mapping;
+    *keysyms_per_keycode = r->keysyms_per_keycode;
+    memmove(r, XCBGetKeyboardMappingkeysyms(r), XCBGetKeyboardMappingkeysymsLength(r));
+    return (KeySym *) r;
 }
-

@@ -7,20 +7,26 @@
 
 Status XGetWindowAttributes(register Display *dpy, Window window, XWindowAttributes *attr)
 {
-    XCBGetGeometryCookie gc;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGetGeometryRep *gr;
-    XCBGetWindowAttributesCookie ac;
     XCBGetWindowAttributesRep *ar;
     register int i;
     register Screen *sp;
 
-    gc = XCBGetGeometry(XCBConnectionOfDisplay(dpy), XCLDRAWABLE(window));
-    ac = XCBGetWindowAttributes(XCBConnectionOfDisplay(dpy), XCLWINDOW(window));
-    gr = XCBGetGeometryReply(XCBConnectionOfDisplay(dpy), gc, 0);
-    ar = XCBGetWindowAttributesReply(XCBConnectionOfDisplay(dpy), ac, 0);
+    {
+	DRAWABLE d = XCLDRAWABLE(window);
+	XCBGetGeometryCookie gc = XCBGetGeometry(c, d);
+	XCBGetWindowAttributesCookie ac = XCBGetWindowAttributes(c, d.window);
+	gr = XCBGetGeometryReply(c, gc, 0);
+	ar = XCBGetWindowAttributesReply(c, ac, 0);
+    }
     /* Xlib kills BadDrawable errors from GetGeometry, but I can't be arsed. */
     if (!gr || !ar)
-	goto error;
+    {
+	free(gr);
+	free(ar);
+	return 0; /* failure */
+    }
 
     attr->depth = gr->depth;
     attr->root = gr->root.xid;
@@ -56,9 +62,4 @@ Status XGetWindowAttributes(register Display *dpy, Window window, XWindowAttribu
     free(gr);
     free(ar);
     return 1; /* success */
-
-error:
-    free(gr);
-    free(ar);
-    return 0; /* failure */
 }

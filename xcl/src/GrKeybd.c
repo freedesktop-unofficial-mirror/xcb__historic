@@ -5,12 +5,7 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 
-int XGrabKeyboard (dpy, window, ownerEvents, pointerMode, keyboardMode, time)
-    register Display *dpy;
-    Window window;
-    Bool ownerEvents;
-    int pointerMode, keyboardMode;
-    Time time;
+int XGrabKeyboard(Display *dpy, Window window, Bool ownerEvents, int pointerMode, int keyboardMode, Time time)
 {
     register XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGrabKeyboardRep *r;

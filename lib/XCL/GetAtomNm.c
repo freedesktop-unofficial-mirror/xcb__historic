@@ -4,7 +4,6 @@
  * 
  * See the file COPYING for licensing information. */
 #include "xclint.h"
-// #include "Xintatom.h"
 
 /* XXX: this implementation does no caching. */
 

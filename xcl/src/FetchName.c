@@ -5,33 +5,15 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 #include <X11/Xatom.h>
-#include <X11/Xos.h>
-
-static Status _XGetCStringProperty();
-
-Status XFetchName (dpy, window, name)
-    register Display *dpy;
-    Window window;
-    char **name;
-{
-    return _XGetCStringProperty(dpy, window, XA_WM_NAME, name);
-}
-
-Status XGetIconName (dpy, window, name)
-    register Display *dpy;
-    Window window;
-    char **name;
-{
-    return _XGetCStringProperty(dpy, window, XA_WM_ICON_NAME, name);
-}
+// #include <X11/Xos.h>
 
 static Status _XGetCStringProperty(register Display *dpy, Window w, ATOM property, char **name)
 {
-    XCBGetPropertyCookie c;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGetPropertyRep *p;
+    int len;
 
-    c = XCBGetProperty(XCBConnectionOfDisplay(dpy), /* delete */ 0, XCLWINDOW(w), property, XCLATOM(XA_STRING), /* offset */ 0, /* length */ 1<<30);
-    p = XCBGetPropertyReply(XCBConnectionOfDisplay(dpy), c, 0);
+    p = XCBGetPropertyReply(c, XCBGetProperty(c, /* delete */ 0, XCLWINDOW(w), property, XCLATOM(XA_STRING), /* offset */ 0, /* length */ 1<<30), 0);
 
     if (!p || p->type.xid != XA_STRING || p->format != 8) {
 	*name = NULL;
@@ -39,10 +21,19 @@ static Status _XGetCStringProperty(register Display *dpy, Window w, ATOM propert
 	return 0; /* failure */
     }
 
-    /* allocate an extra byte to null-terminate the string. */
-    *name = Xmalloc (p->value_len + 1);
-    memcpy(*name, XCBGetPropertyvalue(p), p->value_len);
-    (*name)[p->value_len] = '\0';
-    free(p);
+    len = XCBGetPropertyvalueLength(p);
+    memmove(p, XCBGetPropertyvalue(p), len);
+    *name = (char *) p;
+    (*name)[len] = '\0';
     return 1; /* success */
+}
+
+Status XFetchName(Display *dpy, Window window, char **name)
+{
+    return _XGetCStringProperty(dpy, window, XCLATOM(XA_WM_NAME), name);
+}
+
+Status XGetIconName(Display *dpy, Window window, char **name)
+{
+    return _XGetCStringProperty(dpy, window, XCLATOM(XA_WM_ICON_NAME), name);
 }

@@ -10,9 +10,9 @@
 
 Atom XInternAtom(Display *dpy, const char *name, const Bool onlyIfExists)
 {
-    register XCBConnection *c = XCBConnectionOfDisplay(dpy);
-    Atom atom;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBInternAtomRep *r;
+    Atom atom;
 
     if (!name)
 	name = "";
@@ -22,7 +22,7 @@ Atom XInternAtom(Display *dpy, const char *name, const Bool onlyIfExists)
 	return None;
     atom = r->atom.xid;
     free(r);
-    return (atom);
+    return atom;
 }
 
 Status XInternAtoms(Display *dpy, char **const names, const int count, const Bool onlyIfExists, Atom *const atoms_return)
@@ -33,15 +33,12 @@ Status XInternAtoms(Display *dpy, char **const names, const int count, const Boo
     int ret = 1;
 
     cs = (XCBInternAtomCookie *) malloc(count * sizeof(XCBInternAtomCookie));
-    /* even if this memory allocation fails, ensure that every entry in
-     * atoms_return is initialized. Xlib doesn't dynamically allocate
-     * memory here, so it doesn't have this failure case. */
-    if (!cs) {
+    if (!cs)
+    {
+	/* malloc failed: fall back to one InternAtom at a time */
 	for (i = 0; i < count; ++i)
-	    atoms_return[i] = None;
-    /* now every entry in atoms_return has some sensible value, so we can
-     * report the memory allocation failure. */
-	return 0;
+	    atoms_return[i] = XInternAtom(dpy, names[i], onlyIfExists);
+	return 1;
     }
 
     for (i = 0; i < count; ++i)

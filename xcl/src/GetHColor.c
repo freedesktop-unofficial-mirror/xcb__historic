@@ -7,11 +7,10 @@
 
 Status XAllocColor(register Display *dpy, Colormap cmap, XColor *def)
 {
-    XCBAllocColorCookie c;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBAllocColorRep *r;
 
-    c = XCBAllocColor(XCBConnectionOfDisplay(dpy), XCLCOLORMAP(cmap), def->red, def->green, def->blue);
-    r = XCBAllocColorReply(XCBConnectionOfDisplay(dpy), c, 0);
+    r = XCBAllocColorReply(c, XCBAllocColor(c, XCLCOLORMAP(cmap), def->red, def->green, def->blue), 0);
     if (!r)
 	return 0;
 

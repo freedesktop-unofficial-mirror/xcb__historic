@@ -10,17 +10,18 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
     /* RETURNS */
     Atom *actual_type, int *actual_format, unsigned long *nitems, unsigned long *bytesafter, unsigned char **prop)
 {
-    XCBGetPropertyCookie c;
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
+    XCBGetPropertyCookie cookie;
     XCBGetPropertyRep *r;
 
-    c = XCBGetProperty(XCBConnectionOfDisplay(dpy), delete, XCLWINDOW(window), XCLATOM(property), XCLATOM(req_type), offset, length);
-    r = XCBGetPropertyReply(XCBConnectionOfDisplay(dpy), c, 0);
+    cookie = XCBGetProperty(c, delete, XCLWINDOW(window), XCLATOM(property), XCLATOM(req_type), offset, length);
+    r = XCBGetPropertyReply(c, cookie, 0);
     if (!r)
 	return 1;	/* not Success */
 
-    *prop = (unsigned char *) NULL;
-    if (r->type.xid != None) {
-	long bytes;
+    /* XXX: should we even bother checking r->format? */
+    if (r->type.xid != None)
+    {
 	/* Check that the server returned a valid format. If it didn't,
 	 * throw a BadImplementation error in the library. */
 	switch (r->format) {
@@ -32,33 +33,39 @@ XGetWindowProperty(register Display *dpy, Window window, Atom property, long off
 
 	    default:
 		error.type = X_Error;
-		error.sequenceNumber = c.seqnum;
+		error.sequenceNumber = cookie.seqnum;
 		error.majorCode = X_GetProperty;
 		error.minorCode = 0;
 		error.errorCode = BadImplementation;
 		_XError(dpy, &error);
 		goto error;
 	}
-	/* One more byte is malloced than is needed to contain the property
-	 * data, but this last byte is null terminated and convenient for 
-	 * returning string properties, so the client doesn't then have to 
-	 * recopy the string to make it null terminated. On the other hand,
-	 * it's a really stupid idea. */
-	bytes = r->value_len * 8 / r->format;
-	*prop = Xmalloc (bytes + 1);
-	if (!*prop)
-	    goto error;
-	/* FIXME: Xlib has a different behavior than this for systems where a
-	 * short isn't 16 bits or where a long isn't 32 bits. */
-	memcpy (*prop, XCBGetPropertyvalue(r), bytes);
-	(*prop)[bytes] = '\0';
     }
 
     *actual_type = r->type.xid;
     *actual_format = r->format;
     *nitems = r->value_len;
     *bytesafter = r->bytes_after;
-    free(r);
+
+    if (r->type.xid != None)
+    {
+	/* This null terminates the property, which is convenient for 
+	 * returning string properties, so the client doesn't then have to 
+	 * recopy the string to make it null terminated. On the other hand,
+	 * it's a really stupid idea. */
+	long bytes = XCBGetPropertyvalueLength(r);
+	/* FIXME: Xlib has a different behavior than this for systems where a
+	 * short isn't 16 bits or where a long isn't 32 bits. */
+	memmove(r, XCBGetPropertyvalue(r), bytes);
+	*prop = (char *) r;
+	(*prop)[bytes] = '\0';
+    }
+    else
+    {
+	*prop = 0;
+	free(r);
+    }
+
     return Success;
 
 error:

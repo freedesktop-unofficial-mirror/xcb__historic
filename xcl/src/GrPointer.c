@@ -5,16 +5,9 @@
  * See the file COPYING for licensing information. */
 #include "xclint.h"
 
-int XGrabPointer(dpy, grab_window, owner_events, event_mask, pointer_mode,
-	     keyboard_mode, confine_to, curs, time)
-    register Display *dpy;
-    Window grab_window;
-    Bool owner_events;
-    unsigned int event_mask; /* CARD16 */
-    int pointer_mode, keyboard_mode;
-    Window confine_to;
-    Cursor curs;
-    Time time;
+int XGrabPointer(Display *dpy, Window grab_window, Bool owner_events,
+    unsigned int event_mask, /* CARD16 */
+    int pointer_mode, int keyboard_mode, Window confine_to, Cursor curs, Time time)
 {
     register XCBConnection *c = XCBConnectionOfDisplay(dpy);
     XCBGrabPointerRep *r;

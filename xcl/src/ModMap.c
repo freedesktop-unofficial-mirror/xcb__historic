@@ -20,7 +20,7 @@ XModifierKeymap *XGetModifierMapping(Display *dpy)
     if (!r)
 	goto error;
 
-    nbytes = r->keycodes_per_modifier * (8 * sizeof(KEYCODE));
+    nbytes = XCBGetModifierMappingkeycodesLength(r);
     res->modifiermap = (KeyCode *) Xmalloc (nbytes);
     if (!res->modifiermap)
 	goto error;
@@ -29,11 +29,11 @@ XModifierKeymap *XGetModifierMapping(Display *dpy)
     res->max_keypermod = r->keycodes_per_modifier;
 
 done:
-    return (res);
+    return res;
 
 error:
     if (res)
-	Xfree((char *) res);
+	Xfree(res);
     res = 0;
     goto done;
 }
