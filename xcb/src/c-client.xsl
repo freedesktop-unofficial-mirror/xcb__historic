@@ -128,6 +128,8 @@ authorization from the authors.
 
     <type name="char" />
     <type name="void" />
+    <type name="float" />
+    <type name="double" />
     <type name="XID" />
   </xsl:variable>
   <xsl:variable name="core-types" select="e:node-set($core-types-rtf)" />
