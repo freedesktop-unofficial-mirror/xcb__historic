@@ -278,15 +278,6 @@ STRUCT(XCBConnSetupSuccessRep, `
 
 /* Pre-defined constants */
 
-COMMENT(X_TCP_PORT + display number = server port for TCP transport)
-CONSTANT(int, `X_TCP_PORT', `6000')
-
-COMMENT(current protocol version)
-CONSTANT(CARD16, `X_PROTOCOL', `11')
-
-COMMENT(current minor version)
-CONSTANT(CARD16, `X_PROTOCOL_REVISION', `0')
-
 dnl XXX: everything after here probably belongs in xcb.m4. It came from
 dnl X.h et al.
 

@@ -145,9 +145,11 @@ define(`STATICSTRUCT', `PUSHDIV(-1)
 pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
 $2
 popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()SOURCEONLY(`typedef struct `$1' {
+POPDIV()dnl
+HEADERONLY(`typedef struct `$1' `$1';')dnl
+SOURCEONLY(`struct `$1' {
 undivert(STRUCTDIV)dnl
-} `$1';')')
+};')')
 
 dnl UNION(name, 1 or more FIELDs)
 define(`UNION', `PUSHDIV(-1)

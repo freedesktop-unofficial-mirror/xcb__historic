@@ -167,10 +167,7 @@ PACKETSTRUCT(`$1', `Rep', `$3')
 undivert(OUTDIV)`'dnl
 INLINEFUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
 `XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericEvent **e', `
-#ifdef XCBTRACEREP
-    fprintf(stderr, "$1 reply wait\n");
-#endif
-
+    XCBREPTRACER("$1");
     return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
 ')popdef(`NEXTFIELD')')
 
@@ -189,17 +186,14 @@ FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
 undivert(VARDIV)`'dnl
 ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
 
-#ifdef XCBTRACEREQ
-    fprintf(stderr, "$2 request send\n");
-#endif
-
+    XCBREQTRACER("$2");
     pthread_mutex_lock(&c->locked);
-    out = (XCB`$2'Req *) XCBAllocOut(c, XCB_CEIL(sizeof(*out)));
+    out = (XCB`$2'Req *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(*out)));
 
 undivert(OUTDIV)`'dnl
 
     ret.seqnum = ++c->seqnum;
-ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c, parts, PARTQTY);')
+ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c->handle, parts, PARTQTY);')
 ifelse($1, Void, `dnl', `    XCBAddReplyData(c, ret.seqnum);')
     pthread_mutex_unlock(&c->locked);
 
@@ -302,10 +296,7 @@ define(`XCBGEN', `dnl
 HEADERONLY(`dnl
 #ifndef __`'TOUPPER($1)_H
 #define __`'TOUPPER($1)_H
-
-#if defined(XCBTRACEREQ) || defined(XCBTRACEREP) || defined(XCBTRACEEVENT)
-REQUIRE(stdio)
-#endif
+REQUIRE(xcb_trace)
 ')SOURCEONLY(`dnl
 REQUIRE(assert)
 REQUIRE($1)')')
