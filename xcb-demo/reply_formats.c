@@ -9,12 +9,12 @@
 
 #define WINFMT "0x%08x"
 
-int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *reply)
+int formatGetWindowAttributesReply(WINDOW wid, XCB_GetWindowAttributes_Rep *reply)
 {
     if(!reply)
     {
         fprintf(stderr, "Failed to get attributes for window " WINFMT ".\n",
-            (unsigned int) wid);
+            (unsigned int) wid.xid);
         return 0;
     }
 
@@ -34,9 +34,9 @@ int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *repl
            "    allEventMasks      = 0x%08x\n"
            "    yourEventMask      = 0x%08x\n"
            "    doNotPropagateMask = 0x%08x\n",
-        (unsigned int) wid,
+        (unsigned int) wid.xid,
         reply->backing_store,
-        (unsigned int) reply->visual,
+        (unsigned int) reply->visual.id,
         reply->_class,
         reply->bit_gravity,
         reply->win_gravity,
@@ -46,7 +46,7 @@ int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *repl
         reply->map_is_installed,
         reply->map_state,
         reply->override_redirect,
-        (unsigned int) reply->colormap,
+        (unsigned int) reply->colormap.xid,
         (unsigned int) reply->all_event_masks,
         (unsigned int) reply->your_event_mask,
         reply->do_not_propagate_mask);
@@ -55,17 +55,17 @@ int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *repl
     return 1;
 }
 
-int formatGetGeometryReply(Window wid, XCB_GetGeometry_Rep *reply)
+int formatGetGeometryReply(WINDOW wid, XCB_GetGeometry_Rep *reply)
 {
     if(!reply)
     {
         fprintf(stderr, "Failed to get geometry for window " WINFMT ".\n",
-            (unsigned int) wid);
+            (unsigned int) wid.xid);
         return 0;
     }
 
     printf("Geometry for window " WINFMT ": %dx%d%+d%+d\n",
-        (unsigned int) wid,
+        (unsigned int) wid.xid,
         reply->width,
         reply->height,
         reply->x,
@@ -75,27 +75,27 @@ int formatGetGeometryReply(Window wid, XCB_GetGeometry_Rep *reply)
     return 1;
 }
 
-int formatQueryTreeReply(Window wid, XCB_QueryTree_Rep *reply)
+int formatQueryTreeReply(WINDOW wid, XCB_QueryTree_Rep *reply)
 {
     int i;
 
     if(!reply)
     {
         fprintf(stderr, "Failed to query tree for window " WINFMT ".\n",
-            (unsigned int) wid);
+            (unsigned int) wid.xid);
         return 0;
     }
 
     printf("Window " WINFMT " has parent " WINFMT ", root " WINFMT ", and %d children%c\n",
-        (unsigned int) wid,
-        (unsigned int) reply->parent,
-        (unsigned int) reply->root,
+        (unsigned int) wid.xid,
+        (unsigned int) reply->parent.xid,
+        (unsigned int) reply->root.xid,
         (unsigned int) reply->children_len,
         reply->children_len ? ':' : '.');
 
     for(i = 0; i < reply->children_len; ++i)
         printf("    window " WINFMT "\n",
-            (unsigned int) XCB_QueryTree_children(reply)[i]);
+            (unsigned int) XCB_QueryTree_children(reply)[i].xid);
 
     fflush(stdout);
     return 1;
@@ -325,7 +325,7 @@ int formatEvent(XCB_Event *e)
             seqnum,
             labelSendEvent[sendEvent]);
         break;
-    case KeymapNotify:
+    case XCB_KeymapNotify:
         printf("Event %s%s.\n",
             labelEvent[e->response_type],
             labelSendEvent[sendEvent]);

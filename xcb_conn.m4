@@ -17,11 +17,7 @@ REQUIRE(errno)
 
 CPPUNDEF(`USENONBLOCKING')
 ')HEADERONLY(`dnl
-CPPDEFINE(`NEED_EVENTS')
-CPPDEFINE(`NEED_REPLIES')
-CPPDEFINE(`ANSICPP')
-REQUIRE(X11/X)
-REQUIRE(X11/Xproto)
+REQUIRE(PACKAGE, xcb_types)
 REQUIRE(sys/uio)
 REQUIRE(pthread)
 
@@ -30,8 +26,6 @@ CPPDEFINE(`XCB_PAD(E)', `((4-((E)%4))%4)')
 
 /* Index of nearest 4-byte boundary following E. */
 CPPDEFINE(`XCB_CEIL(E)', `(((E)+3)&~3)')
-
-CPPDEFINE(`X_TCP_PORT', `6000')	/* add display number */
 
 STRUCT(XCB_ListNode, `
     POINTERFIELD(struct XCB_ListNode, `next')
@@ -49,17 +43,18 @@ STRUCT(XCB_Reply_Data, `
     POINTERFIELD(void, `data')
 ')
 
-STRUCT(XCB_Event, `
-    FIELD(BYTE, `response_type')
-')
+PACKETSTRUCT(Generic, `Rep', `')
+PACKETSTRUCT(Generic, `Event', `')
+PACKETSTRUCT(Generic, `Error', `')
+typedef XCB_Generic_Event XCB_Event; /* deprecated name */
 
 STRUCT(XCB_Depth, `
-    POINTERFIELD(xDepth, `data')
-    POINTERFIELD(xVisualType, `visuals')
+    POINTERFIELD(DEPTH, `data')
+    POINTERFIELD(VISUALTYPE, `visuals')
 ')
 
-STRUCT(XCB_WindowRoot, `
-    POINTERFIELD(xWindowRoot, `data')
+STRUCT(XCB_Screen, `
+    POINTERFIELD(SCREEN, `data')
     POINTERFIELD(XCB_Depth, `depths')
 ')
 
@@ -85,10 +80,9 @@ STRUCT(XCB_Connection, `
     dnl FIELD(XCB_Atom_Dictionary, `atoms')
 
     POINTERFIELD(char, `vendor')
-    POINTERFIELD(xPixmapFormat, `pixmapFormats')
-    POINTERFIELD(XCB_WindowRoot, `roots')
-    FIELD(xConnSetupPrefix, `setup_prefix')
-    FIELD(xConnSetup, `setup')
+    POINTERFIELD(FORMAT, `pixmapFormats')
+    POINTERFIELD(XCB_Screen, `roots')
+    POINTERFIELD(XCB_ConnSetup_Success_Rep, `setup')
 ')
 
 COOKIETYPE(`void')
@@ -106,8 +100,8 @@ _C
 FUNCTION(`CARD32 XCB_Generate_ID', `XCB_Connection *c', `
     CARD32 ret;
     pthread_mutex_lock(&c->locked);
-    ret = c->last_xid | c->setup.ridBase;
-    c->last_xid += c->setup.ridMask & -(c->setup.ridMask);
+    ret = c->last_xid | c->setup->resource_id_base;
+    c->last_xid += c->setup->resource_id_mask & -(c->setup->resource_id_mask);
     pthread_mutex_unlock(&c->locked);
     return ret;
 ')
@@ -315,7 +309,7 @@ ALLOC(unsigned char, buf, 32)
 
     if(buf[0] == 1) /* get the payload for a reply packet */
     {INDENT()
-        CARD32 length = ((xGenericReply *) buf)->length;
+        CARD32 length = ((XCB_Generic_Rep *) buf)->length;
         if(length)
         {INDENT()
 REALLOC(unsigned char, buf, 32 + length * 4)
@@ -328,11 +322,11 @@ REALLOC(unsigned char, buf, 32 + length * 4)
 
     /* Only compare the low 16 bits of the seqnum of the packet. */
     if(!(buf[0] & ~1)) /* reply or error packet */
-        rep = (XCB_Reply_Data *) XCB_List_find(&c->reply_data, match_reply_seqnum16, &((xGenericReply *) buf)->sequenceNumber);
+        rep = (XCB_Reply_Data *) XCB_List_find(&c->reply_data, match_reply_seqnum16, &((XCB_Generic_Rep *) buf)->seqnum);
 
     if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
     {
-        fprintf(stderr, "No reply record found for reply %d.\n", ((xGenericReply *) buf)->sequenceNumber);
+        fprintf(stderr, "No reply record found for reply %d.\n", ((XCB_Generic_Rep *) buf)->seqnum);
         free(buf);
         return -1;
     }
@@ -603,8 +597,11 @@ FUNCTION(`int XCB_Open_Unix', `const char *file', `
 ')
 _C
 FUNCTION(`XCB_Connection *XCB_Connect', `int fd', `
+    return XCB_Connect_Auth(fd, "", "");
+')
+_C
+FUNCTION(`XCB_Connection *XCB_Connect_Auth', `int fd, char *name, char *data', `
     XCB_Connection* c;
-    size_t clen = sizeof(XCB_Connection);
 
 ALLOC(XCB_Connection, c, 1)
 
@@ -632,100 +629,88 @@ ALLOC(XCB_Connection, c, 1)
 
     /* Write the connection setup request. */
     {
-        xConnClientPrefix *out = (xConnClientPrefix *) c->outqueue;
-        c->n_outqueue = SIZEOF(xConnClientPrefix);
+        XCB_ConnSetup_Req *out = (XCB_ConnSetup_Req *) c->outqueue;
+        c->n_outqueue = XCB_CEIL(sizeof(XCB_ConnSetup_Req));
 
         /* B = 0x42 = MSB first, l = 0x6c = LSB first */
-        out->byteOrder = 0x6c;
-        out->majorVersion = X_PROTOCOL;
-        out->minorVersion = X_PROTOCOL_REVISION;
-        /* Auth protocol name and data are both zero-length for now */
-        out->nbytesAuthProto = 0;
-        out->nbytesAuthString = 0;
+        out->byte_order = 0x6c;
+        out->protocol_major_version = X_PROTOCOL;
+        out->protocol_minor_version = X_PROTOCOL_REVISION;
+        out->authorization_protocol_name_len = strlen(name);
+        out->authorization_protocol_data_len = strlen(data);
+
+        memcpy(c->outqueue + c->n_outqueue, name, out->authorization_protocol_name_len);
+        c->n_outqueue += XCB_CEIL(out->authorization_protocol_name_len);
+        memcpy(c->outqueue + c->n_outqueue, data, out->authorization_protocol_data_len);
+        c->n_outqueue += XCB_CEIL(out->authorization_protocol_data_len);
     }
     if(XCB_Flush(c) <= 0)
         goto error;
 
     /* Read the server response */
-    if(XCB_read_internal(c, &c->setup_prefix, SIZEOF(xConnSetupPrefix)) != SIZEOF(xConnSetupPrefix))
+    c->setup = malloc(sizeof(XCB_ConnSetup_Generic_Rep));
+    assert(c->setup);
+
+    if(XCB_read_internal(c, c->setup, sizeof(XCB_ConnSetup_Generic_Rep)) != sizeof(XCB_ConnSetup_Generic_Rep))
         goto error;
 
-    clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
-    c = (XCB_Connection *) realloc(c, clen);
-    assert(c);
-    if(XCB_read_internal(c, &c->setup, c->setup_prefix.length * 4) != c->setup_prefix.length * 4)
+    c->setup = realloc(c->setup, c->setup->length * 4 + sizeof(XCB_ConnSetup_Generic_Rep));
+    assert(c->setup);
+
+    if(XCB_read_internal(c, (char *) c->setup + sizeof(XCB_ConnSetup_Generic_Rep), c->setup->length * 4) != c->setup->length * 4)
         goto error;
 
     /* 0 = failed, 2 = authenticate, 1 = success */
-    switch(c->setup_prefix.success)
+    switch(c->setup->status)
     {
     case 0: /* failed */
-        fflush(stderr);
-        write(STDERR_FILENO, &c->setup, c->setup_prefix.lengthReason);
-        write(STDERR_FILENO, "\n", sizeof("\n"));
-        goto error;
+        {
+            XCB_ConnSetup_Failed_Rep *setup = (XCB_ConnSetup_Failed_Rep *) c->setup;
+            write(STDERR_FILENO, setup + 1, setup->reason_len);
+            write(STDERR_FILENO, "\n", sizeof("\n"));
+            goto error;
+        }
+        /*NOTREACHED*/
 
     case 2: /* authenticate */
-        goto error;
+        {
+            XCB_ConnSetup_Authenticate_Rep *setup = (XCB_ConnSetup_Authenticate_Rep *) c->setup;
+            write(STDERR_FILENO, setup + 1, setup->length * 4);
+            write(STDERR_FILENO, "\n", sizeof("\n"));
+            goto error;
+        }
+        /*NOTREACHED*/
     }
 
     /* Set up a collection of convenience pointers. */
-    /* Initialize these since they are used before the next realloc. */
-    c->vendor = (char *) (c + 1);
-    c->pixmapFormats = (xPixmapFormat *) (c->vendor + XCB_CEIL(c->setup.nbytesVendor));
+    c->vendor = (char *) (c->setup + 1);
+    c->pixmapFormats = (FORMAT *) (c->vendor + XCB_CEIL(c->setup->vendor_len));
 
-    /* So, just how obscure *can* a person make memory management? */
-    {
-        xWindowRoot *root;
-        xDepth *depth;
-        XCB_Depth *xpdepth;
-        xVisualType *visual;
-        int i, j, oldclen = clen;
+    {INDENT()
+        SCREEN *root;
+        DEPTH *depth;
+        VISUALTYPE *visual;
+        int i, j;
 
-        clen += sizeof(XCB_WindowRoot) * c->setup.numRoots;
+ALLOC(XCB_Screen, c->roots, c->setup->roots_len)
 
-        root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
-        for(i = 0; i < c->setup.numRoots; ++i)
-        {
-            clen += sizeof(XCB_Depth) * root->nDepths;
-
-            depth = (xDepth *) (root + 1);
-            for(j = 0; j < root->nDepths; ++j)
-            {
-                visual = (xVisualType *) (depth + 1);
-                depth = (xDepth *) (visual + depth->nVisuals);
-            }
-            root = (xWindowRoot *) depth;
-        }
-
-        c = (XCB_Connection *) realloc(c, clen);
-        assert(c);
-
-        /* Re-initialize these since realloc probably moved them. */
-        c->vendor = (char *) (c + 1);
-        c->pixmapFormats = (xPixmapFormat *) (c->vendor + XCB_CEIL(c->setup.nbytesVendor));
-
-        c->roots = (XCB_WindowRoot *) (((char *) c) + oldclen);
-        xpdepth = (XCB_Depth *) (c->roots + c->setup.numRoots);
-
-        root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
-        for(i = 0; i < c->setup.numRoots; ++i)
-        {
+        root = (SCREEN *) (c->pixmapFormats + c->setup->pixmap_formats_len);
+        for(i = 0; i < c->setup->roots_len; ++i)
+        {INDENT()
             c->roots[i].data = root;
-            c->roots[i].depths = xpdepth;
+ALLOC(XCB_Depth, c->roots[i].depths, root->allowed_depths_len)
 
-            depth = (xDepth *) (root + 1);
-            xpdepth += root->nDepths;
-            for(j = 0; j < root->nDepths; ++j)
+            depth = (DEPTH *) (root + 1);
+            for(j = 0; j < root->allowed_depths_len; ++j)
             {
                 c->roots[i].depths[j].data = depth;
-                visual = (xVisualType *) (depth + 1);
+                visual = (VISUALTYPE *) (depth + 1);
                 c->roots[i].depths[j].visuals = visual;
-                depth = (xDepth *) (visual + depth->nVisuals);
+                depth = (DEPTH *) (visual + depth->visuals_len);
             }
-            root = (xWindowRoot *) depth;
-        }
-    }
+            root = (SCREEN *) depth;
+        }UNINDENT()
+    }UNINDENT()
 
     return c;
 

@@ -40,7 +40,7 @@ dnl Use C-style comments.
 changecom(`/*', `*/')
 
 dnl COMMENT(text)
-define(`COMMENT', `/* $@ */')
+define(`COMMENT', `/* '`$@'` */')
 
 
 dnl Exactly one of _H and _C should be set on the command line.
@@ -66,6 +66,9 @@ define(`CPPDEFINE', `#define `$1' `$2'')
 dnl Declare a C pre-processor #undef.
 dnl CPPUNDEF(name)
 define(`CPPUNDEF', `#undef `$1'')
+
+dnl CONSTANT(type, name, value)
+define(`CONSTANT', `CPPDEFINE(`$2', `$3')')
 
 
 dnl Declare a C function.
@@ -110,6 +113,9 @@ TAB()assert($2);')
 
 dnl -- Type macros
 
+dnl TYPEDEF(old name, new name)
+define(`TYPEDEF', `HEADERONLY(`typedef $1 $2;')')
+
 dnl Holds body of structure declared with STRUCT or UNION macros
 define(`STRUCTDIV', ALLOCDIV)
 
@@ -123,9 +129,9 @@ define(`STRUCT', `PUSHDIV(-1)
 pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
 $2
 popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()HEADERONLY(`typedef struct `$1' {
+POPDIV()TYPEDEF(`struct $1 {
 undivert(STRUCTDIV)dnl
-} `$1';')')
+}', `$1')')
 
 dnl STATICSTRUCT(name, 1 or more FIELDs)
 define(`STATICSTRUCT', `PUSHDIV(-1)
@@ -141,8 +147,8 @@ define(`UNION', `PUSHDIV(-1)
 pushdef(`FIELDQTY', 0) pushdef(`PADQTY', 0)
 $2
 popdef(`PADQTY') popdef(`FIELDQTY')
-POPDIV()HEADERONLY(`typedef union `$1' {
+POPDIV()TYPEDEF(`union $1 {
 undivert(STRUCTDIV)dnl
-} `$1';')')
+}', `$1')')
 
 divert(0)`'dnl

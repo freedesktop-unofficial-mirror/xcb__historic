@@ -16,10 +16,6 @@
 #include <pthread.h>
 #endif
 
-#ifdef TEST_ICCCM
-#include <X11/Xatom.h>
-#endif
-
 #ifdef VERBOSE
 #include <stdio.h>
 #endif
@@ -33,12 +29,13 @@ void try_events(XCB_Connection *c);
 void wait_events(XCB_Connection *c);
 
 static XCB_Connection *c;
-static Window window;
+static WINDOW window;
 
 int main(int argc, char **argv)
 {
     CARD32 mask = 0;
     CARD32 values[6];
+    DRAWABLE d;
 #ifdef TEST_GET_GEOMETRY
     XCB_GetGeometry_cookie geom[3];
     XCB_GetGeometry_Rep *geomrep[3];
@@ -70,22 +67,22 @@ int main(int argc, char **argv)
 #endif
 
 #if 1
-    window = XCB_Generate_ID(c);
+    window = XCB_WINDOW_New(c);
 #else
     window = 0; /* should be an invalid ID */
 #endif
 
     mask |= CWBackPixel;
-    values[0] = c->roots[0].data->whitePixel;
+    values[0] = c->roots[0].data->white_pixel;
 
     mask |= CWBorderPixel;
-    values[1] = c->roots[0].data->blackPixel;
+    values[1] = c->roots[0].data->black_pixel;
 
     mask |= CWBackingStore;
     values[2] = Always;
 
     mask |= CWOverrideRedirect;
-    values[3] = xFalse;
+    values[3] = FALSE;
 
     mask |= CWEventMask;
     values[4] = ButtonReleaseMask | ExposureMask | StructureNotifyMask
@@ -95,20 +92,25 @@ int main(int argc, char **argv)
     values[5] = ButtonPressMask;
 
     XCB_CreateWindow(c, c->roots[0].depths[0].data->depth,
-	window, c->roots[0].data->windowId,
+        window, c->roots[0].data->root,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
-        /* visual */ c->roots[0].data->rootVisualID, mask, values);
+        /* visual */ c->roots[0].data->root_visual, mask, values);
 #ifdef TEST_ICCCM
     atom[0] = XCB_InternAtom(c, 0, "WM_PROTOCOLS");
     atom[1] = XCB_InternAtom(c, 0, "WM_DELETE_WINDOW");
     atomrep[1] = XCB_InternAtom_Reply(c, atom[1], 0);
     atomrep[0] = XCB_InternAtom_Reply(c, atom[0], 0);
-    XCB_ChangeProperty(c, PropModeReplace, window, XA_WM_NAME, XA_STRING, 8, strlen(argv[0]), argv[0]);
+    {
+        ATOM XA_WM_NAME = { 39 };
+        ATOM XA_STRING = { 31 };
+        XCB_ChangeProperty(c, PropModeReplace, window, XA_WM_NAME, XA_STRING, 8, strlen(argv[0]), argv[0]);
+    }
     if(atomrep[0] && atomrep[1])
     {
-        Atom WM_PROTOCOLS = atomrep[0]->atom;
-        Atom WM_DELETE_WINDOW = atomrep[1]->atom;
+        ATOM WM_PROTOCOLS = atomrep[0]->atom;
+        ATOM WM_DELETE_WINDOW = atomrep[1]->atom;
+        ATOM XA_ATOM = { 4 };
         XCB_ChangeProperty(c, PropModeReplace, window, WM_PROTOCOLS, XA_ATOM, 32, 1, &WM_DELETE_WINDOW);
     }
     free(atomrep[0]);
@@ -121,12 +123,14 @@ int main(int argc, char **argv)
     attr[0] = XCB_GetWindowAttributes(c, window);
 #endif
 #ifdef TEST_GET_GEOMETRY
-    geom[0] = XCB_GetGeometry(c, c->roots[0].data->windowId);
-    geom[1] = XCB_GetGeometry(c, window);
+    d.window = c->roots[0].data->root;
+    geom[0] = XCB_GetGeometry(c, d);
+    d.window = window;
+    geom[1] = XCB_GetGeometry(c, d);
 #endif
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
-    tree[0] = XCB_QueryTree(c, c->roots[0].data->windowId);
+    tree[0] = XCB_QueryTree(c, c->roots[0].data->root);
 # endif
     tree[1] = XCB_QueryTree(c, window);
 #endif
@@ -134,7 +138,7 @@ int main(int argc, char **argv)
     /* Start reading replies and possibly events */
 #ifdef TEST_GET_GEOMETRY
     geomrep[0] = XCB_GetGeometry_Reply(c, geom[0], 0);
-    formatGetGeometryReply(c->roots[0].data->windowId, geomrep[0]);
+    formatGetGeometryReply(c->roots[0].data->root, geomrep[0]);
     free(geomrep[0]);
 #endif
 
@@ -157,12 +161,13 @@ int main(int argc, char **argv)
     treerep[1] = XCB_QueryTree_Reply(c, tree[1], 0);
     formatQueryTreeReply(window, treerep[1]);
 
-    if(treerep[1] && treerep[1]->parent && treerep[1]->parent != c->roots[0].data->windowId)
+    if(treerep[1] && treerep[1]->parent.xid && treerep[1]->parent.xid != c->roots[0].data->root.xid)
     {
         tree[2] = XCB_QueryTree(c, treerep[1]->parent);
 
 # ifdef TEST_GET_GEOMETRY
-        geom[2] = XCB_GetGeometry(c, treerep[1]->parent);
+        d.window = treerep[1]->parent;
+        geom[2] = XCB_GetGeometry(c, d);
         geomrep[2] = XCB_GetGeometry_Reply(c, geom[2], 0);
         formatGetGeometryReply(treerep[1]->parent, geomrep[2]);
         free(geomrep[2]);
@@ -208,7 +213,7 @@ int wait_event(XCB_Connection *c)
     if(!formatEvent(e))
         return 0;
 
-    if(e->response_type == ButtonRelease)
+    if(e->response_type == XCB_ButtonRelease)
         ret = 0; /* They clicked, therefore, we're done. */
     free(e);
     return ret;
