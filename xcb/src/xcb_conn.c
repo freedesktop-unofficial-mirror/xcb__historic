@@ -327,7 +327,6 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
         {
             XCBConnSetupFailedRep *setup = (XCBConnSetupFailedRep *) c->setup;
             write(STDERR_FILENO, XCBConnSetupFailedRepReason(setup), XCBConnSetupFailedRepReasonLength(setup));
-            write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
         /*NOTREACHED*/
@@ -336,7 +335,6 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
         {
             XCBConnSetupAuthenticateRep *setup = (XCBConnSetupAuthenticateRep *) c->setup;
             write(STDERR_FILENO, XCBConnSetupAuthenticateRepReason(setup), XCBConnSetupAuthenticateRepReasonLength(setup));
-            write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
         /*NOTREACHED*/
