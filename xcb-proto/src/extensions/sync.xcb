@@ -1,0 +1,174 @@
+XCBGEN(sync, `
+Copyright (C) 2004 Mikko Torni.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+')
+BEGINEXTENSION(SYNC, Sync)
+PUSHDIV(-1)
+
+TYPEDEF(CARD32, ALARM)
+
+ENUM(ALARMSTATE,
+    Active,
+    Inactive,
+    Destroyed)
+
+TYPEDEF(CARD32, COUNTER)
+
+ENUM(TESTTYPE,
+    PositiveTransition,
+    NegativeTransition,
+    PositiveComparison,
+    NegativeComparison
+)
+
+ENUM(VALUETYPE,
+    Absolute,
+    Relative
+)
+
+STRUCT(INT64, `
+    FIELD(INT32, `hi')
+    FIELD(CARD32, `lo')
+')
+
+STRUCT(SYSTEMCOUNTER, `
+    FIELD(COUNTER, `counter')
+    FIELD(INT64, `resolution')
+    FIELD(CARD16, `name_len')
+    ARRAYFIELD(CARD8, `name', `R->name_len')
+')
+
+STRUCT(TRIGGER, `
+    FIELD(COUNTER, `counter')
+    FIELD(VALUETYPE, `wait_type')
+    FIELD(INT64, `wait_value')
+    FIELD(TESTTYPE, `test_type')
+')
+
+STRUCT(WAITCONDITION, `
+    FIELD(TRIGGER, `trigger')
+    FIELD(INT64, `event_threshold')
+')
+
+ERROR(`Counter', 0)
+ERROR(`Alarm', 1)
+    
+REQUEST(Initialize, `
+    OPCODE(0)
+', `
+    PAD(1)
+    REPLY(CARD8, `major_version')
+    REPLY(CARD8, `minor_version')
+')
+
+REQUEST(ListSystemCounters, `
+    OPCODE(1)
+', `
+    PAD(1)
+    REPLY(CARD32, `counters_len')
+    PAD(20)
+    LISTFIELD(SYSTEMCOUNTER, `counters', `R->counters_len')
+')
+
+VOIDREQUEST(CreateCounter, `
+    OPCODE(2)
+    PARAM(COUNTER, `id')
+    PARAM(INT64, `initial_value')
+')
+
+VOIDREQUEST(DestroyCounter, `
+    OPCODE(6)
+    PARAM(COUNTER, `counter')
+')
+
+REQUEST(QueryCounter, `
+    OPCODE(5)
+    PARAM(COUNTER, `counter')
+', `
+    PAD(1)
+    REPLY(INT64, `counter_value')
+')
+
+VOIDREQUEST(Await, `
+    OPCODE(7)
+    LOCALPARAM(CARD16, `wait_list_len')
+    LISTPARAM(WAITCONDITION, `wait_list', `wait_list_len')
+')
+
+VOIDREQUEST(ChangeCounter, `
+    OPCODE(4)
+    PARAM(COUNTER, `counter')
+    PARAM(INT64, `amount')
+')
+
+VOIDREQUEST(SetCounter, `
+    OPCODE(3)
+    PARAM(COUNTER, `counter')
+    PARAM(INT64, `value')
+')
+
+VOIDREQUEST(CreateAlarm, `
+    OPCODE(8)
+    PARAM(ALARM, `id')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
+')
+
+VOIDREQUEST(ChangeAlarm, `
+    OPCODE(9)
+    PARAM(ALARM, `id')
+    VALUEPARAM(CARD32, `value_mask', `value_list')
+')
+
+VOIDREQUEST(DestroyAlarm, `
+    OPCODE(11)
+    PARAM(ALARM, `alarm')
+')
+
+REQUEST(QueryAlarm, `
+    OPCODE(10)
+    PARAM(ALARM, `alarm')
+', `
+    PAD(1)
+    REPLY(TRIGGER, `trigger')
+    REPLY(INT64, `delta')
+    REPLY(BOOL, `events')
+    REPLY(ALARMSTATE, `state')
+')
+
+VOIDREQUEST(SetPriority, `
+    OPCODE(12)
+    PARAM(CARD32, `id')
+    PARAM(INT32, `priority')
+')
+    
+REQUEST(GetPriority, `
+    OPCODE(13)
+    PARAM(CARD32, `id')
+', `
+    PAD(1)
+    PARAM(INT32, `priority')
+')
+
+EVENT(CounterNotify, 0, `
+    REPLY(CARD8, `kind')
+    REPLY(COUNTER, `counter')
+    REPLY(INT64, `wait_value')
+    REPLY(INT64, `counter_value')
+    REPLY(TIMESTAMP, `timestamp')
+    REPLY(CARD16, `count')
+    REPLY(BOOL, `destroyed')
+')
+
+EVENT(AlarmNotify, 1, `
+    REPLY(CARD8, `kind')
+    REPLY(ALARM, `alarm')
+    REPLY(INT64, `counter_value')
+    REPLY(INT64, `alarm_value')
+    REPLY(TIMESTAMP, `timestamp')
+')
+    
+
+POPDIV()
+ENDEXTENSION
+ENDXCBGEN
