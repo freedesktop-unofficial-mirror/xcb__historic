@@ -256,8 +256,8 @@ FUNCTION(`int XCBFlush', `XCBConnection *c', `
 
 define(`MC1',`"MIT-MAGIC-COOKIE-1"')dnl
 define(`XA1',`"XDM-AUTHORIZATION-1"')dnl
-_C static char *authtypes[] = { XA1, MC1 };
-_C static int authtypelens[] = { sizeof(XA1)-1, sizeof(MC1)-1 };
+_C static char *authtypes[] = { /* XA1, */ MC1 };
+_C static int authtypelens[] = { /* sizeof(XA1)-1, */ sizeof(MC1)-1 };
 FUNCTION(`XCBAuthInfo *XCBGetAuthInfo',
          `int fd, int nonce, XCBAuthInfo *info', `
     /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
@@ -382,7 +382,7 @@ ALLOC(XCBConnection, c, 1)
     pthread_mutex_init(&c->locked, 0);
     pthread_mutex_lock(&c->locked);
 
-    c->handle = XCBIOFdOpen(fd, &c->locked, XCBReadPacket, c);
+    c->handle = XCBIOFdOpen(fd, &c->locked);
     if(!c->handle)
         goto error;
 
@@ -436,7 +436,7 @@ ALLOC(XCBConnection, c, 1)
     case 0: /* failed */
         {
             XCBConnSetupFailedRep *setup = (XCBConnSetupFailedRep *) c->setup;
-            write(STDERR_FILENO, setup + 1, setup->reason_len);
+            write(STDERR_FILENO, XCBConnSetupFailedRepreason(setup), XCBConnSetupFailedRepreasonLength(setup));
             write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
@@ -445,13 +445,14 @@ ALLOC(XCBConnection, c, 1)
     case 2: /* authenticate */
         {
             XCBConnSetupAuthenticateRep *setup = (XCBConnSetupAuthenticateRep *) c->setup;
-            write(STDERR_FILENO, setup + 1, setup->length * 4);
+            write(STDERR_FILENO, XCBConnSetupAuthenticateRepreason(setup), XCBConnSetupAuthenticateRepreasonLength(setup));
             write(STDERR_FILENO, "\n", sizeof("\n"));
             goto error;
         }
         /*NOTREACHED*/
     }
 
+    XCBIOSetReader(c->handle, XCBReadPacket, c);
     pthread_mutex_unlock(&c->locked);
     return c;
 

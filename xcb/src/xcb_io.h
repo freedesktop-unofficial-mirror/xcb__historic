@@ -19,7 +19,8 @@
 
 typedef struct XCBIOHandle XCBIOHandle;
 
-XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, XCBIOHandle *), void *readerdata);
+XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked);
+void XCBIOSetReader(XCBIOHandle *h, int (*reader)(void *, XCBIOHandle *), void *readerdata);
 
 void *XCBAllocOut(XCBIOHandle *c, int size);
 

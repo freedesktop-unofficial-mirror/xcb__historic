@@ -41,7 +41,7 @@ struct XCBIOHandle {
     void *readerdata;
 };
 
-XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, XCBIOHandle *), void *readerdata)
+XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked)
 {
     XCBIOHandle *h;
     long flags;
@@ -68,10 +68,16 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, 
     h->n_outqueue = 0;
     /* h->outvec does not need initialization */
     h->n_outvec = 0;
-    h->reader = reader;
-    h->readerdata = readerdata;
+    h->reader = 0;
+    h->readerdata = 0;
 
     return h;
+}
+
+void XCBIOSetReader(XCBIOHandle *h, int (*reader)(void *, XCBIOHandle *), void *readerdata)
+{
+    h->reader = reader;
+    h->readerdata = readerdata;
 }
 
 void *XCBAllocOut(XCBIOHandle *c, int size)
@@ -127,8 +133,9 @@ static int XCBFillBuffer(XCBIOHandle *h)
     if(ret < 0)
         return errno == EAGAIN ? 1 : -1;
     h->n_inqueue += ret;
-    while(ret > 0)
-        ret = h->reader(h->readerdata, h);
+    if(h->reader)
+        while(ret > 0)
+            ret = h->reader(h->readerdata, h);
     return 1;
 }
 
@@ -203,7 +210,7 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
     int i, len;
 
     for(i = 0, len = 0; i < count; ++i)
-        len += vector[i].iov_len;
+        len += XCB_CEIL(vector[i].iov_len);
 
     /* Is the queue about to overflow? */
     if(c->n_outqueue + len < sizeof(c->outqueue))
