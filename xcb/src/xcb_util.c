@@ -29,6 +29,7 @@ int XCBOnes(unsigned long mask)
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
 {
     char *colon;
+    *screen = *display = 0;
     if(!name || !*name)
         name = getenv("DISPLAY");
     if(!name)
