@@ -16,7 +16,8 @@ xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb \
 		extensions/shm.h extensions/shape.h \
 		extensions/render.h extensions/dpms.h
 
-AM_CFLAGS = $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
+CFLAGS =
+AM_CFLAGS = $(CDEBUGFLAGS) $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
 libXCB_la_LIBADD = $(XCBPROTO_LIBS) $(XPROTO_LIBS) $(XAU_LIBS)
 libXCB_la_SOURCES = \
 		xcb_conn.c xcb_auth.c xcb_io.c \
