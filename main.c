@@ -1,60 +1,58 @@
 #undef TEST_GET_WINDOW_ATTRIBUTES
 #define TEST_GET_GEOMETRY
-#undef TEST_QUERY_TREE
-#define TEST_EVENTS
+#define TEST_QUERY_TREE
 #define TEST_THREADS
+#define VERBOSE
+#undef SUPERVERBOSE
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #ifdef TEST_THREADS
 #include <pthread.h>
 #endif
 
+#ifdef VERBOSE
+#include <stdio.h>
+#endif
+
+#include <stdlib.h>
+
 #include "xp_core.h"
 #include "reply_formats.h"
 
-#ifdef TEST_GET_WINDOW_ATTRIBUTES
-int window_attrs(XCB_Connection *c, Window wid);
-#endif
-#ifdef TEST_GET_GEOMETRY
-int window_geom(XCB_Connection *c, Window wid);
-#endif
-#ifdef TEST_QUERY_TREE
-Window window_tree(XCB_Connection *c, Window wid);
-#endif
-#ifdef TEST_EVENTS
-int wait_event(XCB_Connection *c);
-#endif
+void try_events(XCB_Connection *c);
+void wait_events(XCB_Connection *c);
 
 static XCB_Connection *c;
 static Window window;
 
 int main(int argc, char **argv)
 {
-    int fd;
-    int screen = 0;
     CARD32 mask = 0;
-    XP_CreateWindowValue values[6];
+    CARD32 values[6];
+#ifdef TEST_GET_GEOMETRY
+    XCB_GetGeometry_cookie geom[3];
+    xGetGeometryReply *geomrep[3];
+#endif
 #ifdef TEST_QUERY_TREE
-    Window parent;
+    XCB_QueryTree_cookie tree[3];
+    xQueryTreeReply *treerep[3];
+#endif
+#ifdef TEST_GET_WINDOW_ATTRIBUTES
+    XCB_GetWindowAttributes_cookie attr[1];
+    xGetWindowAttributesReply *attrrep[1];
+#endif
+#ifdef TEST_THREADS
+    pthread_t event_thread;
 #endif
 
-    fd = XCB_Open(getenv("DISPLAY"), &screen);
-    if(fd == -1)
-    {
-        perror("XCB_Open");
-        abort();
-    }
+    c = XP_Connect();
 
-    c = XCB_Connect(fd);
-    if(!c)
-    {
-        perror("XCB_Connect");
-        abort();
-    }
-    printf("Connected.\n");
-    fflush(stdout);
+#ifdef TEST_THREADS
+# ifdef VERBOSE
+    printf("main() thread ID: %ld\n", pthread_self());
+# endif
+    /* don't do this cast. */
+    pthread_create(&event_thread, 0, (void *(*)(void *))wait_events, c);
+#endif
 
 #if 1
     window = XCB_Generate_ID(c);
@@ -62,156 +60,140 @@ int main(int argc, char **argv)
     window = 0; /* should be an invalid ID */
 #endif
 
-    values[0].backgroundPixel = c->roots[0].data->whitePixel;
     mask |= CWBackPixel;
-    values[1].borderPixel = c->roots[0].data->blackPixel;
+    values[0] = c->roots[0].data->whitePixel;
+
     mask |= CWBorderPixel;
-    values[2].backingStore = Always;
+    values[1] = c->roots[0].data->blackPixel;
+
     mask |= CWBackingStore;
-    values[3].overrideRedirect = xFalse;
+    values[2] = Always;
+
     mask |= CWOverrideRedirect;
-    values[4].eventMask = ButtonPressMask | ButtonReleaseMask | ExposureMask |
-        EnterWindowMask | LeaveWindowMask | StructureNotifyMask;
+    values[3] = xFalse;
+
     mask |= CWEventMask;
-#if 0 /* this doesn't work - why not? */
-    values[5].doNotPropagateMask = ButtonPressMask;
+    values[4] = ButtonReleaseMask | ExposureMask | StructureNotifyMask
+        | EnterWindowMask | LeaveWindowMask;
+
     mask |= CWDontPropagate;
-#endif
+    values[5] = ButtonPressMask;
 
     XP_CreateWindow(c, /* depth */ 16, window, c->roots[0].data->windowId,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
         /* visual */ c->roots[0].data->rootVisualID, mask, values);
     XP_MapWindow(c, window);
-    XP_Sync(c);
-#ifdef TEST_EVENTS
-    while(c->event_data_head) /* don't do this. */
-        wait_event(c);
-#endif
 
-#ifdef TEST_GET_GEOMETRY
-    window_geom(c, c->roots[0].data->windowId);
-#ifdef TEST_EVENTS
-    while(c->event_data_head) /* don't do this. */
-        wait_event(c);
-#endif
-#endif
-#if 0 /* this produces a lot of output :) */
-    window_tree(c, c->roots[0].data->windowId);
+    /* Send off a collection of requests */
+#ifdef TEST_GET_WINDOW_ATTRIBUTES
+    attr[0] = XP_GetWindowAttributes(c, window);
 #endif
 #ifdef TEST_GET_GEOMETRY
-    window_geom(c, window);
-#ifdef TEST_EVENTS
-    while(c->event_data_head) /* don't do this. */
-        wait_event(c);
-#endif
+    geom[0] = XP_GetGeometry(c, c->roots[0].data->windowId);
+    geom[1] = XP_GetGeometry(c, window);
 #endif
 #ifdef TEST_QUERY_TREE
-    parent = window_tree(c, window);
-    if(parent && parent != c->roots[0].data->windowId)
-    {
+# ifdef SUPERVERBOSE /* this produces a lot of output :) */
+    tree[0] = XP_QueryTree(c, c->roots[0].data->windowId);
+# endif
+    tree[1] = XP_QueryTree(c, window);
+#endif
+
+    /* Start reading replies and possibly events */
 #ifdef TEST_GET_GEOMETRY
-        window_geom(c, parent);
+    geomrep[0] = XP_GetGeometry_Get_Reply(c, geom[0], 0);
+    formatGetGeometryReply(c->roots[0].data->windowId, geomrep[0]);
+    free(geomrep[0]);
 #endif
-        window_tree(c, parent);
+
+#ifdef TEST_QUERY_TREE
+# ifdef SUPERVERBOSE /* this produces a lot of output :) */
+    treerep[0] = XP_QueryTree_Get_Reply(c, tree[0], 0);
+    formatQueryTreeReply(c->roots[0].data->windowId, treerep[0]);
+    free(treerep[0]);
+# endif
+#endif
+
+#ifdef TEST_GET_GEOMETRY
+    geomrep[1] = XP_GetGeometry_Get_Reply(c, geom[1], 0);
+    formatGetGeometryReply(window, geomrep[1]);
+    free(geomrep[1]);
+#endif
+
+    /* Mix in some more requests */
+#ifdef TEST_QUERY_TREE
+    treerep[1] = XP_QueryTree_Get_Reply(c, tree[1], 0);
+    formatQueryTreeReply(window, treerep[1]);
+
+    if(treerep[1]->parent && treerep[1]->parent != c->roots[0].data->windowId)
+    {
+        tree[2] = XP_QueryTree(c, treerep[1]->parent);
+
+# ifdef TEST_GET_GEOMETRY
+        geom[2] = XP_GetGeometry(c, treerep[1]->parent);
+        geomrep[2] = XP_GetGeometry_Get_Reply(c, geom[2], 0);
+        formatGetGeometryReply(treerep[1]->parent, geomrep[2]);
+        free(geomrep[2]);
+# endif
+
+        treerep[2] = XP_QueryTree_Get_Reply(c, tree[2], 0);
+        formatQueryTreeReply(treerep[1]->parent, treerep[2]);
+        free(treerep[2]);
     }
+
+    free(treerep[1]);
 #endif
 
+    /* Get the last reply of the first batch */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
-    window_attrs(c, window);
+    attrrep[0] = XP_GetWindowAttributes_Get_Reply(c, attr[0], 0);
+    formatGetWindowAttributesReply(window, attrrep[0]);
+    free(attrrep[0]);
 #endif
 
-#ifdef TEST_EVENTS
-    while(wait_event(c))
-        /* empty statement */;
+#ifdef VERBOSE
+    if(c->reply_data_head)
+        printf("Unexpected additional replies waiting, dunno why...\n");
+#endif
+
+#ifdef TEST_THREADS
+    pthread_join(event_thread, 0);
+#else
+    wait_events(c);
 #endif
 
     exit(0);
     /*NOTREACHED*/
 }
 
-#ifdef TEST_GET_WINDOW_ATTRIBUTES
-int window_attrs(XCB_Connection *c, Window wid)
-{
-    XCB_GetWindowAttributes_cookie cookie;
-    xGetWindowAttributesReply *reply;
-
-    cookie = XP_GetWindowAttributes(c, wid);
-    reply = XP_GetWindowAttributes_Get_Reply(c, cookie);
-    if(!reply)
-    {
-        fprintf(stderr, "Failed to get attributes for window 0x%x.\n",
-            (unsigned int) wid);
-        return 0;
-    }
-
-    formatGetWindowAttributesReply(wid, reply);
-    free(reply);
-    return 1;
-}
-#endif
-
-#ifdef TEST_GET_GEOMETRY
-int window_geom(XCB_Connection *c, Window wid)
-{
-    XCB_GetGeometry_cookie cookie;
-    xGetGeometryReply *reply;
-
-    cookie = XP_GetGeometry(c, wid);
-    reply = XP_GetGeometry_Get_Reply(c, cookie);
-    if(!reply)
-    {
-        fprintf(stderr, "Failed to get geometry for window 0x%x.\n",
-            (unsigned int) wid);
-        return 0;
-    }
-
-    formatGetGeometryReply(wid, reply);
-    free(reply);
-    return 1;
-}
-#endif
-
-#ifdef TEST_QUERY_TREE
-Window window_tree(XCB_Connection *c, Window wid)
-{
-    XCB_QueryTree_cookie cookie;
-    xQueryTreeReply *reply;
-    Window ret;
-    int i;
-
-    cookie = XP_QueryTree(c, wid);
-    reply = XP_QueryTree_Get_Reply(c, cookie);
-    if(!reply)
-    {
-        fprintf(stderr, "Failed to get tree for window 0x%x.\n", (unsigned int) wid);
-        return 0;
-    }
-
-    formatQueryTreeReply(wid, reply);
-    ret = reply->parent;
-    free(reply);
-    return ret;
-}
-#endif
-
-#ifdef TEST_EVENTS
 int wait_event(XCB_Connection *c)
 {
     int ret = 1;
     XCB_Event *e = XCB_Wait_Event(c);
 
-    if(!e)
-    {
-        fprintf(stderr, "An error occured while waiting for event.\n");
+    if(!formatEvent(e))
         return 0;
-    }
-
-    formatEvent(e);
 
     if(e->type == ButtonRelease)
         ret = 0; /* They clicked, therefore, we're done. */
     free(e);
     return ret;
 }
+
+void try_events(XCB_Connection *c)
+{
+    while(c->event_data_head && wait_event(c)) /* don't do this. */
+        /* empty statement */ ;
+}
+
+void wait_events(XCB_Connection *c)
+{
+#ifdef TEST_THREADS
+# ifdef VERBOSE
+    printf("wait_events() thread ID: %ld\n", pthread_self());
+# endif
 #endif
+    while(wait_event(c))
+        /* empty statement */ ;
+}

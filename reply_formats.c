@@ -3,6 +3,13 @@
 
 int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
 {
+    if(!reply)
+    {
+        fprintf(stderr, "Failed to get attributes for window 0x%x.\n",
+            (unsigned int) wid);
+        return 0;
+    }
+
     printf("Window 0x%08x has attributes:\n"
            "    backingStore       = %d\n"
            "    visualID           = %#x\n"
@@ -42,6 +49,13 @@ int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
 
 int formatGetGeometryReply(Window wid, xGetGeometryReply *reply)
 {
+    if(!reply)
+    {
+        fprintf(stderr, "Failed to get geometry for window 0x%x.\n",
+            (unsigned int) wid);
+        return 0;
+    }
+
     printf("Geometry for window 0x%x: %dx%d%+d%+d\n",
         (unsigned int) wid,
         reply->width,
@@ -56,6 +70,13 @@ int formatGetGeometryReply(Window wid, xGetGeometryReply *reply)
 int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
 {
     int i;
+
+    if(!reply)
+    {
+        fprintf(stderr, "Failed to query tree for window 0x%x.\n",
+            (unsigned int) wid);
+        return 0;
+    }
 
     printf("Window 0x%x has parent 0x%x, root 0x%x, and %d children%c\n",
         (unsigned int) wid,
@@ -270,6 +291,12 @@ static const char *labelSendEvent[] = {
 int formatEvent(XCB_Event *e)
 {
     BYTE sendEvent;
+
+    if(!e)
+    {
+        fprintf(stderr, "Error reading event from server.\n");
+        return 0;
+    }
 
     sendEvent = (e->type & 0x80) ? 1 : 0;
     e->type &= ~0x80;

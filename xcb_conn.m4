@@ -52,6 +52,7 @@ _H
 STRUCT(XCB_Connection, `
     FIELD(int, `fd')
     FIELD(pthread_mutex_t, `locked')
+    FIELD(pthread_mutex_t, `readlocked')
     FIELD(int, `seqnum')
     ARRAYFIELD(CARD8, `outqueue', 4096)
     FIELD(int, `n_outqueue')
@@ -205,26 +206,43 @@ FUNCTION(`', `int XCB_Remove_Reply_Data', dnl
     return 1;
 ')
 
-/* PRE: c is unlocked */
-FUNCTION(`', `int XCB_Wait_Once', `XCB_Connection *c', `
+/* PRE: c is locked and cur points to valid memory */
+/* POST: cur is in the list */
+FUNCTION(`', `int XCB_Add_Event_Data', dnl
+`XCB_Connection *c, XCB_Event_Data *cur', `
+    assert(cur);
+    cur->next = 0;
+    if(c->event_data_tail)
+        c->event_data_tail->next = cur;
+    else
+        c->event_data_head = cur;
+
+    c->event_data_tail = cur;
+    return 1;
+')
+_C
+_C`/* Note that we assume that XCB_Wait_Once and XCB_Wait_Seqnum are the'
+_C` * _only_ functions which touch the reply_data list. These two can be'
+_C` * checked for thread-safety while making optimizing assumptions. */'
+_C
+_C`'/* PRE: c is locked */
+FUNCTION(`static', `int XCB_Wait_Once', `XCB_Connection *c', `
     unsigned char *buf;
-    int seqnum;
-    CARD32 length;
-
 ALLOC(unsigned char, buf, 32)
-
-    if(pthread_mutex_trylock(&c->locked) == EBUSY)
-        return EAGAIN;
 
     if(XCB_Read(c, buf, 32) < 32)
         return 0;
-    if(buf[0] == 1) /* reply */
-    {INDENT()
-        XCB_Reply_Data *cur;
 
+    switch(buf[0])
+    {INDENT()
+        XCB_Reply_Data *rep;
+        int seqnum;
+        CARD32 length;
+
+    case 1: /* reply */
         seqnum = ((xGenericReply *) buf)->sequenceNumber;
-        XCB_Find_Reply_Data(c, seqnum, &cur, 0);
-        if(!cur)
+        XCB_Find_Reply_Data(c, seqnum, &rep, 0);
+        if(!rep)
         {
             printf("Got reply for seqnum %d but no data found!\n", seqnum);
             return 0;
@@ -237,46 +255,44 @@ REALLOC(unsigned char, buf, 32 + length * 4)
             XCB_Read(c, buf + 32, length * 4);
         }UNINDENT()
 
-        cur->data = buf;
-        cur->received = 1;
-    }UNINDENT()
-    else /* error or event */
-    {INDENT()
-        XCB_Event_Data *cur;
+        rep->data = buf;
+        rep->received = 1;
+        break;
+
+    case 0: /* error */
+        XCB_Find_Reply_Data(c, ((xError *) buf)->sequenceNumber, &rep, 0);
+        if(rep) /* add this error to the reply data */
+        {
+            free(rep->data); /* I hope this is always a no-op */
+            rep->data = buf;
+            rep->error = rep->received = 1;
+            break; /* do not add to the event queue */
+        }
+
+        /* FALLTHROUGH */ /* add this error to the event queue */
+    default: /* event */
+        {INDENT()
+            XCB_Event_Data *cur;
 ALLOC(XCB_Event_Data, cur, 1)
 
-        cur->event = (XCB_Event *) buf;
-        cur->next = 0;
-        if(c->event_data_tail)
-            c->event_data_tail->next = cur;
-        else
-            c->event_data_head = cur;
-
-        c->event_data_tail = cur;
-
-        if(cur->event->type == 0) /* error */
-        {
-            XCB_Reply_Data *rep;
-            XCB_Find_Reply_Data(c, cur->event->error.sequenceNumber, &rep, 0);
-            if(rep)
-            {
-                rep->error = rep->received = 1;
-                free(rep->data);
-                rep->data = 0;
-            }
-        }
+            cur->event = (XCB_Event *) buf;
+            XCB_Add_Event_Data(c, cur);
+        }UNINDENT()
     }UNINDENT()
 
-    pthread_mutex_unlock(&c->locked);
     return 1;
 ')
 
 /* PRE: c is unlocked */
-FUNCTION(`', `void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum', `
+FUNCTION(`', `void *XCB_Wait_Seqnum', dnl
+`XCB_Connection *c, int seqnum, xError **e', `
     void *ret = 0;
     XCB_Reply_Data *cur, *prev;
 
-    pthread_mutex_lock(&c->locked);
+    if(e)
+        *e = 0;
+
+    pthread_mutex_lock(&c->readlocked);
     XCB_Flush(c);
     XCB_Find_Reply_Data(c, seqnum, &cur, &prev);
     if(!cur) /* nothing found to hand back */
@@ -286,22 +302,39 @@ FUNCTION(`', `void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum', `
         goto done;
     ++cur->pending;
 
-    while(!cur->received) /* wait for the reply to arrive */
+    while(1) /* wait for the reply to arrive */
     {
-        pthread_mutex_unlock(&c->locked);
-        if(!XCB_Wait_Once(c))
-            goto done;
-        pthread_mutex_lock(&c->locked);
+        if(cur->received) break;
+        if(!XCB_Wait_Once(c)) goto done;
+        if(cur->received) break;
+
+        /* CHECKME: Want to let other threads run here. Is this OK? */
+        /* No. It is not. */
+        pthread_mutex_unlock(&c->readlocked);
+        pthread_mutex_lock(&c->readlocked);
     }
 
-    if(!cur->error)
+    if(cur->error)
+    {INDENT()
+        if(!e)
+        {INDENT()
+            XCB_Event_Data *event;
+ALLOC(XCB_Event_Data, event, 1)
+
+            event->event = (XCB_Event *) cur->data;
+            XCB_Add_Event_Data(c, event);
+        }UNINDENT()
+        else
+            *e = (xError *) cur->data;
+    }UNINDENT()
+    else
         ret = cur->data;
 
     XCB_Remove_Reply_Data(c, cur, prev);
     free(cur);
 
 done:
-    pthread_mutex_unlock(&c->locked);
+    pthread_mutex_unlock(&c->readlocked);
     return ret;
 ')
 
@@ -310,13 +343,17 @@ FUNCTION(`', `XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
     XCB_Event *ret = 0;
     XCB_Event_Data *cur;
 
-    pthread_mutex_lock(&c->locked);
-    while(!c->event_data_head)
+    pthread_mutex_lock(&c->readlocked);
+    while(1) /* wait for an event to arrive */
     {
-        pthread_mutex_unlock(&c->locked);
-        if(!XCB_Wait_Once(c))
-            goto done;
-        pthread_mutex_lock(&c->locked);
+        if(c->event_data_head) break;
+        if(!XCB_Wait_Once(c)) goto done;
+        if(c->event_data_head) break;
+
+        /* CHECKME: Want to let other threads run here. Is this OK? */
+        /* No. It is not. */
+        pthread_mutex_unlock(&c->readlocked);
+        pthread_mutex_lock(&c->readlocked);
     }
 
     cur = c->event_data_head;
@@ -327,7 +364,7 @@ FUNCTION(`', `XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
     free(cur);
 
 done:
-    pthread_mutex_unlock(&c->locked);
+    pthread_mutex_unlock(&c->readlocked);
     return ret;
 ')
 
@@ -369,7 +406,6 @@ ALLOC(char, buf, strlen(display) + 1)
     {
         /* display specifies TCP */
         unsigned short port = X_TCP_PORT + atoi(colon);
-        printf("Attempting to open \"%s:%d\"...\n", buf, port);
         fd = XCB_Open_TCP(buf, port);
     }
     else
@@ -377,7 +413,6 @@ ALLOC(char, buf, strlen(display) + 1)
         /* display specifies Unix socket */
         char file[] = "/tmp/.X11-unix/X\0\0";
         strcat(file, colon);
-        printf("Attempting to open \"%s\"...\n", file);
         fd = XCB_Open_Unix(file);
     }
 
@@ -420,6 +455,7 @@ ALLOC(XCB_Connection, c, 1)
 
     c->fd = fd;
     pthread_mutex_init(&c->locked, 0);
+    pthread_mutex_init(&c->readlocked, 0);
     c->n_outqueue = 0;
     c->seqnum = 0;
     c->last_xid = 0;

@@ -1,12 +1,34 @@
 STARTHEADER
 _C`'#include <assert.h>
 _C`'#include <stdlib.h>
+_C`'#include <stdio.h> /* for perror */
 _C`'#include <string.h>
 _C
 _H`'#include "xcb_conn.h"
 _C`'#include "xp_core.h"
+_H
 _H`'typedef char CHAR2B[2];
 
+FUNCTION(`', `XCB_Connection *XP_Connect', `', `
+    int fd, screen;
+    XCB_Connection *c;
+    fd = XCB_Open(getenv("DISPLAY"), &screen);
+    if(fd == -1)
+    {
+        perror("XCB_Open");
+        abort();
+    }
+
+    c = XCB_Connect(fd);
+    if(!c)
+    {
+        perror("XCB_Connect");
+        abort();
+    }
+
+    return c;
+')
+_C
 FUNCTION(`', `int XP_Flush', `XCB_Connection *c', `
     pthread_mutex_lock(&c->locked);
     XCB_Flush(c);
@@ -14,31 +36,13 @@ FUNCTION(`', `int XP_Flush', `XCB_Connection *c', `
     return 1;
 ')
 _C
-FUNCTION(`', `int XP_Sync', `XCB_Connection *c', `
+FUNCTION(`', `int XP_Sync', `XCB_Connection *c, xError **e', `
     XCB_GetInputFocus_cookie cookie = XP_GetInputFocus(c);
-    xGetInputFocusReply *reply = XP_GetInputFocus_Get_Reply(c, cookie);
+    xGetInputFocusReply *reply = XP_GetInputFocus_Get_Reply(c, cookie, e);
     free(reply);
     return (reply != 0);
 ')
 
-VALUE(XP_CreateWindowValue, `
-VALUECODE(Pixmap, backgroundPixmap)
-VALUECODE(CARD32, backgroundPixel)
-VALUECODE(Pixmap, borderPixmap)
-VALUECODE(CARD32, borderPixel)
-VALUECODE(CARD8, bitGravity)
-VALUECODE(CARD8, winGravity)
-VALUECODE(CARD8, backingStore)
-VALUECODE(CARD32, backingPlanes)
-VALUECODE(CARD32, backingPixel)
-VALUECODE(BOOL, overrideRedirect)
-VALUECODE(BOOL, saveUnder)
-VALUECODE(CARD32, eventMask)
-VALUECODE(CARD16, doNotPropagateMask)
-VALUECODE(Colormap, colormap)
-VALUECODE(Cursor, cursor)
-')
-_H
 REQUEST(void, CreateWindow, `
     PARAM(CARD8, `depth')
     PARAM(Window, `wid')
@@ -50,12 +54,12 @@ REQUEST(void, CreateWindow, `
     PARAM(CARD16, `borderWidth')
     PARAM(CARD16, `class')
     PARAM(VisualID, `visual')
-    VALUEPARAM(XP_CreateWindowValue, `values', CARD32, `mask')
+    VALUEPARAM(CARD32, `mask', `values')
 ')
 
 REQUEST(void, ChangeWindowAttributes, `
     PARAM(Window, `window')
-    VALUEPARAM(XP_CreateWindowValue, `values', CARD32, `valueMask')
+    VALUEPARAM(CARD32, `valueMask', `values')
 ')
 
 REQUEST(GetWindowAttributes, GetWindowAttributes, `PARAM(Window, `id')')
@@ -84,19 +88,9 @@ REQUEST(void, UnmapWindow, `PARAM(Window, `id')')
 
 REQUEST(void, UnmapSubwindows, `PARAM(Window, `id')')
 
-VALUE(XP_ConfigureWindowValue, `
-VALUECODE(INT16, `x')
-VALUECODE(INT16, `y')
-VALUECODE(CARD16, `width')
-VALUECODE(CARD16, `height')
-VALUECODE(CARD16, `borderWidth')
-VALUECODE(Window, `sibling')
-VALUECODE(CARD8, `stackMode')
-')
-_H
 REQUEST(void, ConfigureWindow, `
     PARAM(Window, `window')
-    VALUEPARAM(XP_ConfigureWindowValue, `values', CARD16, `mask')
+    VALUEPARAM(CARD16, `mask', `values')
 ')
 
 REQUEST(void, CirculateWindow, `
@@ -326,41 +320,15 @@ REQUEST(void, CreatePixmap, `
 
 REQUEST(void, FreePixmap, `PARAM(Pixmap, `id')')
 
-VALUE(XP_CreateGCValue, `
-VALUECODE(CARD8, `function')
-VALUECODE(CARD32, `planeMask')
-VALUECODE(CARD32, `foreground')
-VALUECODE(CARD32, `background')
-VALUECODE(CARD16, `lineWidth')
-VALUECODE(CARD8, `lineStyle')
-VALUECODE(CARD8, `capStyle')
-VALUECODE(CARD8, `joinStyle')
-VALUECODE(CARD8, `fillStyle')
-VALUECODE(CARD8, `fillRule')
-VALUECODE(Pixmap, `tile')
-VALUECODE(Pixmap, `stipple')
-VALUECODE(INT16, `tileStippleXOrigin')
-VALUECODE(INT16, `tileStippleYOrigin')
-VALUECODE(Font, `font')
-VALUECODE(CARD8, `subwindowMode')
-VALUECODE(BOOL, `graphicsExposures')
-VALUECODE(INT16, `clipXOrigin')
-VALUECODE(INT16, `clipYOrigin')
-VALUECODE(Pixmap, `clipMask')
-VALUECODE(CARD16, `dashOffset')
-VALUECODE(CARD8, `dashes')
-VALUECODE(CARD8, `arcMode')
-')
-_H
 REQUEST(void, CreateGC, `
     PARAM(GContext, `gc')
     PARAM(Drawable, `drawable')
-    VALUEPARAM(XP_CreateGCValue, `values', CARD32, `mask')
+    VALUEPARAM(CARD32, `mask', `values')
 ')
 
 REQUEST(void, ChangeGC, `
     PARAM(GContext, `gc')
-    VALUEPARAM(XP_CreateGCValue, `values', CARD32, `mask')
+    VALUEPARAM(CARD32, `mask', `values')
 ')
 
 REQUEST(void, CopyGC, `

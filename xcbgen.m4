@@ -22,7 +22,8 @@ ifdef(`_H', , `define(`_H', `dnl')')
 ifdef(`_C', , `define(`_C', `dnl')')
 
 dnl visibility, return type/name, params, body
-define(`FUNCTION', `$1`'ifelse($1,,,` ')`'$2`('$3`)'_H;
+define(`FUNCTION', `dnl
+ifelse(`$1',static,`_C')`'$1`'ifelse($1,,,` ')`'$2`('$3`)'_H;
 _C
 _H`'pushdiv(-1)
 {INDENT()dnl
@@ -49,16 +50,13 @@ define(`_PARAMQTY',0)
 
 dnl --- Request/Response macros -----------------------------------------------
 
-define(`VALUECODE', `FIELD($1, $2)')
-define(`VALUE', `UNION($1, `$2')')
-
 define(`VALUEPARAM', `pushdiv(_outdiv)
-TAB()out->length += XCB_Ones(`$4');
-TAB()out->`$4' = `$4';
-TAB()parts[_PARTQTY].iov_base = `$2';
-TAB()parts[_PARTQTY].iov_len = XCB_Ones(`$4') * 4;
+TAB()out->`$2' = `$2';
+TAB()out->length += XCB_Ones(`$2');
+TAB()parts[_PARTQTY].iov_base = `$3';
+TAB()parts[_PARTQTY].iov_len = XCB_Ones(`$2') * 4;
 define(`_PARTQTY', eval(1+_PARTQTY))dnl
-divert(_parmdiv), $3 `$4', $1 *`$2'dnl
+divert(_parmdiv), $1 `$2', CARD32 *`$3'dnl
 popdiv()')
 
 define(`LISTPARAM', `pushdiv(_outdiv)
@@ -131,8 +129,8 @@ ifelse($1, void, `pushdiv(-1)')
 /* It is the caller''`s responsibility to free the returned
  * x'$1`Reply object. */
 FUNCTION(`', `x'$1`Reply *XP_'$1`_Get_Reply', dnl
-`XCB_Connection *c, XCB_'$1`_cookie cookie', `
-    return (x'$1`Reply *) XCB_Wait_Seqnum(c, cookie.seqnum);
+`XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
+    return (x'$1`Reply *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
 ')
 ifelse($1, void, `popdiv()')dnl')
 
