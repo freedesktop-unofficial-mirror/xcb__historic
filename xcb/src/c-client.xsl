@@ -739,18 +739,19 @@ See the file COPYING in this package for licensing information.
 <xsl:if test="$h"><xsl:text>
 #ifndef </xsl:text><xsl:value-of select="$guard" /><xsl:text>
 #define </xsl:text><xsl:value-of select="$guard" /><xsl:text>
-
-</xsl:text></xsl:if>
+</xsl:text>
+<xsl:for-each select="($root/xcb | $root/xcb/extension)/import">
+<xsl:text>#include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"
+</xsl:text>
+</xsl:for-each>
+<xsl:text>
+</xsl:text>
+</xsl:if>
 
 <xsl:if test="$c"><xsl:text>
 #include &lt;assert.h&gt;
 #include "xcb.h"
-#include "xcbext.h"</xsl:text>
-<xsl:for-each select="($root/xcb | $root/xcb/extension)/import">
-<xsl:text>
-#include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"</xsl:text>
-</xsl:for-each>
-<xsl:text>
+#include "xcbext.h"
 #include "</xsl:text><xsl:value-of select="$header" /><xsl:text>.h"
 
 </xsl:text></xsl:if>
