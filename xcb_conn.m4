@@ -1,3 +1,8 @@
+STARTHEADER
+_H`'#include <pthread.h>
+_H`'#include <X11/X.h>
+_H`'#include <X11/Xproto.h>
+_H`'#include <sys/uio.h>
 _C`'#include <assert.h>
 _C`'#include <sys/types.h>
 _C`'#include <sys/socket.h>
@@ -7,116 +12,65 @@ _C`'#include <netdb.h>
 _C`'#include <stdio.h>
 _C`'#include <unistd.h>
 _C`'#include <stdlib.h>
-_H`'#include <pthread.h>
+_C`'#include <errno.h>
 _C
 _C`'#include "xcb_conn.h"
 
 _H`'#define XP_PAD(E) ((4-((E)%4))%4)
 _H
-_H`'include(`xcb_types.m4')
-STRUCT(XP_FORMAT, `
-FIELD(XP_CARD8,depth)
-FIELD(XP_CARD8,bits_per_pixel)
-FIELD(XP_CARD8,scanline_pad)
-PAD(5)
-')
-_H
-STRUCT(XP_VISUALTYPE, `
-FIELD(XP_VISUALID, `visual_id')
-FIELD(XP_CARD8, `class')
-FIELD(XP_CARD8, `bits_per_rgb_value')
-FIELD(XP_CARD16, `colormap_entries')
-FIELD(XP_CARD32, `red_mask')
-FIELD(XP_CARD32, `green_mask')
-FIELD(XP_CARD32, `blue_mask')
-PAD(4)
-')
-_H
-dnl XP_DEPTH is special, and has its own list-handling for visuals.
-dnl XP_DEPTH is only used during connection set-up, by XCB_Connect.
-STRUCT(XP_DEPTH, `
-FIELD(XP_CARD8, `depth')
-PAD(1)
-FIELD(XP_CARD16, `visuals_length')
-PAD(4)
-POINTERFIELD(XP_VISUALTYPE, `visuals')
-')
-_H
-dnl XP_SCREEN is special, and has its own list-handling for allowed_depths.
-dnl XP_SCREEN is only used during connection set-up, by XCB_Connect.
-STRUCT(XP_SCREEN, `
-FIELD(XP_WINDOW,root)
-FIELD(XP_COLORMAP,default_colormap)
-FIELD(XP_CARD32,white_pixel)
-FIELD(XP_CARD32,black_pixel)
-FIELD(XP_SETofEVENT,current_input_masks)
-FIELD(XP_CARD16,width_in_pixels)
-FIELD(XP_CARD16,height_in_pixels)
-FIELD(XP_CARD16,width_in_millimeters)
-FIELD(XP_CARD16,height_in_millimeters)
-FIELD(XP_CARD16,min_installed_maps)
-FIELD(XP_CARD16,max_installed_maps)
-FIELD(XP_VISUALID,root_visual)
-dnl 0 = Never, 1 = WhenMapped, 2 = Always
-FIELD(XP_CARD8,backing_stores)
-FIELD(XP_BOOL,save_unders)
-FIELD(XP_CARD8,root_depth)
-dnl always a multiple of 4
-FIELD(XP_CARD8,allowed_depths_length)
-POINTERFIELD(XP_DEPTH,allowed_depths)
-')
-_H
-define(`_BASESTRUCT',1)dnl
-COOKIETYPE(`void')
-_H
-_H`'struct XCB_Connection; /* forward declare */
-_H`'struct XCB_Reply_Data; /* forward declare */
-_H`'typedef int (*XCB_Reply_Handler)(struct XCB_Connection *,
-_H`'    struct XCB_Reply_Data *, unsigned char *);
-_H
 STRUCT(XCB_Reply_Data, `
-FIELD(int, `pending')
-FIELD(int, `received')
-FIELD(XCB_Reply_Handler, `reply_handler')
-FIELD(int, `seqnum')
-POINTERFIELD(void, `data')
-POINTERFIELD(struct XCB_Reply_Data, `next')
+    FIELD(int, `pending')
+    FIELD(int, `received')
+    FIELD(int, `error')
+    FIELD(int, `seqnum')
+    POINTERFIELD(void, `data')
+    POINTERFIELD(struct XCB_Reply_Data, `next')
 ')
 _H
-STRUCT(XCB_Display_Info, `
-FIELD(XP_CARD16, `protocol_major_version')
-FIELD(XP_CARD16, `protocol_minor_version')
-POINTERFIELD(char, `vendor')
-FIELD(XP_CARD32, `release_number')
-FIELD(XP_CARD32, `resource_id_base')
-FIELD(XP_CARD32, `resource_id_mask')
-FIELD(XP_CARD32, `motion_buffer_size')
-FIELD(XP_CARD16, `maximum_request_length')
-FIELD(XP_CARD8, `image_byte_order')
-FIELD(XP_CARD8, `bitmap_format_bit_order')
-FIELD(XP_CARD8, `bitmap_format_scanline_unit')
-FIELD(XP_CARD8, `bitmap_format_scanline_pad')
-FIELD(XP_CARD8, `min_keycode')
-FIELD(XP_CARD8, `max_keycode')
-FIELD(XP_CARD8, `pixmap_formats_length')
-POINTERFIELD(XP_FORMAT, `pixmap_formats')
-FIELD(XP_CARD8, `roots_length')
-POINTERFIELD(XP_SCREEN, `roots')
+UNION(XCB_Event, `
+    FIELD(BYTE, `type')
+    FIELD(xError, `error')
+    FIELD(xEvent, `event')
+    FIELD(xKeymapEvent, `keymapEvent')
+')
+_H
+STRUCT(XCB_Event_Data, `
+    POINTERFIELD(XCB_Event, `event')
+    POINTERFIELD(struct XCB_Event_Data, `next')
+')
+_H
+STRUCT(XP_Depth, `
+    POINTERFIELD(xDepth, `data')
+    POINTERFIELD(xVisualType, `visuals')
+')
+_H
+STRUCT(XP_WindowRoot, `
+    POINTERFIELD(xWindowRoot, `data')
+    POINTERFIELD(XP_Depth, `depths')
 ')
 _H
 STRUCT(XCB_Connection, `
-FIELD(int, `fd')
-FIELD(pthread_mutex_t, `locked')
-FIELD(int, `seqnum')
-ARRAYFIELD(XP_CARD8, `outqueue', 4096)
-FIELD(int, `n_outqueue')
-POINTERFIELD(XCB_Reply_Data, `reply_data_head')
-POINTERFIELD(XCB_Reply_Data, `reply_data_tail')
-dnl FIELD(XCB_Atom_Dictionary, `atoms')
-FIELD(XCB_Display_Info, `disp_info')
-FIELD(XP_CARD32, `last_xid')
+    FIELD(int, `fd')
+    FIELD(pthread_mutex_t, `locked')
+    FIELD(int, `seqnum')
+    ARRAYFIELD(CARD8, `outqueue', 4096)
+    FIELD(int, `n_outqueue')
+    dnl FIELD(XCB_Atom_Dictionary, `atoms')
+    FIELD(CARD32, `last_xid')
+
+    POINTERFIELD(XCB_Reply_Data, `reply_data_head')
+    POINTERFIELD(XCB_Reply_Data, `reply_data_tail')
+    POINTERFIELD(XCB_Event_Data, `event_data_head')
+    POINTERFIELD(XCB_Event_Data, `event_data_tail')
+
+    POINTERFIELD(char, `vendor')
+    POINTERFIELD(xPixmapFormat, `pixmapFormats')
+    POINTERFIELD(XP_WindowRoot, `roots')
+    FIELD(xConnSetupPrefix, `setup_prefix')
+    FIELD(xConnSetup, `setup')
 ')
-define(`_BASESTRUCT',0)dnl
+_H
+COOKIETYPE(`void')
 _H
 FUNCTION(`', `int XCB_Ones', `unsigned long mask', `
     register unsigned long y;
@@ -125,20 +79,12 @@ FUNCTION(`', `int XCB_Ones', `unsigned long mask', `
     return ((y + (y >> 3)) & 030707070707) % 077;
 ')
 _C
-FUNCTION(`', `XP_CARD32 XCB_Generate_ID', `XCB_Connection *c', `
-    XP_CARD32 ret;
-    XCB_Connection_Lock(c);
-    ret = (c->last_xid += c->disp_info.resource_id_mask & -(c->disp_info.resource_id_mask)) | c->disp_info.resource_id_base;
-    XCB_Connection_Unlock(c);
+FUNCTION(`', `CARD32 XCB_Generate_ID', `XCB_Connection *c', `
+    CARD32 ret;
+    pthread_mutex_lock(&c->locked);
+    ret = (c->last_xid += c->setup.ridMask & -(c->setup.ridMask)) | c->setup.ridBase;
+    pthread_mutex_unlock(&c->locked);
     return ret;
-')
-
-FUNCTION(`', `int XCB_Connection_Lock', `XCB_Connection *c', `
-    return pthread_mutex_lock(&c->locked);
-')
-_C
-FUNCTION(`', `int XCB_Connection_Unlock', `XCB_Connection *c', `
-    return pthread_mutex_unlock(&c->locked);
 ')
 _C
 FUNCTION(`', `int XCB_Read', dnl
@@ -150,32 +96,58 @@ FUNCTION(`', `int XCB_Read', dnl
 /* PRE: c is locked */
 /* POST: c's queue has been flushed */
 FUNCTION(`', `int XCB_Flush', `XCB_Connection *c', `
-    write(c->fd, c->outqueue, c->n_outqueue);
-    c->n_outqueue = 0;
-    return 1;
+    int ret = 0;
+    if(c->n_outqueue)
+    {
+        ret = write(c->fd, c->outqueue, c->n_outqueue);
+        c->n_outqueue = 0;
+    }
+    return ret;
 ')
 
-/* PRE: c is locked, buf points to valid memory, and len contains the number
-        of valid characters in buf */
-/* POST: if the queue would have overflowed, it has been written first;
-         if buf's contents are larger than the queue, buf has been written;
-         otherwise, buf has been copied into the queue. */
+/* PRE: c is locked, vector points to valid memory, and count contains the
+        number of entries in vector */
+/* POST: if all of the data given would fit in the buffer, it has been copied
+         there; otherwise, the contents of the buffer followed by the data
+         have been written. */
 FUNCTION(`', `int XCB_Write', dnl
-`XCB_Connection *c, unsigned char *buf, int len', `
-    if(c->n_outqueue + len >= sizeof(c->outqueue))
+`XCB_Connection *c, const struct iovec *vector, const size_t count', `
+    int i, len;
+
+    for(i = 0, len = 0; i < count; ++i)
+        len += vector[i].iov_len;
+
+    /* Is the queue about to overflow? */
+    if(c->n_outqueue + len < sizeof(c->outqueue))
     {
-        XCB_Flush(c);
-        if(len >= sizeof(c->outqueue))
+        /* No, this will fit. */
+        for(i = 0; i < count; ++i)
         {
-            write(c->fd, buf, len);
-            goto done;
+            memcpy(c->outqueue + c->n_outqueue, vector[i].iov_base, vector[i].iov_len);
+            c->n_outqueue += vector[i].iov_len;
         }
+        return len;
     }
 
-    memcpy(c->outqueue + c->n_outqueue, buf, len);
-    c->n_outqueue += len;
-done:
-    return ++c->seqnum;
+    /* If there was something in the queue already, make sure to send it
+     * before the new data. */
+    if(c->n_outqueue)
+    {INDENT()
+        struct iovec *v;
+        int ret;
+
+ALLOC(struct iovec, v, count + 1)
+        v[0].iov_base = c->outqueue;
+        v[0].iov_len = c->n_outqueue;
+        memcpy(v + 1, vector, sizeof(struct iovec) * (count + 1));
+        ret = writev(c->fd, v, count + 1);
+        free(v);
+
+        return ret;
+    }UNINDENT()
+
+    /* Nothing was in the queue, but this is a really big request. */
+    return writev(c->fd, vector, count);
 ')
 
 /* PRE: c is locked and cur points to valid memory */
@@ -237,44 +209,65 @@ FUNCTION(`', `int XCB_Remove_Reply_Data', dnl
 FUNCTION(`', `int XCB_Wait_Once', `XCB_Connection *c', `
     unsigned char *buf;
     int seqnum;
-    XP_CARD32 length;
-    XCB_Reply_Data *cur;
+    CARD32 length;
 
 ALLOC(unsigned char, buf, 32)
 
-    XCB_Connection_Lock(c);
+    if(pthread_mutex_trylock(&c->locked) == EBUSY)
+        return EAGAIN;
 
-    XCB_Read(c, buf, 32);
-    switch(buf[0])
+    if(XCB_Read(c, buf, 32) < 32)
+        return 0;
+    if(buf[0] == 1) /* reply */
     {INDENT()
-    case 0: /* error */
-define(`_index', 2)dnl
-UNPACK(XP_CARD16, `seqnum')
-        printf("Got error %d for request %d - ignoring\n", buf[1], seqnum);
-        break;
-    case 1: /* reply */
-define(`_index', 2)dnl
-UNPACK(XP_CARD16, `seqnum')
+        XCB_Reply_Data *cur;
+
+        seqnum = ((xGenericReply *) buf)->sequenceNumber;
         XCB_Find_Reply_Data(c, seqnum, &cur, 0);
         if(!cur)
         {
             printf("Got reply for seqnum %d but no data found!\n", seqnum);
-            abort();
+            return 0;
         }
-define(`_index', 4)dnl
-UNPACK(XP_CARD32, `length')
+
+        length = ((xGenericReply *) buf)->length;
         if(length)
         {INDENT()
 REALLOC(unsigned char, buf, 32 + length * 4)
             XCB_Read(c, buf + 32, length * 4);
         }UNINDENT()
-        cur->reply_handler(c, cur, buf);
-        break;
-    default: /* event */
-        printf("Got event %d - ignoring\n", buf[0]);
+
+        cur->data = buf;
+        cur->received = 1;
+    }UNINDENT()
+    else /* error or event */
+    {INDENT()
+        XCB_Event_Data *cur;
+ALLOC(XCB_Event_Data, cur, 1)
+
+        cur->event = (XCB_Event *) buf;
+        cur->next = 0;
+        if(c->event_data_tail)
+            c->event_data_tail->next = cur;
+        else
+            c->event_data_head = cur;
+
+        c->event_data_tail = cur;
+
+        if(cur->event->type == 0) /* error */
+        {
+            XCB_Reply_Data *rep;
+            XCB_Find_Reply_Data(c, cur->event->error.sequenceNumber, &rep, 0);
+            if(rep)
+            {
+                rep->error = rep->received = 1;
+                free(rep->data);
+                rep->data = 0;
+            }
+        }
     }UNINDENT()
 
-    XCB_Connection_Unlock(c);
+    pthread_mutex_unlock(&c->locked);
     return 1;
 ')
 
@@ -283,7 +276,7 @@ FUNCTION(`', `void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum', `
     void *ret = 0;
     XCB_Reply_Data *cur, *prev;
 
-    XCB_Connection_Lock(c);
+    pthread_mutex_lock(&c->locked);
     XCB_Flush(c);
     XCB_Find_Reply_Data(c, seqnum, &cur, &prev);
     if(!cur) /* nothing found to hand back */
@@ -295,23 +288,52 @@ FUNCTION(`', `void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum', `
 
     while(!cur->received) /* wait for the reply to arrive */
     {
-        XCB_Connection_Unlock(c);
-        XCB_Wait_Once(c);
-        XCB_Connection_Lock(c);
+        pthread_mutex_unlock(&c->locked);
+        if(!XCB_Wait_Once(c))
+            goto done;
+        pthread_mutex_lock(&c->locked);
     }
 
-    ret = cur->data;
+    if(!cur->error)
+        ret = cur->data;
+
     XCB_Remove_Reply_Data(c, cur, prev);
     free(cur);
 
 done:
-    XCB_Connection_Unlock(c);
+    pthread_mutex_unlock(&c->locked);
     return ret;
 ')
 
-FUNCTION(`', `int XCB_Open', `const char *display', `
+/* It is the caller's responsibility to free the returned XCB_Event object. */
+FUNCTION(`', `XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
+    XCB_Event *ret = 0;
+    XCB_Event_Data *cur;
+
+    pthread_mutex_lock(&c->locked);
+    while(!c->event_data_head)
+    {
+        pthread_mutex_unlock(&c->locked);
+        if(!XCB_Wait_Once(c))
+            goto done;
+        pthread_mutex_lock(&c->locked);
+    }
+
+    cur = c->event_data_head;
+    ret = cur->event;
+    c->event_data_head = cur->next;
+    if(!c->event_data_head)
+        c->event_data_tail = 0;
+    free(cur);
+
+done:
+    pthread_mutex_unlock(&c->locked);
+    return ret;
+')
+
+FUNCTION(`', `int XCB_Open', `const char *display, int *screen', `
     int fd = -1;
-    char *buf, *colon, *screen;
+    char *buf, *colon, *dot;
 
     if(!display)
     {
@@ -323,21 +345,30 @@ ALLOC(char, buf, strlen(display) + 1)
     strcpy(buf, display);
 
     colon = strchr(buf, '':'`);
+    if(!colon)
+    {
+        printf("Error: invalid display: \"%s\"\n", buf);
+        return -1;
+    }
     *colon = ''\0'`;
     ++colon;
 
-    screen = strchr(colon, ''.'`);
-    if(screen)
+    dot = strchr(colon, ''.'`);
+    if(dot)
     {
-        *screen = ''\0'`;
-        ++screen;
-        printf("You asked for screen %s. I''`m ignoring you.\n", screen);
+        *dot = ''\0'`;
+        ++dot;
+        if(screen)
+            *screen = atoi(dot);
     }
+    else
+        if(screen)
+            *screen = 0;
 
     if(*buf)
     {
         /* display specifies TCP */
-        unsigned short port = 6000 + atoi(colon);
+        unsigned short port = X_TCP_PORT + atoi(colon);
         printf("Attempting to open \"%s:%d\"...\n", buf, port);
         fd = XCB_Open_TCP(buf, port);
     }
@@ -381,124 +412,110 @@ FUNCTION(`', `int XCB_Open_Unix', `const char *file', `
     return fd;
 ')
 _C
-pushdef(`_outdiv',0)dnl
 FUNCTION(`', `XCB_Connection *XCB_Connect', `int fd', `
-dnl Using calloc to make gdb use slightly less painful.
-dnl Should probably switch to malloc when things work better.
-    XCB_Connection* c = (XCB_Connection*) calloc(1, sizeof(XCB_Connection));
-    int i, j, k, vendor_length, additional_data_length;
-    unsigned char *tmp, *buf;
-    assert(c);
+    XCB_Connection* c;
+    size_t clen = sizeof(XCB_Connection);
+
+ALLOC(XCB_Connection, c, 1)
 
     c->fd = fd;
     pthread_mutex_init(&c->locked, 0);
     c->n_outqueue = 0;
+    c->seqnum = 0;
+    c->last_xid = 0;
     c->reply_data_head = 0;
     c->reply_data_tail = 0;
-    c->last_xid = 0;
+    c->event_data_head = 0;
+    c->event_data_tail = 0;
 
     /* Write the connection setup request. */
-pushdiv(1)define(`_index',0)define(`_SIZE',0)dnl
-    /* B = 0x42 = MSB first, l = 0x6c = LSB first */
-PACK(XP_CARD8,0x42)
-PAD(1)dnl
-    /* This is protocol version 11.0 */
-PACK(XP_CARD16,11)
-PACK(XP_CARD16,0)
-    /* Auth protocol name and data are both zero-length */
-PACK(XP_CARD16,0)
-PACK(XP_CARD16,0)
-PAD(2)dnl
-dnl    LISTFIELD(XP_CARD8,authorization_protocol_name,dnl
-dnl       XP_PAD(authorization_protocol_name_length))
-dnl    LISTFIELD(XP_CARD8,authorization_protocol_data,dnl
-dnl       XP_PAD(authorization_protocol_data_length))
-popdiv()dnl
-ALLOC(unsigned char, buf, _SIZE)
-undivert(1)dnl
-    write(c->fd, buf, _SIZE);
+    {
+        xConnClientPrefix *out = (xConnClientPrefix *) c->outqueue;
+        c->n_outqueue = SIZEOF(xConnClientPrefix);
+
+        /* B = 0x42 = MSB first, l = 0x6c = LSB first */
+        out->byteOrder = 0x6c;
+        out->majorVersion = X_PROTOCOL;
+        out->minorVersion = X_PROTOCOL_REVISION;
+        /* Auth protocol name and data are both zero-length for now */
+        out->nbytesAuthProto = 0;
+        out->nbytesAuthString = 0;
+    }
+    XCB_Flush(c);
 
     /* Read the server response */
-    read(c->fd, buf, 1);
+    read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix));
     /* 0 = failed, 2 = authenticate, 1 = success */
-    switch(buf[0])
+    switch(c->setup_prefix.success)
     {
     case 0: /* failed */
     case 2: /* authenticate */
+        free(c);
         return 0; /* aw, screw you. */
     }
 
-pushdiv(1)define(`_index',0)define(`_SIZE',0)dnl
-PAD(1)dnl
-UNPACK(XP_CARD16, `c->disp_info.protocol_major_version')
-UNPACK(XP_CARD16, `c->disp_info.protocol_minor_version')
-UNPACK(XP_CARD16, `additional_data_length')
-popdiv()dnl
-dnl assume this _SIZE is smaller than previous _SIZE to avoid a realloc
-dnl currently this is 7 bytes and the other is 12, so it is OK.
-    read(c->fd, buf, _SIZE);
-undivert(1)dnl
+    clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
+    c = (XCB_Connection *) realloc(c, clen);
+    assert(c);
+    read(c->fd, &c->setup, c->setup_prefix.length * 4);
 
-REALLOC(unsigned char, buf, additional_data_length * 4)
-    read(c->fd, buf, additional_data_length * 4);
-define(`_index',0)define(`_SIZE',0)dnl
-UNPACK(XP_CARD32, `c->disp_info.release_number')
-UNPACK(XP_CARD32, `c->disp_info.resource_id_base')
-UNPACK(XP_CARD32, `c->disp_info.resource_id_mask')
-UNPACK(XP_CARD32, `c->disp_info.motion_buffer_size')
-UNPACK(XP_CARD16, `vendor_length')
-UNPACK(XP_CARD16, `c->disp_info.maximum_request_length')
-UNPACK(XP_CARD8, `c->disp_info.roots_length')
-UNPACK(XP_CARD8, `c->disp_info.pixmap_formats_length')
-dnl 0 = LSBFirst, 1 = MSBFirst
-UNPACK(XP_CARD8, `c->disp_info.image_byte_order')
-dnl 0 = LeastSignificant, 1 = MostSignificant
-UNPACK(XP_CARD8, `c->disp_info.bitmap_format_bit_order')
-UNPACK(XP_CARD8, `c->disp_info.bitmap_format_scanline_unit')
-UNPACK(XP_CARD8, `c->disp_info.bitmap_format_scanline_pad')
-UNPACK(XP_CARD8, `c->disp_info.min_keycode')
-UNPACK(XP_CARD8, `c->disp_info.max_keycode')
-PAD(4)dnl
+    /* Set up a collection of convenience pointers. */
+    /* Initialize these since they are used before the next realloc. */
+    c->vendor = (char *) (c + 1);
+    c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XP_PAD(c->setup.nbytesVendor));
 
-    tmp = buf;
-    buf += _index;
-ALLOC(char, c->disp_info.vendor, vendor_length + 1)
-    memcpy(c->disp_info.vendor, buf, vendor_length);
-    c->disp_info.vendor[vendor_length] = ''\0'`;
-    buf += vendor_length + XP_PAD(vendor_length);
+    /* So, just how obscure *can* a person make memory management? */
+    {
+        xWindowRoot *root;
+        xDepth *depth;
+        XP_Depth *xpdepth;
+        xVisualType *visual;
+        int i, j, oldclen = clen;
 
-ALLOC(XP_FORMAT, c->disp_info.pixmap_formats, c->disp_info.pixmap_formats_length)
-    for(i = 0; i < c->disp_info.pixmap_formats_length; ++i)
-    {INDENT()
-UNPACK(XP_FORMAT, `(c->disp_info.pixmap_formats + i)')
-        buf += SIZEOF(XP_FORMAT);
-    }UNINDENT()
+        clen += sizeof(XP_WindowRoot) * c->setup.numRoots;
 
-ALLOC(XP_SCREEN, c->disp_info.roots, c->disp_info.roots_length)
-    for(i = 0; i < c->disp_info.roots_length; ++i)
-    {INDENT()
-UNPACK(XP_SCREEN, `(c->disp_info.roots + i)')
-        buf += SIZEOF(XP_SCREEN);
+        root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
+        for(i = 0; i < c->setup.numRoots; ++i)
+        {
+            clen += sizeof(XP_Depth) * root->nDepths;
 
-ALLOC(XP_DEPTH, c->disp_info.roots[i].allowed_depths, c->disp_info.roots[i].allowed_depths_length)
-        for(j = 0; j < c->disp_info.roots[i].allowed_depths_length; ++j)
-        {INDENT()
-UNPACK(XP_DEPTH, `(c->disp_info.roots[i].allowed_depths + j)')
-            buf += SIZEOF(XP_DEPTH);
+            depth = (xDepth *) (root + 1);
+            for(j = 0; j < root->nDepths; ++j)
+            {
+                visual = (xVisualType *) (depth + 1);
+                depth = (xDepth *) (visual + depth->nVisuals);
+            }
+            root = (xWindowRoot *) depth;
+        }
 
-ALLOC(XP_VISUALTYPE, c->disp_info.roots[i].allowed_depths[j].visuals, c->disp_info.roots[i].allowed_depths[j].visuals_length)
-            for(k = 0; k < c->disp_info.roots[i].allowed_depths[j].visuals_length; ++k)
-            {INDENT()
-UNPACK(XP_VISUALTYPE, `(c->disp_info.roots[i].allowed_depths[j].visuals + k)')
-                buf += SIZEOF(XP_VISUALTYPE);
-            }UNINDENT()
-        }UNINDENT()
-    }UNINDENT()
+        c = (XCB_Connection *) realloc(c, clen);
+        assert(c);
 
-    buf = tmp;
+        /* Re-initialize these since realloc probably moved them. */
+        c->vendor = (char *) (c + 1);
+        c->pixmapFormats = (xPixmapFormat *) (c->vendor + c->setup.nbytesVendor + XP_PAD(c->setup.nbytesVendor));
 
-    /* clean up */
-    free(buf);
+        c->roots = (XP_WindowRoot *) (((char *) c) + oldclen);
+        xpdepth = (XP_Depth *) (c->roots + c->setup.numRoots);
+
+        root = (xWindowRoot *) (c->pixmapFormats + c->setup.numFormats);
+        for(i = 0; i < c->setup.numRoots; ++i)
+        {
+            c->roots[i].data = root;
+            c->roots[i].depths = xpdepth;
+
+            depth = (xDepth *) (root + 1);
+            xpdepth += root->nDepths;
+            for(j = 0; j < root->nDepths; ++j)
+            {
+                c->roots[i].depths[j].data = depth;
+                visual = (xVisualType *) (depth + 1);
+                c->roots[i].depths[j].visuals = visual;
+                depth = (xDepth *) (visual + depth->nVisuals);
+            }
+            root = (xWindowRoot *) depth;
+        }
+    }
+
     return c;
 ')
-popdef(`_outdiv')dnl
