@@ -1,3 +1,25 @@
+2004-11-06  Josh Triplett  <josh@freedesktop.org>
+
+	* configure.ac:
+	* src/.cvsignore:
+	* src/Makefile.am:
+	* src/xcb.h:
+	Merged changes for XML-XCB project.
+
+	* src/c-client.xsl:
+	* src/xcb.h:
+	Add XSLT binding generator and non-M4 version of xcb.h.
+	
+	* src/client-c.xcb:
+	* src/xcb.h.m4:
+	Remove M4 binding generator and M4 version of xcb.h.
+
+	* debian/changelog:
+	* debian/control:
+	* debian/copyright.debian:
+	* debian/rules:
+	Updated Debian packaging.
+
 2004-09-30  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcbext.h:

@@ -16,4 +16,4 @@ debian/copyright: debian/copyright.debian COPYING
 clean::
 	-rm -f debian/copyright
 
-build-stamp:: debian/copyright
+common-install-prehook-arch common-install-prehook-indep:: debian/copyright

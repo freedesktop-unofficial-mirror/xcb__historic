@@ -2,8 +2,9 @@ Source: fd.o-xcb-proto
 Section: libdevel
 Priority: optional
 Maintainer: Jamey Sharp <sharpone@debian.org>
-Build-Depends: debhelper (>= 4.0.0)
-Standards-Version: 3.6.0
+Build-Depends: cdbs, debhelper (>= 4.0.0), autoconf, automake1.9 | automaken
+Build-Conflicts: automake1.4, automake1.5, automake1.6
+Standards-Version: 3.6.1
 
 Package: fd.o-xcb-proto
 Architecture: any
@@ -18,6 +19,6 @@ Description: X C Binding - protocol descriptions
  For more information, please see http://freedesktop.org/Software/xcb .
  .
  xcb-proto contains descriptions of the X core protocol and selected
- extensions in a domain-specific language. XCB uses these descriptions
- to generate much of its code. You only need this package if you want to
- compile XCB or any other library that uses these descriptions.
+ extensions in an XML-based data format. XCB uses these descriptions to
+ generate much of its code. You only need this package if you want to compile
+ XCB or otherwise make use of these protocol descriptions.

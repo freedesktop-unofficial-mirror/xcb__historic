@@ -42,24 +42,34 @@ typedef struct {
     int index;
 } XCBGenericIter;
 
-divert(-1)
-define(`_H')
-include(`client-c.xcb')
+typedef struct {
+    BYTE response_type;
+    CARD8 pad0;
+    CARD16 sequence;
+    CARD32 length;
+} XCBGenericRep;
 
-define(`XCBGEN')
-define(`ENDXCBGEN')
+typedef struct {
+    BYTE response_type;
+    CARD8 pad0;
+    CARD16 sequence;
+} XCBGenericEvent;
 
-PACKETSTRUCT(Generic, `Rep')
-PACKETSTRUCT(Generic, `Event')
-PACKETSTRUCT(Generic, `Error')
+typedef struct {
+    BYTE response_type;
+    BYTE error_code;
+    CARD16 sequence;
+} XCBGenericError;
 
-COOKIETYPE(`Void')
+typedef struct {
+    unsigned int sequence;
+} XCBVoidCookie;
 
-include(`xcb_types.xcb')
-include(`xproto.xcb')
 
-divert(0)dnl
-undivert(TYPEDIV)dnl
+/* Include the generated xproto and xcb_types headers. */
+#include "xcb_types.h"
+#include "xproto.h"
+
 
 /* xcb_auth.c */
 
@@ -108,12 +118,6 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
 void XCBDisconnect(XCBConnection *c);
 
 
-/* xproto.c and xcb_types.c */
-
-undivert(FUNCDIV)
-undivert(INLINEFUNCDIV)dnl
-
-
 /* xcb_util.c */
 
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
@@ -124,6 +128,7 @@ int XCBOpenUnix(const char *file);
 XCBConnection *XCBConnectBasic(void);
 
 int XCBSync(XCBConnection *c, XCBGenericError **e);
+
 
 #ifdef __cplusplus
 }

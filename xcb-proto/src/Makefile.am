@@ -1,4 +1,14 @@
-nobase_xcbinclude_HEADERS = generics.xcb xproto.xcb xcb_types.xcb \
-	extensions/bigreq.xcb extensions/shm.xcb extensions/shape.xcb \
-	extensions/render.xcb extensions/dpms.xcb extensions/xc_misc.xcb \
-	extensions/sync.xcb
+nobase_xcbinclude_HEADERS = xcb.xsd                  \
+                            xcb_types.xml            \
+                            xproto.xml               \
+                            extensions/bigreq.xml    \
+                            extensions/composite.xml \
+                            extensions/damage.xml    \
+                            extensions/dpms.xml      \
+                            extensions/render.xml    \
+                            extensions/shape.xml     \
+                            extensions/shm.xml       \
+                            extensions/sync.xml      \
+                            extensions/xc_misc.xml   \
+                            extensions/xevie.xml     \
+                            extensions/xfixes.xml

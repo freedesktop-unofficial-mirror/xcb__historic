@@ -2,7 +2,8 @@ Source: fd.o-xcb
 Section: libdevel
 Priority: optional
 Maintainer: Jamey Sharp <sharpone@debian.org>
-Build-Depends: debhelper (>= 4.0.0), fd.o-xproto, fd.o-xau, fd.o-xcb-proto
+Build-Depends: fd.o-xproto, fd.o-xau, fd.o-xcb-proto (>= 0.9), cdbs, debhelper (>= 4.0.0), autoconf, automake1.9 | automaken, libtool, xsltproc
+Build-Conflicts: automake1.4, automake1.5, automake1.6
 Standards-Version: 3.6.0
 
 Package: fd.o-xcb

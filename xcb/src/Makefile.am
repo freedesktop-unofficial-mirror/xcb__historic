@@ -1,28 +1,36 @@
 lib_LTLIBRARIES = libXCB.la
 
-M4FLAGS = $(XCBPROTO_CFLAGS)
-
 EXTHEADERS = \
 		extensions/bigreq.h \
+		extensions/composite.h \
+		extensions/damage.h \
 		extensions/shm.h \
 		extensions/shape.h \
 		extensions/render.h \
 		extensions/dpms.h \
 		extensions/sync.h \
-		extensions/xc_misc.h
+		extensions/xc_misc.h \
+		extensions/xevie.h \
+		extensions/xfixes.h
 EXTSOURCES = \
 		extensions/bigreq.c \
+		extensions/composite.c \
+		extensions/damage.c \
 		extensions/shm.c \
 		extensions/shape.c \
 		extensions/render.c \
 		extensions/dpms.c \
 		extensions/sync.c \
-		extensions/xc_misc.c
+		extensions/xc_misc.c \
+		extensions/xevie.c \
+		extensions/xfixes.c
 EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
-COREPROTO = xcb.h xproto.c xcb_types.c
+COREHEADERS = xproto.h xcb_types.h
+CORESOURCES = xproto.c xcb_types.c
+COREPROTO   = $(CORESOURCES) $(COREHEADERS)
 
-xcbinclude_HEADERS = xcb.h xcbext.h xcbint.h client-c.xcb $(EXTHEADERS)
+xcbinclude_HEADERS = xcb.h xcbext.h xcbint.h $(COREHEADERS) $(EXTHEADERS)
 
 TESTS = check_all
 noinst_PROGRAMS = check_all
@@ -46,13 +54,20 @@ CLEANFILES = $(COREPROTO) $(EXTENSIONS)
 clean-local:
 	rmdir extensions || true
 
-vpath %.xcb $(XCBPROTO_VPATH)
-%.h: %.xcb generics.xcb client-c.xcb
-	@n=`dirname $*`; test -d $$n || (echo mkdir $$n; mkdir $$n)
-	$(M4) -D_H $(M4FLAGS) client-c.xcb $*.xcb > $*.h
-%.c: %.xcb generics.xcb client-c.xcb
-	@n=`dirname $*`; test -d $$n || (echo mkdir $$n; mkdir $$n)
-	$(M4) -D_C $(M4FLAGS) client-c.xcb $*.xcb > $*.c
+vpath %.xml $(XCBPROTO_XCBINCLUDEDIR) $(XCBPROTO_XCBINCLUDEDIR)/extensions
 
-xcb.h: xcb.h.m4 generics.xcb client-c.xcb xcb_types.xcb xproto.xcb
-	$(M4) $(M4FLAGS) xcb.h.m4 > xcb.h
+%.h: %.xml c-client.xsl
+	@n=`dirname $*`; test -d $$n || (echo mkdir $$n; mkdir $$n)
+	$(XSLTPROC) --stringparam mode header \
+	            --stringparam base-path $(XCBPROTO_XCBINCLUDEDIR)/ \
+	            --stringparam extension-path \
+	                          $(XCBPROTO_XCBINCLUDEDIR)/extensions/ \
+	            -o $@ c-client.xsl $< 
+
+%.c: %.xml c-client.xsl
+	@n=`dirname $*`; test -d $$n || (echo mkdir $$n; mkdir $$n)
+	$(XSLTPROC) --stringparam mode source \
+	            --stringparam base-path $(XCBPROTO_XCBINCLUDEDIR)/ \
+	            --stringparam extension-path \
+	                          $(XCBPROTO_XCBINCLUDEDIR)/extensions/ \
+	            -o $@ c-client.xsl $< 

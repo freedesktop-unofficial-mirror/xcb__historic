@@ -1,3 +1,10 @@
+fd.o-xcb-proto (0.9-1) unstable; urgency=low
+
+  * New version with XML protocol descriptions.
+  * Updated Debian packaging.
+
+ -- Josh Triplett <josh@freedesktop.org>  Fri, 29 Oct 2004 15:11:09 -0700
+
 fd.o-xcb-proto (0.8-1) unstable; urgency=low
 
   * Initial Release.
