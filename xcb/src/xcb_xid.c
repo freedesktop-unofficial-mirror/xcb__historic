@@ -3,8 +3,10 @@
 
 /* XID allocators. */
 
+#include <stdlib.h>
 #include "xcb.h"
 #include "xcbint.h"
+#include "extensions/xc_misc.h"
 
 /* Public interface */
 
@@ -12,7 +14,7 @@ CARD32 XCBGenerateID(XCBConnection *c)
 {
     CARD32 ret;
     pthread_mutex_lock(&c->xid.lock);
-    if(c->xid.last == c->xid.mask)
+    if(c->xid.last == c->xid.max)
     {
 	    XCBXCMiscGetXIDRangeRep *range;
 	    range = XCBXCMiscGetXIDRangeReply(c, XCBXCMiscGetXIDRange(c), 0);

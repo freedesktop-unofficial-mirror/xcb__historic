@@ -1,3 +1,9 @@
+2004-07-07  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_xid.c:
+	OK, it might be a good idea to commit something
+	that compiles. I thought I'd tested this change...
+
 2004-07-06  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcbint.h:
