@@ -6,6 +6,7 @@ EXTHEADERS = \
 		extensions/damage.h \
 		extensions/shm.h \
 		extensions/shape.h \
+		extensions/randr.h \
 		extensions/render.h \
 		extensions/dpms.h \
 		extensions/sync.h \
@@ -18,6 +19,7 @@ EXTSOURCES = \
 		extensions/damage.c \
 		extensions/shm.c \
 		extensions/shape.c \
+		extensions/randr.c \
 		extensions/render.c \
 		extensions/dpms.c \
 		extensions/sync.c \
