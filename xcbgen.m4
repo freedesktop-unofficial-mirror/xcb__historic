@@ -59,7 +59,7 @@ ifdef(`_H', , `define(`_H', `dnl')')
 ifdef(`_C', , `define(`_C', `dnl')')
 
 
-dnl Declare a C function
+dnl Declare a C function.
 dnl Note that this macro also sticks a declaration
 dnl in the header file.
 dnl FUNCTION(return type and function name, params, body)
@@ -72,6 +72,8 @@ _H`'PUSHDIV(-1)
 }UNINDENT()
 _H`'POPDIV()dnl')
 
+dnl Declare a C function local to the .c file.
+dnl The header file is not affected.
 dnl STATICFUNCTION(return type and function name, params, body)
 define(`STATICFUNCTION', `dnl
 _C`'static $1`('$2`)'
@@ -80,6 +82,18 @@ _H`'PUSHDIV(-1)
 '$3`dnl
 }UNINDENT()
 _H`'POPDIV()dnl')
+
+dnl Declare a C function which should be compiled inline if possible.
+dnl TODO: fallback to a regular function if inline is not supported by
+dnl       the compiler.
+dnl INLINEFUNCTION(return type and function name, params, body)
+define(`INLINEFUNCTION', `dnl
+_C`'PUSHDIV(-1)
+static inline $1`('$2`)'
+{INDENT()dnl
+'$3`dnl
+}UNINDENT()
+_C`'POPDIV()dnl')
 
 
 dnl Allocate a block or array of storage with a given name.
@@ -115,16 +129,27 @@ define(`PARAMQTY', 0)  dnl Count of parameters to request (currently tests
 
 dnl -- Request/Response macros
 
-dnl The *PARAM and *FIELD macros must always appear inside a REQUEST or
-dnl VOIDREQUEST macro call, and must be quoted.
+dnl The *PARAM and *FIELD macros must only appear inside a REQUEST or
+dnl VOIDREQUEST macro call, and must be quoted. All fields must appear
+dnl in the order the X server expects to recieve them in. Parameters to
+dnl the generated request functions will appear in the same order as the
+dnl PARAM/FIELD macros they're related to.
 
-dnl VALUEPARAM and LISTPARAM fields must appear in the order the X server
-dnl expects to recieve them in; other parameter and field definitions
-dnl may be interspersed anywhere and in any order, but it's suggested for
-dnl reasons of clarity that these all be listed in the same order as
-dnl they're given in the X Protocol specification. Parameters to the
-dnl generated request functions will appear in the same order as the
-dnl PARAM macros they're related to.
+
+dnl The X protocol specification says that the X name of the extension
+dnl "should use the ISO Latin-1 encoding, and uppercase and lowercase matter."
+dnl The C name should be a valid C identifier which can be guessed easily
+dnl from the X name, as it will appear in programmer-visible names.
+dnl BEGINEXTENSION(X name, C name)
+define(`BEGINEXTENSION', `define(`EXTENSION', `XCB_`'$2`'_id')dnl
+_H`'extern const char *EXTENSION;
+_C`'const char *EXTENSION = "`$1'";
+FUNCTION(`const XCB_QueryExtension_Rep *XCB_`'$2`'_Init', `XCB_Connection *c', `
+    return XCB_QueryExtension_Cached(c, EXTENSION, 0);
+')')
+
+dnl ENDEXTENSION()
+define(`ENDEXTENSION', `undefine(`EXTENSION')dnl')
 
 
 
@@ -148,11 +173,11 @@ dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
 dnl request.
 dnl LISTPARAM(element type, list name, length expression)
-define(`LISTPARAM', `PUSHDIV(PARMDIV), $1 *`$2'dnl
+define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'dnl
 divert(OUTDIV)
-TAB()out->length += (`$3') * sizeof($1) / 4;
-TAB()parts[PARTQTY].iov_base = `$2';
-TAB()parts[PARTQTY].iov_len = (`$3') * sizeof($1);
+TAB()out->length += (`$3') * sizeof(`$1') / 4;
+TAB()parts[PARTQTY].iov_base = (`$1' *) `$2';
+TAB()parts[PARTQTY].iov_len = (`$3') * sizeof(`$1');
 define(`PARTQTY', eval(1+PARTQTY))dnl
 POPDIV()')
 
@@ -184,14 +209,26 @@ ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
 POPDIV()')
 
 dnl Sets the major number for all instances of this request to the given code.
-dnl TODO: for extensions, set the major number to the extension major number,
-dnl       and the minor number to this given number.
 dnl OPCODE(number)
-define(`OPCODE', `FIELD(CARD8, `majorOpcode')`'dnl
+define(`OPCODE', `ifdef(`EXTENSION', `
+    FIELD(CARD8, `major_opcode')
+    FIELD(CARD8, `minor_opcode')
+PUSHDIV(VARDIV)dnl
+TAB()const XCB_QueryExtension_Rep *extension = XCB_QueryExtension_Cached(c, EXTENSION, 0);
+divert(OUTDIV)dnl
+dnl TODO: better error handling here, please!
+TAB()assert(extension && extension->present);
+
+TAB()out->major_opcode = extension->major_opcode;
+TAB()out->minor_opcode = `$1';
+POPDIV()
+    ifelse(FIELDQTY, 2, `LENGTHFIELD()')
+', `
+    FIELD(CARD8, `major_opcode')
 PUSHDIV(OUTDIV)dnl
-TAB()out->majorOpcode = `$1';
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')dnl
-POPDIV()')
+TAB()out->major_opcode = `$1';
+POPDIV()
+')')
 
 dnl PAD(bytes)
 define(`PAD', `ARRAYFIELD(CARD8, `pad'PADQTY, $1)`'dnl
@@ -261,7 +298,7 @@ popdef(`REQ')dnl
 UNINDENT()dnl
 undivert(OUTDIV)`'dnl
 _H
-FUNCTION(`XCB_'$1`_Rep *XCB_'$1`_Reply',
+INLINEFUNCTION(`XCB_'$1`_Rep *XCB_'$1`_Reply',
 `XCB_Connection *c, XCB_'$1`_cookie cookie, xError **e', `
     return (XCB_'$1`_Rep *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
 ')`'dnl

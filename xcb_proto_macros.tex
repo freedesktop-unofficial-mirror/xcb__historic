@@ -1,5 +1,3 @@
-%% LyX 1.1 created this file.  For more info, see http://www.lyx.org/.
-%% Do not edit unless you really know what you are doing.
 \documentclass[english]{article}
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
@@ -23,7 +21,36 @@
 
 \maketitle
 
+\section{Terminology}
+
+In this document, terms shall be used as follows.
+
+A ``field'' is a unit of information in a real protocol request. Fields
+are never visible to programmers using XCB.
+
+A ``reply field'' is a unit of information in a real protocol reply.
+Reply fields are directly visible to programmers using XCB.
+
+A ``param'' (``parameter'') is a unit of information passed to a protocol
+request wrapper function. It may or may not correspond to a field.
+
+
 \section{Requests and Replies}
+
+
+\subsection{Extension Support: BEGINEXTENSION and ENDEXTENSION}
+
+BEGINEXTENSION(X name, C name)\\
+ENDEXTENSION
+
+An extension's X name is the string used to identify it to the server
+(e.g. `DPMS', `SHAPE', `XVideo'). The X protocol specification says that
+the X name of the extension ``should use the ISO Latin-1 encoding, and
+uppercase and lowercase matter.''
+
+An extension's C name should be a valid C identifier which can be guessed
+easily from the X name: it will appear in some names visible to
+programmers using XCB.
 
 
 \subsection{VOIDREQUEST}
@@ -38,28 +65,55 @@ expect a reply.
 
 \subsection{REQUEST}
 
-REQUEST(name, 0 or more PARAMs, 0 or more REPLYFIELDs)
+REQUEST(name, 0 or more PARAMs, 0 or more REPLYs)
 
 Creates a function named XCB\_<name> returning XCB\_<name>\_cookie
 and accepting whatever parameters are necessary to deliver the given
 PARAMs and FIELDs to the X server. Declares the struct XCB\_<name>\_cookie.
 Creates a function named XCB\_<name>\_Reply returning a pointer to
-x<name>Reply from Xproto.h which forces a cookie returned from XCB\_<name>,
-waiting for the response from the server if necessary. If any REPLYFIELDs
+XCB\_<name>\_Rep which forces a cookie returned from XCB\_<name>,
+waiting for the response from the server if necessary. If any REPLYs
 are given, they must be quoted.
 
 
 \subsection{Request Parameters and Fields}
 
-These PARAM and FIELD macros may only appear within the second parameter
-to the REQUEST or VOIDREQUEST macros, and must always be quoted.
+These PARAM and FIELD macros may only appear within the second
+parameter to the REQUEST or VOIDREQUEST macros, and must always
+be quoted.
 
-VALUEPARAM and LISTPARAM macro calls must appear in the order specified
+All of these macro calls must appear in the order specified
 by Appendix B (Protocol Encoding) of the X Window System Protocol
-specification. The other macros in this section may appear in any
-order, but it is recommended that all PARAMs be in the same order
-as given in the protocol specification, so that users of the library
-can compare XCB code with the protocol specification.
+specification, or the equivalent documentation for any extension.
+However, LISTs (including LISTofVALUEs) are always grouped after
+any fixed-length section.
+
+Information about padding bytes must be known, so you may need to
+specify it using the PAD macro. However, in several cases this
+information can be inferred by the macros and thus can be omitted:
+  \begin{itemize}
+  \item After the last fixed-length field in a fixed-length request or reply.
+  \item After the last fixed-length field in a variable-length request.
+  \item Between each variable-length field and the next 4-byte aligned boundary in a request.
+  \end{itemize}
+
+
+\subsubsection{OPCODE}
+
+OPCODE(number)
+
+For extensions, this macro generates code to look up the major number
+and sets the minor number to the given value.
+
+For the core protocol, this macro sets the major number to the given
+value.
+
+
+\subsubsection{PAD}
+
+PAD(bytes)
+
+Inserts the given number of padding bytes.
 
 
 \subsubsection{PARAM}
@@ -78,6 +132,10 @@ probably be either CARD16 or CARD32, depending on the specified width
 of the bitmask. The value array must be given to the generated function
 in the order the X server expects.
 
+Caution! No type-, value-, or bounds-checking is done on this array by
+XCB. The X server and your operating system may not catch errors either,
+leading to odd results if you're not careful.
+
 
 \subsubsection{LISTPARAM}
 
@@ -95,15 +153,9 @@ LOCALPARAM(type, name)
 Defines a parameter with no associated field. The name can be used
 in expressions.
 
-
-\subsubsection{STRLENFIELD}
-
-STRLENFIELD(string name, field name)
-
-Defines a field which should be filled in with the length of a string
-parameter. The string parameter must be defined by a corresponding
-LISTPARAM(char, ...), and the field name is available for use in the
-expression of a LISTPARAM or EXPRFIELD.
+This macro can be useful in conjunction with LISTs where you need to
+pass the number of items to the LISTPARAM macro, but in the protocol
+the list length is implicit in the request length.
 
 
 \subsubsection{EXPRFIELD}
@@ -111,18 +163,38 @@ expression of a LISTPARAM or EXPRFIELD.
 EXPRFIELD(field name, expression)
 
 Defines a field which should be filled in with the given expression.
-The field name is \textbf{not} available for use in further expressions.
+The field has no associated parameter. The name can be used in
+expressions.
+
+This macro can be useful when the protocol requires an explicit
+field containing a value which is easily calculated from the
+information available.
+
+The recommended idiom for strings which aren't expected to contain
+null characters combines EXPRFIELD with LISTPARAM. This allows
+programmers familiar with C to work with XCB naturally.
+
+\begin{figure}
+\begin{quote}\begin{verbatim}
+EXPRFIELD(CARD16, `name_len', `strlen(name)')
+LISTPARAM(char, `name', `name_len')
+\end{verbatim}\end{quote}
+\caption{Example macro usage for C-style strings.}\label{fig-string}
+\end{figure}
 
 
-\subsection{REPLYFIELD}
+\subsection{ARRAYREPLY}
 
-REPLYFIELD(field type, field name, opt length name)
+ARRAYREPLY(field type, field name, length name)
 
 Generates a C pre-processor macro providing access to a variable-length
-portion of a reply. If another reply field follows, the length name
-must be provided. The length name is the name of a field in the fixed-length
-portion of the response which contains the number of elements in this
-section.
+portion of a reply. The length name should be provided. The length name
+is the name of a field in the fixed-length portion of the response which
+contains the number of elements in this section.
+
+This macro provides full random access to any portion of the
+variable-length portion of a reply, but it's only suitable for LISTs of
+fixed-length elements.
 
 
 \section{Utility Macros}
@@ -149,6 +221,9 @@ contain a call to the ENDXCBGEN macro. The header name should generally
 be the base name of the source file, with all lowercase letters capitalized,
 and all other characters converted to underscores ({}``\_''): for
 example, xcb\_conn.m4 uses XCB\_CONN here.
+
+XCBGEN automatically causes the header file to be \#included by the
+implementation file.
 
 
 \subsection{Indentation}
@@ -193,6 +268,18 @@ STATICFUNCTION(return type and function name, params, body)
 Declares a static-scope C function. No prototype is placed in the
 header file, and the keyword static is applied to the function in
 the implementation file.
+
+
+\subsubsection{INLINEFUNCTION}
+
+INLINEFUNCTION(return type and function name, params, body)
+
+Declare a C function which should be compiled inline if possible.
+The function is placed in the header file and declared ``static inline''.
+
+A future implementation of these macros should fall back to
+generating a regular function if inlines aren't supported by the
+compiler, but this isn't implemented yet.
 
 
 \subsection{Memory Allocation}

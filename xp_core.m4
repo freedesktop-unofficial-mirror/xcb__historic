@@ -8,15 +8,6 @@ _H
 _H`'typedef char CHAR2B[2];
 
 
-/* This function probably belongs here, even though it is
- * the only non-request in the file. */
-FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
-    XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
-    XCB_GetInputFocus_Rep *reply = XCB_GetInputFocus_Reply(c, cookie, e);
-    free(reply);
-    return (reply != 0);
-')
-
 /* The requests, in major number order. */
 /* It is the caller's responsibility to free returned XCB_*_Rep objects. */
 
@@ -891,6 +882,12 @@ REQUEST(QueryExtension, `
     PAD(1)
     EXPRFIELD(CARD16, `name_len', `strlen(name)')
     LISTPARAM(char, `name', `name_len')
+', `
+    PAD(1)
+    REPLY(BOOL, `present')
+    REPLY(CARD8, `major_opcode')
+    REPLY(CARD8, `first_event')
+    REPLY(CARD8, `first_error')
 ')
 
 dnl FIXME: ListExtensions needs an iterator for the reply - a pointer won't do.
@@ -1022,6 +1019,49 @@ dnl but geez, malloc()ing a 262140 byte buffer just so I have something
 dnl to hand to write(2) seems silly...!
 VOIDREQUEST(NoOperation, `
     OPCODE(127)
+')
+
+
+/* Pseudo-requests: these functions don't map directly to protocol requests,
+ * but depend on requests in the core protocol, so they're here. */
+
+/* Returns true iff the sync was sucessful. */
+FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
+    XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
+    XCB_GetInputFocus_Rep *reply = XCB_GetInputFocus_Reply(c, cookie, e);
+    free(reply);
+    return (reply != 0);
+')
+
+/* Do not free the returned XCB_QueryExtension_Rep - on return, it's aliased
+ * from the cache. */
+/* TODO: implement the cache. This function will leak memory on every call
+ *       without the cache implemented. */
+FUNCTION(`const XCB_QueryExtension_Rep *XCB_QueryExtension_Cached',
+`XCB_Connection *c, const char *name, xError **e', `
+    XCB_QueryExtension_Rep *ret = 0;
+    if(e)
+        *e = 0;
+    pthread_mutex_lock(&c->locked);
+
+    /* TODO: search the cache for the given name */
+
+    if(ret)
+        goto done; /* cache hit: return from the cache */
+
+    /* cache miss: query the server */
+    pthread_mutex_unlock(&c->locked);
+    {
+        XCB_QueryExtension_cookie cookie = XCB_QueryExtension(c, name);
+        ret = XCB_QueryExtension_Reply(c, cookie, e);
+    }
+    pthread_mutex_lock(&c->locked);
+
+    /* TODO: cache the query result */
+
+done:
+    pthread_mutex_unlock(&c->locked);
+    return ret;
 ')
 _H
 ENDXCBGEN
