@@ -75,18 +75,20 @@ static void _XInitDefaultDisplay()
 	_default_display.vnumber = X_PROTOCOL;
 }
 
-static int _XInitPixmapFormats(register Display *dpy)
+static int _XInitPixmapFormats(Display *dpy)
 {
 	int i;
 	register ScreenFormat *fmtdst;
 	register FORMAT *fmtsrc;
+	XCBConnection *c = XCBConnectionOfDisplay(dpy);
+	dpy->nformats = XCBConnSetupSuccessReppixmap_formatsLength(c->setup);
 
 	/* Now iterate down setup information... */
 	fmtdst = (ScreenFormat *) Xmalloc(dpy->nformats * sizeof(ScreenFormat));
 	if(!fmtdst)
 		return 0;
 	dpy->pixmap_format = fmtdst;
-	fmtsrc = XCBConnectionOfDisplay(dpy)->pixmapFormats;
+	fmtsrc = XCBConnSetupSuccessReppixmap_formats(c->setup);
 
 	/* First decode the Z axis Screen format information. */
 	for(i = dpy->nformats; i; --i, ++fmtsrc, ++fmtdst)
@@ -99,23 +101,16 @@ static int _XInitPixmapFormats(register Display *dpy)
 	return 1;
 }
 
-static int _XInitVisuals(Depth *dpdst, register VISUALTYPE *vpsrc)
+static Visual *_XInitVisuals(int len, register VISUALTYPE *vpsrc)
 {
-	int i;
 	Visual *vpdst;
+	Visual *dst;
 
-	if(dpdst->nvisuals <= 0)
-	{
-		dpdst->visuals = (Visual *) NULL;
-		return 1;
-	}
-
-	vpdst = (Visual *) Xmalloc(dpdst->nvisuals * sizeof(Visual));
+	dst = vpdst = (Visual *) Xmalloc(len * sizeof(Visual));
 	if(!vpdst)
 		return 0;
-	dpdst->visuals = vpdst;
 
-	for(i = dpdst->nvisuals; i; --i, ++vpsrc, ++vpdst)
+	for(; len; --len, ++vpsrc, ++vpdst)
 	{
 		vpdst->visualid		= vpsrc->visual_id.id;
 		vpdst->class		= vpsrc->class;
@@ -126,73 +121,71 @@ static int _XInitVisuals(Depth *dpdst, register VISUALTYPE *vpsrc)
 		vpdst->blue_mask	= vpsrc->blue_mask;
 		vpdst->ext_data		= NULL;
 	}
-	return 1;
+	return dst;
 }
 
-static int _XInitDepths(Screen *spdst, register XCBDepth *dpsrc)
+static Depth *_XInitDepths(DEPTHIter dpsrc)
 {
-	int i;
 	register Depth *dpdst;
+	Depth *dst;
 
-	/* lets set up the depth structures. */
-	dpdst = (Depth *) Xmalloc(spdst->ndepths * sizeof(Depth));
+	dst = dpdst = (Depth *) Xmalloc(dpsrc.rem * sizeof(Depth));
 	if(!dpdst)
 		return 0;
-	spdst->depths = dpdst;
 
 	/* for all depths on this screen. */
-	for(i = spdst->ndepths; i; --i, ++dpsrc, ++dpdst)
+	for(; dpsrc.rem; DEPTHNext(&dpsrc), ++dpdst)
 	{
-		dpdst->depth		= dpsrc->data->depth;
-		dpdst->nvisuals		= dpsrc->data->visuals_len;
+		dpdst->depth		= dpsrc.data->depth;
+		dpdst->nvisuals		= DEPTHvisualsLength(dpsrc.data);
 
-		if(!_XInitVisuals(dpdst, dpsrc->visuals))
+		dpdst->visuals = _XInitVisuals(dpdst->nvisuals, DEPTHvisuals(dpsrc.data));
+		if(!dpdst->visuals)
 			return 0;
 	}
-	return 1;
+	return dst;
 }
 
-static int _XInitScreens(register Display *dpy)
+static int _XInitScreens(Display *dpy, SCREENIter spsrc)
 {
-	int i;
 	register Screen *spdst;
-	register XCBScreen *spsrc;
 	XGCValues values;
 
-	/* next the Screen structures. */
-	spdst = (Screen *) Xmalloc(dpy->nscreens * sizeof(Screen));
+	dpy->nscreens = spsrc.rem;
+
+	spdst = (Screen *) Xmalloc(spsrc.rem * sizeof(Screen));
 	if(!spdst)
 		return 0;
 	dpy->screens = spdst;
-	spsrc = XCBConnectionOfDisplay(dpy)->roots;
 
 	/* Now go deal with each screen structure. */
-	for(i = dpy->nscreens; i; --i, ++spsrc, ++spdst)
+	for(; spsrc.rem; SCREENNext(&spsrc), ++spdst)
 	{
 		spdst->display		= dpy;
-		spdst->root 		= spsrc->data->root.xid;
-		spdst->cmap 		= spsrc->data->default_colormap.xid;
-		spdst->white_pixel	= spsrc->data->white_pixel;
+		spdst->root 		= spsrc.data->root.xid;
+		spdst->cmap 		= spsrc.data->default_colormap.xid;
+		spdst->white_pixel	= spsrc.data->white_pixel;
 		values.background	= spdst->white_pixel;
-		spdst->black_pixel	= spsrc->data->black_pixel;
+		spdst->black_pixel	= spsrc.data->black_pixel;
 		values.foreground	= spdst->black_pixel;
-		spdst->root_input_mask	= spsrc->data->current_input_masks;
-		spdst->width		= spsrc->data->width_in_pixels;
-		spdst->height		= spsrc->data->height_in_pixels;
-		spdst->mwidth		= spsrc->data->width_in_millimeters;
-		spdst->mheight		= spsrc->data->height_in_millimeters;
-		spdst->min_maps		= spsrc->data->min_installed_maps;
-		spdst->max_maps		= spsrc->data->max_installed_maps;
-		spdst->backing_store	= spsrc->data->backing_stores;
-		spdst->save_unders	= spsrc->data->save_unders;
-		spdst->root_depth	= spsrc->data->root_depth;
-		spdst->ndepths		= spsrc->data->allowed_depths_len;
+		spdst->root_input_mask	= spsrc.data->current_input_masks;
+		spdst->width		= spsrc.data->width_in_pixels;
+		spdst->height		= spsrc.data->height_in_pixels;
+		spdst->mwidth		= spsrc.data->width_in_millimeters;
+		spdst->mheight		= spsrc.data->height_in_millimeters;
+		spdst->min_maps		= spsrc.data->min_installed_maps;
+		spdst->max_maps		= spsrc.data->max_installed_maps;
+		spdst->backing_store	= spsrc.data->backing_stores;
+		spdst->save_unders	= spsrc.data->save_unders;
+		spdst->root_depth	= spsrc.data->root_depth;
+		spdst->ndepths		= spsrc.data->allowed_depths_len;
 		spdst->ext_data		= NULL;
 
-		if(!_XInitDepths(spdst, spsrc->depths))
+		spdst->depths = _XInitDepths(SCREENallowed_depths(spsrc.data));
+		if(!spdst->depths)
 			return 0;
 
-		spdst->root_visual = _XVIDtoVisual(dpy, spsrc->data->root_visual.id);
+		spdst->root_visual = _XVIDtoVisual(dpy, spsrc.data->root_visual.id);
 
 		/* Set up other stuff clients are always going to use. */
 		spdst->default_gc = XCreateGC(dpy, spdst->root, GCForeground|GCBackground, &values);
@@ -212,20 +205,9 @@ Display *XOpenDisplay (register const char *display)
 
 	_XInitDefaultDisplay();
 
-	/*
-	 * If the display specifier string supplied as an argument to this 
-	 * routine is NULL or a pointer to NULL, read the DISPLAY variable.
-	 */
-	if (display == NULL || *display == '\0') {
-		if ((display_name = getenv("DISPLAY")) == NULL) {
-			/* Oops! No DISPLAY environment variable - error. */
-			return(NULL);
-		}
-	}
-	else {
-		/* Display is non-NULL, copy the pointer */
-		display_name = (char *)display;
-	}
+	display_name = XDisplayName(display);
+	if(display_name[0] == '\0')
+		return NULL;
 
 	/* Attempt to allocate a display structure. Return NULL if allocation
 	 * fails. */
@@ -268,8 +250,6 @@ Display *XOpenDisplay (register const char *display)
 	dpy->resource_mask	= c->setup->resource_id_mask;
 	dpy->motion_buffer	= c->setup->motion_buffer_size;
 	dpy->max_request_size	= c->setup->maximum_request_length;
-	dpy->nscreens		= c->setup->roots_len;
-	dpy->nformats		= c->setup->pixmap_formats_len;
 	dpy->byte_order		= c->setup->image_byte_order;
 	dpy->bitmap_bit_order   = c->setup->bitmap_format_bit_order;
 	dpy->bitmap_unit	= c->setup->bitmap_format_scanline_unit;
@@ -284,11 +264,13 @@ Display *XOpenDisplay (register const char *display)
 	}
 	dpy->resource_max = (dpy->resource_mask >> dpy->resource_shift) - 5;
 
-	dpy->vendor = Xmalloc(c->setup->vendor_len + 1);
-	memcpy(dpy->vendor, c->vendor, c->setup->vendor_len);
-	dpy->vendor[c->setup->vendor_len] = '\0';
+	dpy->vendor = Xmalloc(XCBConnSetupSuccessRepvendorLength(c->setup) + 1);
+	memcpy(dpy->vendor, XCBConnSetupSuccessRepvendor(c->setup), XCBConnSetupSuccessRepvendorLength(c->setup));
+	dpy->vendor[XCBConnSetupSuccessRepvendorLength(c->setup)] = '\0';
 
-	if(!_XInitPixmapFormats(dpy) || !_XInitScreens(dpy))
+	if(!_XInitPixmapFormats(dpy))
+		goto error;
+	if(!_XInitScreens(dpy, XCBConnSetupSuccessReproots(c->setup)))
 		goto error;
 
 	/* get the resource manager database off the root window. */
