@@ -83,25 +83,6 @@ void XCBIOSetReader(XCBIOHandle *h, XCBIOCallback reader, void *readerdata)
     h->readerdata = readerdata;
 }
 
-void *XCBAllocOut(XCBIOHandle *c, int size)
-{
-    void *out;
-    if(c->n_outvec || c->n_outqueue + size > sizeof(c->outqueue))
-    {
-        int ret = XCBFlushLocked(c);
-        if(ret <= 0)
-        {
-            fputs("XCB error: flush failed in XCBAllocOut\n", stderr);
-            abort();
-        }
-    }
-
-    out = c->outqueue + c->n_outqueue;
-    c->n_outqueue += size;
-    assert(c->n_outqueue <= sizeof(c->outqueue));
-    return out;
-}
-
 static int XCBWriteBuffer(XCBIOHandle *c)
 {
     int i, n;

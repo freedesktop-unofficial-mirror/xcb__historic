@@ -50,7 +50,7 @@ typedef struct XCBGenericError {
 } XCBGenericError;
 
 typedef struct XCBVoidCookie {
-    int seqnum;
+    unsigned int seqnum;
 } XCBVoidCookie;
 
 divert(-1)
@@ -104,9 +104,9 @@ typedef struct XCBConnection {
 int XCBOnes(unsigned long mask);
 CARD32 XCBGenerateID(XCBConnection *c);
 CARD32 XCBMaximumRequestLength(XCBConnection *c);
-void XCBAddReplyData(XCBConnection *c, int seqnum);
 void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
 unsigned int XCBGetLastSeqnumRead(XCBConnection *c);
+int XCBSendRequest(XCBConnection *c, unsigned int *seqnum, int isvoid, struct iovec *vector, size_t count);
 void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 int XCBFlush(XCBConnection *c);

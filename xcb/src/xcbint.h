@@ -9,7 +9,7 @@
 
 /* xcb_conn.c */
 
-int XCBLockWrite(XCBConnection *c, struct iovec *vector, size_t count);
+int XCBAddReplyData(XCBConnection *c, int seqnum);
 
 
 /* xcb_io.c */
@@ -23,8 +23,6 @@ typedef int (*XCBIOCallback)(void *data, XCBIOHandle *h);
 
 XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked);
 void XCBIOSetReader(XCBIOHandle *h, XCBIOCallback reader, void *readerdata);
-
-void *XCBAllocOut(XCBIOHandle *c, int size);
 
 int XCBFillBuffer(XCBIOHandle *h);
 int XCBWait(XCBIOHandle *c, const int should_write);

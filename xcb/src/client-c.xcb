@@ -188,7 +188,7 @@ dnl -- Diversions used internally
 
 dnl List of parameters in a REQUEST
 define(`PARMDIV', ALLOCDIV)
-dnl Structure assignment code for binding out->* in REQUEST
+dnl Structure assignment code for binding out.* in REQUEST
 define(`ASSNDIV', ALLOCDIV)
 dnl Variable-length list construction code in REQUEST
 define(`LISTDIV', ALLOCDIV)
@@ -261,10 +261,9 @@ dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
 dnl request.
 dnl LISTPARAM(element type, list name, length expression)
-define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)
+define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)dnl
 TAB()parts[PARTQTY].iov_base = (caddr_t) `$2';
 TAB()parts[PARTQTY].iov_len = (`$3')ifelse(`$1', void, , ` * sizeof(`$1')');
-TAB()out->length += (parts[PARTQTY].iov_len + 3) >> 2;
 POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
 
 dnl Defines a field which should be filled in with the given expression.
@@ -274,9 +273,9 @@ dnl EXPRFIELD(field type, field name, expression)
 define(`EXPRFIELD', `FIELD(`$1', `$2')
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
-divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
-TAB()out->`$2' = `$2';
-ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+divert(ASSNDIV)dnl
+TAB()out.`$2' = `$2';
+POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Defines a parameter with no associated field. The name can be used in
 dnl expressions.
@@ -287,9 +286,9 @@ dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
 define(`PARAM', `FIELD($1, `$2')
 PUSHDIV(PARMDIV), $1 `$2'`'dnl
-divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
-TAB()out->`$2' = `$2';
-ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
+divert(ASSNDIV)dnl
+TAB()out.`$2' = `$2';
+POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Sets the major number for all instances of this request to the given code.
@@ -305,42 +304,23 @@ divert(ASSNDIV)dnl
 dnl TODO: better error handling here, please!
 TAB()assert(extension && extension->present);
 
-TAB()out->major_opcode = major_opcode;
-TAB()out->minor_opcode = minor_opcode;
+TAB()out.major_opcode = major_opcode;
+TAB()out.minor_opcode = minor_opcode;
 POPDIV()
     ifelse(FIELDQTY, 2, `LENGTHFIELD()')
 ', `
     FIELD(CARD8, `major_opcode')
 PUSHDIV(VARDIV)dnl
 TAB()const CARD8 major_opcode = `$1';
-divert(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
-TAB()out->major_opcode = major_opcode;
-ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()
+divert(ASSNDIV)dnl
+TAB()out.major_opcode = major_opcode;
+POPDIV()
 ')')
 
 
-dnl Form of a request function with marshaling:
-dnl if !last || last->major_opcode != major_opcode
-dnl    do not marshal
-dnl if defined(EXTENSION) && last->minor_opcode != minor_opcode
-dnl    do not marshal
-dnl foreach i in $@: if last->i != i
-dnl    do not marshal
-dnl if !marshaling
-dnl    out = alloc out buffer
-dnl    set all fields in out
-dnl else
-dnl    out = last
-dnl set up parts array, update out->length
-dnl write parts
-dnl MARSHAL(param name ...)
-define(`MARSHAL', `
-define(`MARSHALABLE')
-ifelse($1, , , `
-    PUSHDIV(MARSHALDIV) || out->`$1' != `$1'POPDIV()
-    MARSHAL(shift($@))
-')
-')
+dnl Declare that this request is permitted to be marshaled.
+dnl MARSHAL()
+define(`MARSHAL', `define(`MARSHALABLE')')
 
 
 dnl REPLY(type, name)
@@ -404,7 +384,6 @@ pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
 FUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
 `XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericError **e', `
-    XCBREPTRACER("$1");
     return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
 ')popdef(`NEXTFIELD')')
 
@@ -415,43 +394,20 @@ dnl REQUESTFUNCTION(return type, request name, parameters)
 define(`REQUESTFUNCTION',`dnl
 ifelse($1, Void, `dnl', `COOKIETYPE($1)
 _H')
-pushdef(`PARTQTY', 0)pushdef(`PARAMQTY', 0)dnl
+pushdef(`PARTQTY', 1)pushdef(`PARAMQTY', 0)dnl
 PACKETSTRUCT(`$2', `Req', `$3')
 FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
+    struct iovec parts[PARTQTY];
     XCB`$1'Cookie ret;
-    XCB`$2'Req *out;
+    XCB`$2'Req out;
 undivert(VARDIV)`'dnl
-ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
-
-    pthread_mutex_lock(&c->locked);
-ifdef(`MARSHALABLE', `dnl
-    out = (XCB`$2'Req *) c->last_request;
-    if(!out || out->major_opcode != major_opcode`'dnl
-ifdef(`EXTENSION', ` || out->minor_opcode != minor_opcode')`'dnl
-undivert(MARSHALDIV))
-    {INDENT()
-')dnl
-TAB()out = (XCB`$2'Req *) XCBAllocOut(c->handle, XCB_CEIL(sizeof(*out)));
-TAB()c->last_request = out;
-TAB()XCBREQTRACER("$2");
 
 undivert(ASSNDIV)`'dnl
 
-TAB()ret.seqnum = ++c->seqnum;
-ifelse($1, Void, `dnl', `    XCBAddReplyData(c, ret.seqnum);')
-ifdef(`MARSHALABLE', `dnl
-    }UNINDENT()
-    else
-    {
-        XCBMARSHALTRACER("$2");
-dnl XXX: it seems bad to return the same seqnum, but I see no other choice.
-        ret.seqnum = c->seqnum;
-    }
-')dnl
+    parts[0].iov_base = (caddr_t) &out;
+    parts[0].iov_len = sizeof(out);
 undivert(LISTDIV)`'dnl
-ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c->handle, parts, PARTQTY);')
-    pthread_mutex_unlock(&c->locked);
-
+    XCBSendRequest(c, &ret.seqnum, /* isvoid */ ifelse($1, Void, 1, 0), parts, /* partqty */ PARTQTY);
     return ret;
 ')popdef(`PARAMQTY')popdef(`PARTQTY')undefine(`MARSHALABLE')')
 
@@ -472,7 +428,7 @@ dnl field.
 dnl COOKIETYPE(name)
 define(`COOKIETYPE', `dnl
 TYPEDEF(`struct XCB`$1'Cookie {
-    int seqnum;
+    unsigned int seqnum;
 }', `XCB`$1'Cookie')')
 
 
@@ -508,10 +464,7 @@ define(`REPMIDDLE', `
 ')
 
 dnl REQMIDDLE()
-define(`REQMIDDLE', `FIELD(CARD16, `length')
-PUSHDIV(ASSNDIV)ifdef(`MARSHALABLE', `INDENT()')dnl
-TAB()out->length = XCB_CEIL(sizeof(*out)) >> 2;
-ifdef(`MARSHALABLE', `UNINDENT()')POPDIV()')
+define(`REQMIDDLE', `FIELD(CARD16, `length')')
 
 dnl for kind in (Event, Error, Rep, Req)
 dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)
@@ -561,7 +514,6 @@ HEADERONLY(`dnl
 ')SOURCEONLY(`dnl
 #include <assert.h>
 #include "xcb.h"
-#include "xcbint.h"
 ifelse($1, `xproto', `', $1, `xcb_types', `', `#include "$1.h"
 ')dnl
 ')')

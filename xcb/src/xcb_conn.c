@@ -53,11 +53,12 @@ CARD32 XCBMaximumRequestLength(XCBConnection *c)
     return c->maximum_request_length;
 }
 
-void XCBAddReplyData(XCBConnection *c, int seqnum)
+inline int XCBAddReplyData(XCBConnection *c, int seqnum)
 {
     XCBReplyData *data;
-    data = (XCBReplyData *) malloc((1) * sizeof(XCBReplyData));
-    assert(data);
+    data = malloc(sizeof(XCBReplyData));
+    if(!data)
+        return 0;
 
     data->pending = 0;
     data->error = 0;
@@ -65,6 +66,61 @@ void XCBAddReplyData(XCBConnection *c, int seqnum)
     data->data = 0;
 
     XCBListAppend(c->reply_data, data);
+    return 1;
+}
+
+int XCBSendRequest(XCBConnection *c, unsigned int *seqnum, int isvoid, struct iovec *vector, size_t count)
+{
+    int ret;
+    int i;
+    struct iovec prefix[2];
+    CARD16 shortlen = 0;
+    CARD32 longlen = 0;
+
+    assert(c != 0);
+    assert(seqnum != 0);
+    assert(vector != 0);
+    assert(count > 0);
+
+    /* put together the length field, possibly using BIGREQUESTS */
+    for(i = 0; i < count; ++i)
+        longlen += XCB_CEIL(vector[i].iov_len) >> 2;
+    if(longlen > c->maximum_request_length)
+        return 0; /* server can't take this; maybe need BIGREQUESTS? */
+    if(longlen <= c->setup->maximum_request_length)
+    {
+        /* we don't need BIGREQUESTS. */
+        shortlen = longlen;
+        longlen = 0;
+    }
+    /* set the length field. */
+    i = 0;
+    prefix[i].iov_base = vector[0].iov_base;
+    prefix[i].iov_len = sizeof(CARD32);
+    vector[0].iov_base = ((char *) vector[0].iov_base) + sizeof(CARD32);
+    vector[0].iov_len -= sizeof(CARD32);
+    ((CARD16 *) prefix[i].iov_base)[1] = shortlen;
+    ++i;
+    if(!shortlen)
+    {
+        prefix[i].iov_base = &longlen;
+        prefix[i].iov_len = sizeof(CARD32);
+        ++i;
+    }
+
+    /* get a sequence number and arrange for delivery. */
+    pthread_mutex_lock(&c->locked);
+    *seqnum = ++c->seqnum;
+
+    if(!isvoid)
+        XCBAddReplyData(c, *seqnum);
+
+    ret = XCBWrite(c->handle, prefix, i);
+    if(ret > 0)
+        ret = XCBWrite(c->handle, vector, count);
+    pthread_mutex_unlock(&c->locked);
+
+    return ret;
 }
 
 static void free_reply_data(XCBReplyData *data)
@@ -232,15 +288,6 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
     return ret;
 }
 
-int XCBLockWrite(XCBConnection *c, struct iovec *vector, size_t count)
-{
-    int ret;
-    pthread_mutex_lock(&c->locked);
-    ret = XCBWrite(c->handle, vector, count);
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
-
 int XCBFlush(XCBConnection *c)
 {
     int ret;
@@ -280,28 +327,31 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
 
     /* Write the connection setup request. */
     {
-        XCBConnSetupReq *out = XCBAllocOut(c->handle, XCB_CEIL(sizeof(XCBConnSetupReq)));
+        XCBConnSetupReq out;
+        struct iovec parts[3];
+        int count = 0;
         int endian = 0x01020304;
-	struct iovec parts[2];
 
         /* B = 0x42 = MSB first, l = 0x6c = LSB first */
         if(htonl(endian) == endian)
-            out->byte_order = 0x42;
+            out.byte_order = 0x42;
         else
-            out->byte_order = 0x6c;
-        out->protocol_major_version = X_PROTOCOL;
-        out->protocol_minor_version = X_PROTOCOL_REVISION;
-        out->authorization_protocol_name_len = 0;
-        out->authorization_protocol_data_len = 0;
+            out.byte_order = 0x6c;
+        out.protocol_major_version = X_PROTOCOL;
+        out.protocol_minor_version = X_PROTOCOL_REVISION;
+        out.authorization_protocol_name_len = 0;
+        out.authorization_protocol_data_len = 0;
+        parts[count].iov_len = sizeof(XCBConnSetupReq);
+        parts[count++].iov_base = (caddr_t) &out;
 
         if(auth_info)
         {
-            parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
-            parts[0].iov_base = auth_info->name;
-            parts[1].iov_len = out->authorization_protocol_data_len = auth_info->datalen;
-            parts[1].iov_base = auth_info->data;
-            XCBWrite(c->handle, parts, 2);
+            parts[count].iov_len = out.authorization_protocol_name_len = auth_info->namelen;
+            parts[count++].iov_base = auth_info->name;
+            parts[count].iov_len = out.authorization_protocol_data_len = auth_info->datalen;
+            parts[count++].iov_base = auth_info->data;
         }
+        XCBWrite(c->handle, parts, count);
     }
     if(XCBFlushLocked(c->handle) <= 0)
         goto error;
