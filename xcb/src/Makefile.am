@@ -27,7 +27,7 @@ xcbinclude_HEADERS = xcb.h xcbext.h xcbint.h client-c.xcb $(EXTHEADERS)
 TESTS = check_all
 noinst_PROGRAMS = check_all
 check_all_SOURCES = check_all.c check_suites.h check_public.c
-check_all_CFLAGS = @CHECK_CFLAGS@
+check_all_CFLAGS = $(XPROTO_CFLAGS) @CHECK_CFLAGS@
 check_all_LDADD = -lXCB @CHECK_LIBS@
 
 CFLAGS =
