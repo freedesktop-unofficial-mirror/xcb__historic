@@ -551,5 +551,7 @@ int main(int argc, char *argv[])
     free(version_reply);
     free(formats_reply);
 
+    XCBDisconnect(c);
+
     exit(0);
 }

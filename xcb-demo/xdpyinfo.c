@@ -36,6 +36,8 @@ int main(int argc, char **argv)
     list_screens();
     fputs("\n", stdout);
 
+    XCBDisconnect(c);
+
     exit(0);
 }
 
@@ -85,6 +87,7 @@ void list_extensions(void (*ext_printer)(int, char *))
 	fputs("\n" "    ", stdout);
 	ext_printer(XCBSTRNameLength(i.data), XCBSTRName(i.data));
     }
+    free(r);
 }
 
 void print_extension(int len, char *name)
