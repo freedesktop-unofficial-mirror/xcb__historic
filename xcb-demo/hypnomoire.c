@@ -10,7 +10,6 @@
 #include <stdlib.h> /* for free(3) */
 #include <unistd.h> /* for usleep(3) */
 #include <stdio.h>
-#include <assert.h>
 #include <pthread.h>
 
 #define LAG 0.3 /* lag angle for the follow line */
@@ -24,6 +23,7 @@
 static XCBConnection *c;
 static XCBSCREEN *root;
 static XCBGCONTEXT white, black;
+static int depth;
 
 #define WINS 8
 static struct {
@@ -37,6 +37,23 @@ static struct {
 void *run(void *param);
 void *event_thread(void *param);
 
+static void get_depth()
+{
+	XCBDRAWABLE drawable = { root->root };
+	XCBGetGeometryRep *geom;
+	geom = XCBGetGeometryReply(c, XCBGetGeometry(c, drawable), 0);
+	if(!geom)
+	{
+		perror("GetGeometry(root) failed");
+		abort();
+	}
+
+	depth = geom->depth;
+	fprintf(stderr, "Root 0x%lx: %dx%dx%d\n",
+		 root->root.xid, geom->width, geom->height, geom->depth);
+	free(geom);
+}
+
 int main()
 {
 	pthread_t thr;
@@ -48,6 +65,7 @@ int main()
 
 	c = XCBConnectBasic();
 	root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
+	get_depth();
 
 	rootwin.window = root->root;
 	white = XCBGCONTEXTNew(c);
@@ -106,15 +124,12 @@ void *run(void *param)
 	}
 
 	{
-		int depth;
 		CARD32 mask = XCBCWBackPixel | XCBCWEventMask | XCBCWDontPropagate;
 		CARD32 values[3];
 		XCBRECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
 		values[0] = root->white_pixel;
 		values[1] = ButtonReleaseMask | ExposureMask;
 		values[2] = ButtonPressMask;
-
-		depth = XCBSCREENAllowedDepths(root).data->depth;
 
 		XCBCreateWindow(c, depth, windows[idx].w.window, root->root,
 			/* x */ 0, /* y */ 0,
