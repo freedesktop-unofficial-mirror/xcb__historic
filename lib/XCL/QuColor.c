@@ -1,6 +1,11 @@
 #include "xclint.h"
 #include <assert.h>
 
+int XQueryColor(Display *dpy, Colormap cmap, XColor *def)
+{
+    return XQueryColors(dpy, cmap, def, 1);
+}
+
 int XQueryColors(Display *dpy, Colormap cmap, XColor *const defs, const int ncolors)
 {
     register int i;
