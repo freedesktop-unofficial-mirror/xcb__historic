@@ -394,7 +394,7 @@ Bool _XUnknownWireEvent(register Display *dpy, register XEvent *re, register xEv
 Bool _XWireToEvent(register Display *dpy, register XEvent *re, register xEvent *event)
 {
 	re->type = event->u.u.type & 0x7f;
-	((XAnyEvent *)re)->serial = _XSetLastRequestRead(dpy, (xGenericReply *)event);
+	((XAnyEvent *)re)->serial = 0;
 	((XAnyEvent *)re)->send_event = ((event->u.u.type & 0x80) != 0);
 	((XAnyEvent *)re)->display = dpy;
 	
@@ -753,41 +753,4 @@ Bool _XWireToEvent(register Display *dpy, register XEvent *re, register xEvent *
 		return(_XUnknownWireEvent(dpy, re, event));
 	}
 	return(True);
-}
-
-/* The hard part about this is that we only get 16 bits from a reply.
- * We have three values that will march along, with the following invariant:
- *      dpy->last_request_read <= rep->sequenceNumber <= dpy->request
- * We have to keep
- *      dpy->request - dpy->last_request_read < 2^16
- * or else we won't know for sure what value to use in events.  We do this
- * by forcing syncs when we get close. */
-unsigned long _XSetLastRequestRead(register Display *dpy, register xGenericReply *rep)
-{
-    register unsigned long      newseq, lastseq;
-
-    lastseq = dpy->last_request_read;
-    /*
-     * KeymapNotify has no sequence number, but is always guaranteed
-     * to immediately follow another event, except when generated via
-     * SendEvent (hmmm).
-     */
-    if ((rep->type & 0x7f) == KeymapNotify)
-        return(lastseq);
-
-    newseq = (lastseq & ~((unsigned long)0xffff)) | rep->sequenceNumber;
-
-    if (newseq < lastseq) {
-        newseq += 0x10000;
-        if (newseq > dpy->request) {
-            (void) fprintf (stderr, 
-            "XCL: sequence lost (0x%lx > 0x%lx) in reply type 0x%x!\n",
-                            newseq, dpy->request, 
-                            (unsigned int) rep->type);
-            newseq -= 0x10000;
-        }
-    }
-
-    dpy->last_request_read = newseq;
-    return(newseq);
 }

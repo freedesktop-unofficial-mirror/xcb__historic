@@ -202,7 +202,7 @@ int _XError(Display *dpy, register xError *rep)
     register _XAsyncHandler *async, *next;
     int rtn_val;
 
-    event.xerror.serial = _XSetLastRequestRead(dpy, (xGenericReply *)rep);
+    event.xerror.serial = 0;
 
     for (async = dpy->async_handlers; async; async = next) {
         next = async->next;
