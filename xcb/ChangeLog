@@ -1,3 +1,10 @@
+2004-07-24  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_auth.c:
+	Bart cleaned up some code that I made ugly, and
+	I'm fixing a warning that resulted from a static
+	function being created but not necessarily used.
+
 2004-07-07  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_xid.c:

@@ -171,10 +171,12 @@ static Xauth *get_authptr(struct sockaddr *sockname, unsigned int socknamelen)
                                  N_AUTH_PROTOS, authnames, authnamelens);
 }
 
+#ifdef HAS_AUTH_XA1
 static void do_append(char *buf, int *idxp, void *val, size_t valsize) {
     memcpy(buf + *idxp, val, valsize);
     *idxp += valsize;
 }
+#endif
      
 static int compute_auth(XCBAuthInfo *info, Xauth *authptr, struct sockaddr *sockname)
 {
