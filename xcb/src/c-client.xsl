@@ -51,10 +51,12 @@ authorization from the authors.
   <xsl:variable name="ucase-header"
                 select="translate($header,$lcase,$ucase)" />
 
+  <xsl:variable name="ext" select="/xcb/@extension-name" />
+
   <!-- Other protocol descriptions to search for types in, after checking the
        current protocol description. -->
   <xsl:variable name="search-path-rtf">
-    <xsl:for-each select="(/xcb | /xcb/extension)/import">
+    <xsl:for-each select="/xcb/import">
       <path><xsl:value-of select="concat($extension-path, ., '.xml')" /></path>
     </xsl:for-each>
     <xsl:choose>
@@ -82,22 +84,19 @@ authorization from the authors.
   <xsl:variable name="pass1" select="e:node-set($pass1-rtf)" />
   
   <xsl:template match="xcb" mode="pass1">
-    <xcb header="{@header}">
+    <xcb>
+      <xsl:copy-of select="@*" />
+      <xsl:if test="$ext">
+        <constant type="XCBExtension" name="XCB{$ext}Id"
+                  value='{{ "{@extension-xname}" }}' />
+        <function type="const XCBQueryExtensionRep *" name="XCB{$ext}Init">
+          <field type="XCBConnection *" name="c" />
+          <l>return XCBGetExtensionData(c, &amp;XCB<!--
+          --><xsl:value-of select="$ext" />Id);</l>
+        </function>
+      </xsl:if>
       <xsl:apply-templates mode="pass1" />
     </xcb>
-  </xsl:template>
-
-  <xsl:template match="extension" mode="pass1">
-    <extension xname="{@xname}" name="{@name}">
-      <constant type="XCBExtension" name="XCB{@name}Id"
-                value='{{ "{@xname}" }}' />
-      <function type="const XCBQueryExtensionRep *" name="XCB{@name}Init">
-        <field type="XCBConnection *" name="c" />
-        <l>return XCBGetExtensionData(c, &amp;XCB<!--
-        --><xsl:value-of select="@name" />Id);</l>
-      </function>
-      <xsl:apply-templates mode="pass1" />
-    </extension>
   </xsl:template>
 
   <!-- Modify names that conflict with C++ keywords by prefixing them with an
@@ -121,9 +120,7 @@ authorization from the authors.
   -->
   <xsl:template name="canonical-type-name">
     <xsl:param name="type" select="string(@type)" />
-    <xsl:for-each select="(/xcb|/xcb/extension
-                          |document($search-path)/xcb
-                          |document($search-path)/xcb/extension
+    <xsl:for-each select="(/xcb|document($search-path)/xcb
                           )/*[((self::struct or self::union
                                 or self::xidtype or self::enum
                                 or self::event or self::eventcopy
@@ -131,7 +128,7 @@ authorization from the authors.
                                and @name=$type)
                               or (self::typedef and @newname=$type)][1]">
       <xsl:text>XCB</xsl:text>
-      <xsl:call-template name="current-extension" />
+      <xsl:value-of select="/xcb/@extension-name" />
     </xsl:for-each>
     <xsl:value-of select="$type" />
   </xsl:template>
@@ -142,8 +139,7 @@ authorization from the authors.
     <xsl:text>XCB</xsl:text>
     <xsl:choose>
       <xsl:when test="reply">
-        <xsl:call-template name="current-extension" />
-        <xsl:value-of select="@name" />
+        <xsl:value-of select="concat($ext, @name)" />
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>Void</xsl:text>
@@ -153,10 +149,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="request" mode="pass1">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:if test="reply">
       <struct name="XCB{$ext}{@name}Cookie">
         <field type="unsigned int" name="sequence" />
@@ -207,10 +199,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="xidtype" mode="pass1">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <struct name="XCB{$ext}{@name}">
       <field type="CARD32" name="xid" />
     </struct>
@@ -225,10 +213,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="struct|union" mode="pass1">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <struct name="XCB{$ext}{@name}">
       <xsl:if test="self::union">
         <xsl:attribute name="kind">union</xsl:attribute>
@@ -240,10 +224,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="event|eventcopy|error|errorcopy" mode="pass1">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:variable name="suffix">
       <xsl:choose>
         <xsl:when test="self::event|self::eventcopy">
@@ -299,10 +279,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="enum" mode="pass1">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <enum name="XCB{$ext}{@name}">
       <xsl:for-each select="item">
         <item name="XCB{$ext}{../@name}{@name}">
@@ -467,12 +443,12 @@ authorization from the authors.
   <xsl:variable name="result" select="e:node-set($result-rtf)" />
 
   <xsl:template match="xcb" mode="pass2">
-    <xcb header="{@header}">
+    <xcb>
+      <xsl:copy-of select="@*" />
       <xsl:apply-templates mode="pass2"
-                           select="//constant|//enum|//struct
-                                   |//typedef|//iterator" />
+                           select="constant|enum|struct|typedef|iterator" />
       <xsl:apply-templates mode="pass2"
-                           select="//function|//iterator-functions" />
+                           select="function|iterator-functions" />
     </xcb>
   </xsl:template>
 
@@ -507,12 +483,8 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="do-request" mode="pass2">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:variable name="struct"
-                  select="e:node-set($pass1//struct[@name=current()/@ref])" />
+                  select="$pass1/xcb/struct[@name=current()/@ref]" />
     <l>struct iovec xcb_parts[<!--
     --><xsl:value-of select="1+count($struct/list)" />];</l>
     <l><xsl:value-of select="../@type" /> ret;</l>
@@ -602,8 +574,7 @@ authorization from the authors.
     <xsl:variable name="ref" select="@ref" />
     <xsl:variable name="kind" select="@kind" />
     <xsl:variable name="struct"
-                  select="e:node-set($pass1
-                                     //struct[@name=concat($ref,$kind)])" />
+                  select="$pass1/xcb/struct[@name=concat($ref,$kind)]" />
     <xsl:variable name="nextfields-rtf">
       <nextfield>R + 1</nextfield>
       <xsl:for-each select="$struct/list[not(@fixed)]">
@@ -631,13 +602,12 @@ authorization from the authors.
         --><xsl:call-template name="capitalize" /><!--
       --></xsl:variable>
       <xsl:variable name="is-variable"
-                    select="$pass1//struct[@name=current()/@type]/list
-                            or ((document($search-path)/xcb
-                                |document($search-path)/xcb/extension
-                                )/struct[concat('XCB',
-                                                ancestor::extension/@name,
-                                                @name) = current()/@type]
-                                 /*[self::valueparam or self::list])" />
+                    select="$pass1/xcb/struct[@name=current()/@type]/list
+                            or document($search-path)/xcb
+                               /struct[concat('XCB',
+                                              ancestor::xcb/@extension-name,
+                                              @name) = current()/@type]
+                               /*[self::valueparam or self::list]" />
       <xsl:if test="not($is-variable)">
         <function type="{@type} *" name="{$ref}{$field-name}">
           <field type="{$ref}{$kind} *" name="R" />
@@ -797,7 +767,7 @@ authorization from the authors.
 #ifndef </xsl:text><xsl:value-of select="$guard" /><xsl:text>
 #define </xsl:text><xsl:value-of select="$guard" /><xsl:text>
 </xsl:text>
-<xsl:for-each select="($root/xcb | $root/xcb/extension)/import">
+<xsl:for-each select="$root/xcb/import">
 <xsl:text>#include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"
 </xsl:text>
 </xsl:for-each>
@@ -926,11 +896,6 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="function" mode="output">
-    <xsl:variable name="ext-retval"><!--
-      --><xsl:call-template name="current-extension" /><!--
-    --></xsl:variable>
-    <xsl:variable name="ext" select="string($ext-retval)" />
-
     <xsl:call-template name="type-and-name" />
     <xsl:text>(</xsl:text>
     <xsl:call-template name="list">
@@ -1042,12 +1007,5 @@ authorization from the authors.
         <xsl:value-of select="$separator" />
       </xsl:if>
     </xsl:for-each>
-  </xsl:template>
-
-  <!--
-    Helper function to output the name of the current extension, if any.
-  -->
-  <xsl:template name="current-extension">
-    <xsl:value-of select="string(ancestor-or-self::extension/@name)" />
   </xsl:template>
 </xsl:transform>

@@ -1,3 +1,9 @@
+2004-11-07  Josh Triplett  <josh@freedesktop.org>
+
+	* c-client.xsl:
+	Update XSLT to deal with change from extension element to
+	extension-name and extension-xname attributes on xcb element.
+
 2004-11-06  Josh Triplett  <josh@freedesktop.org>
 
 	* xcb.h:
@@ -16,7 +22,6 @@
 
 	* COPYING:
 	Remove non-applicable licenses from COPYING file.
-
 
 2004-11-06  Josh Triplett  <josh@freedesktop.org>
 
