@@ -1,7 +1,6 @@
-STARTHEADER
+XCBGEN(XCB_CONN)
+_H
 _H`'#include <pthread.h>
-_H`'#include <X11/X.h>
-_H`'#include <X11/Xproto.h>
 _H`'#include <sys/uio.h>
 _C`'#include <assert.h>
 _C`'#include <sys/types.h>
@@ -13,6 +12,11 @@ _C`'#include <stdio.h>
 _C`'#include <unistd.h>
 _C`'#include <stdlib.h>
 _C`'#include <errno.h>
+#define NEED_EVENTS
+#define NEED_REPLIES
+#define ANSICPP
+_H`'#include <X11/X.h>
+_H`'#include <X11/Xproto.h>
 _C
 _C`'#include "xcb_conn.h"
 
@@ -585,3 +589,5 @@ FUNCTION(`XCB_Connection *XCB_Connect_Basic', `', `
 
     return c;
 ')
+_H
+ENDXCBGEN

@@ -1,7 +1,7 @@
 #define TEST_GET_WINDOW_ATTRIBUTES
 #define TEST_GET_GEOMETRY
 #define TEST_QUERY_TREE
-#define TEST_THREADS
+#undef TEST_THREADS
 #define VERBOSE
 #undef SUPERVERBOSE
 
@@ -79,7 +79,8 @@ int main(int argc, char **argv)
     mask |= CWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XCB_CreateWindow(c, /* depth */ 16, window, c->roots[0].data->windowId,
+    XCB_CreateWindow(c, c->roots[0].depths[0].data->depth,
+	window, c->roots[0].data->windowId,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
         /* visual */ c->roots[0].data->rootVisualID, mask, values);

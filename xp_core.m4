@@ -1,4 +1,5 @@
-STARTHEADER
+XCBGEN(XP_CORE)
+_H
 _C`'#include <assert.h>
 _C`'#include <stdlib.h>
 _C`'#include <stdio.h> /* for perror */
@@ -9,12 +10,17 @@ _C`'#include "xp_core.h"
 _H
 _H`'typedef char CHAR2B[2];
 
+
+/* This function probably belongs here, even though it is
+ * the only non-request in the file. */
 FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
     XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
     xGetInputFocusReply *reply = XCB_GetInputFocus_Reply(c, cookie, e);
     free(reply);
     return (reply != 0);
 ')
+
+/* The requests, in major number order. */
 
 VOIDREQUEST(CreateWindow, `
     PARAM(CARD8, `depth')
@@ -129,7 +135,7 @@ VOIDREQUEST(SendEvent, `
     PARAM(BOOL, `propagate')
     PARAM(Window, `destination')
     PARAM(CARD32, `eventMask')
-    dnl FIXME: will fail under WORD64
+    dnl FIXME: may fail under WORD64
     PARAM(xEvent, `event')
 ')
 
@@ -267,8 +273,8 @@ REQUEST(ListFonts, `
     LISTPARAM(char, `pattern', `nbytes')
 ')
 
-dnl The ListFontsWithInfo request is not supported by XCB.
-dnl
+/* The ListFontsWithInfo request is not supported by XCB. */
+
 dnl TODO: SetFontPath
 dnl
 dnl FIXME: GetFontPath needs an iterator for the reply - a pointer won't do.
@@ -529,3 +535,5 @@ dnl FIXME: NoOperation should allow specifying payload length
 dnl but geez, malloc()ing a 262140 byte buffer just so I have something
 dnl to hand to write(2) seems silly...!
 VOIDREQUEST(NoOperation)
+_H
+ENDXCBGEN
