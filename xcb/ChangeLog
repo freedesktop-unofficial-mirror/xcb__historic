@@ -1,3 +1,8 @@
+2005-03-28  Vincent Torri  <torri@iecn.u-nancy.fr>
+
+	* doc/tutorial/index.html, doc/tutorial/xcb.css:
+	Add a tutorial
+
 2005-03-27  Jeremy Kolb  <jkolb@brandeis.edu>
 
 	* src/Makefile.am:
