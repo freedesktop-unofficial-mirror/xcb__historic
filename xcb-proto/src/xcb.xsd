@@ -116,11 +116,9 @@
 
   <!-- Type for a packet structure -->
   <xsd:complexType name="packet-struct">
-    <xsd:complexContent>
-      <xsd:extension base="struct">
-        <xsd:attribute name="number" type="xsd:integer" />
-      </xsd:extension>
-    </xsd:complexContent>
+    <xsd:group ref="fields" minOccurs="0" maxOccurs="unbounded" />
+    <xsd:attribute name="name" type="xsd:string" />
+    <xsd:attribute name="number" type="xsd:integer" />
   </xsd:complexType>
 
   <!-- Type for a packet structure copy -->
