@@ -21,18 +21,6 @@
   
   <!-- First pass: Store everything in a variable. -->
   <xsl:variable name="pass1-rtf">
-    <xsl:if test="not(function-available('e:node-set'))">
-      <xsl:message terminate="yes"><!--
-        -->Error: This stylesheet requires the EXSL node-set extension.<!--
-      --></xsl:message>
-    </xsl:if>
-
-    <xsl:if test="not($h) and not($c)">
-      <xsl:message terminate="yes"><!--
-        -->Error: Parameter "mode" must be "header" or "source".<!--
-      --></xsl:message>
-    </xsl:if>
-
     <xsl:apply-templates select="/" mode="pass1" />
   </xsl:variable>
   <xsl:variable name="pass1" select="e:node-set($pass1-rtf)" />
@@ -315,6 +303,18 @@
   </xsl:template>
 
   <xsl:template match="/">
+    <xsl:if test="not(function-available('e:node-set'))">
+      <xsl:message terminate="yes"><!--
+        -->Error: This stylesheet requires the EXSL node-set extension.<!--
+      --></xsl:message>
+    </xsl:if>
+
+    <xsl:if test="not($h) and not($c)">
+      <xsl:message terminate="yes"><!--
+        -->Error: Parameter "mode" must be "header" or "source".<!--
+      --></xsl:message>
+    </xsl:if>
+    
     <!-- Second pass: Process the variable. -->
     <xsl:apply-templates select="$pass1/*" mode="pass2" />
   </xsl:template>
