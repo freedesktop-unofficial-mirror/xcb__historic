@@ -11,8 +11,14 @@ See the file COPYING in this package for licensing information.
 
   <xsl:strip-space elements="*" />
 
-  <xsl:param name="mode" /> <!-- "header" or "source" -->
-  <xsl:param name="base-path" /> <!-- Path to the protocol descriptions. -->
+  <!-- "header" or "source" -->
+  <xsl:param name="mode" />
+
+  <!-- Path to the core protocol descriptions. -->
+  <xsl:param name="base-path" />
+
+  <!-- Path to the extension protocol descriptions. -->
+  <xsl:param name="extension-path" select="$base-path" />
 
   <xsl:variable name="h" select="$mode = 'header'" />
   <xsl:variable name="c" select="$mode = 'source'" />
@@ -28,7 +34,7 @@ See the file COPYING in this package for licensing information.
        current protocol description. -->
   <xsl:variable name="search-path-rtf">
     <xsl:for-each select="(/xcb | /xcb/extension)/import">
-      <path><xsl:value-of select="concat($base-path, ., '.xml')" /></path>
+      <path><xsl:value-of select="concat($extension-path, ., '.xml')" /></path>
     </xsl:for-each>
     <xsl:choose>
       <xsl:when test="$header='xproto'">
