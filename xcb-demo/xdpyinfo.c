@@ -1,5 +1,7 @@
 #include <X11/XCB/xcb.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 XCBConnection *c;
 
@@ -41,11 +43,11 @@ void print_setup()
 {
     printf("version number:    %d.%d", c->setup->protocol_major_version, c->setup->protocol_minor_version);
     fputs("\n" "vendor string:    ", stdout);
-    fwrite(XCBConnSetupSuccessRepvendor(c->setup), 1, XCBConnSetupSuccessRepvendorLength(c->setup), stdout);
-    printf("\n" "vendor release number:    %d", c->setup->release_number);
+    fwrite(XCBConnSetupSuccessRepVendor(c->setup), 1, XCBConnSetupSuccessRepVendorLength(c->setup), stdout);
+    printf("\n" "vendor release number:    %d", (int) c->setup->release_number);
     // "\n" "XFree86 version: %d.%d.%d.%d"
     printf("\n" "maximum request size:  %d bytes", c->setup->maximum_request_length * 4);
-    printf("\n" "motion buffer size:  %d", c->setup->motion_buffer_size);
+    printf("\n" "motion buffer size:  %d", (int)c->setup->motion_buffer_size);
     printf("\n" "bitmap unit, bit order, padding:    %d, %s, %d", c->setup->bitmap_format_scanline_unit, (c->setup->bitmap_format_bit_order == LSBFirst) ? "LSBFirst" : "MSBFirst", c->setup->bitmap_format_scanline_pad);
     printf("\n" "image byte order:    %s", (c->setup->image_byte_order == LSBFirst) ? "LSBFirst" : "MSBFirst");
 
@@ -56,8 +58,8 @@ void print_setup()
 
 void print_formats()
 {
-    int i = XCBConnSetupSuccessReppixmap_formatsLength(c->setup);
-    FORMAT *p = XCBConnSetupSuccessReppixmap_formats(c->setup);
+    int i = XCBConnSetupSuccessRepPixmapFormatsLength(c->setup);
+    FORMAT *p = XCBConnSetupSuccessRepPixmapFormats(c->setup);
     printf("\n" "number of supported pixmap formats:    %d", i);
     fputs("\n" "supported pixmap formats:", stdout);
     for(--i; i >= 0; --i, ++p)
@@ -76,12 +78,12 @@ void list_extensions(void (*ext_printer)(int, char *))
 	return;
     }
 
-    i = XCBListExtensionsnames(r);
+    i = XCBListExtensionsNames(r);
     printf("\n" "number of extensions:    %d", i.rem);
     for(; i.rem; STRNext(&i))
     {
 	fputs("\n" "    ", stdout);
-	ext_printer(STRnameLength(i.data), STRname(i.data));
+	ext_printer(STRNameLength(i.data), STRName(i.data));
     }
 }
 
@@ -130,7 +132,7 @@ void list_screens()
     SCREENIter i;
     int cur;
 
-    i = XCBConnSetupSuccessReproots(c->setup);
+    i = XCBConnSetupSuccessRepRoots(c->setup);
     printf("\n" "number of screens:    %d" "\n", i.rem);
     for(cur = 1; i.rem; SCREENNext(&i), ++cur)
     {
