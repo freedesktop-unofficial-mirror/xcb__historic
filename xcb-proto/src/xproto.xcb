@@ -424,7 +424,7 @@ REQUEST(QueryTree, `
     FIELD(WINDOW, `parent')
     FIELD(CARD16, `children_len')
     PAD(14)
-    ARRAYREPLY(WINDOW, `children', `R->children_len')
+    LISTFIELD(WINDOW, `children', `R->children_len')
 ')
 
 REQUEST(InternAtom, `
@@ -446,7 +446,7 @@ REQUEST(GetAtomName, `
     PAD(1)
     FIELD(CARD16, `name_len')
     PAD(22)
-    ARRAYREPLY(CARD8, `name', `R->name_len')
+    LISTFIELD(CARD8, `name', `R->name_len')
 ')
 
 VOIDREQUEST(ChangeProperty, `
@@ -482,7 +482,7 @@ REQUEST(GetProperty, `
     FIELD(CARD32, `bytes_after')
     FIELD(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(void, `value', `R->value_len')
+    LISTFIELD(void, `value', `R->value_len')
 ')
 
 REQUEST(ListProperties, `
@@ -493,7 +493,7 @@ REQUEST(ListProperties, `
     PAD(1)
     FIELD(CARD16, `atoms_len')
     PAD(22)
-    ARRAYREPLY(ATOM, `atoms', `R->atoms_len')
+    LISTFIELD(ATOM, `atoms', `R->atoms_len')
 ')
 
 VOIDREQUEST(SetSelectionOwner, `
@@ -660,7 +660,7 @@ REQUEST(GetMotionEvents, `
     PAD(1)
     FIELD(CARD32, `events_len')
     PAD(20)
-    ARRAYREPLY(TIMECOORD, `events', `R->events_len')
+    LISTFIELD(TIMECOORD, `events', `R->events_len')
 ')
 
 REQUEST(TranslateCoordinates, `
@@ -760,8 +760,8 @@ REQUEST(QueryFont, `
     FIELD(INT16, `font_ascent')
     FIELD(INT16, `font_descent')
     FIELD(CARD32, `char_infos_len')
-    ARRAYREPLY(FONTPROP, `properties', `R->properties_len')
-    ARRAYREPLY(CHARINFO, `char_infos', `R->char_infos_len')
+    LISTFIELD(FONTPROP, `properties', `R->properties_len')
+    LISTFIELD(CHARINFO, `char_infos', `R->char_infos_len')
 ')
 
 REQUEST(QueryTextExtents, `
@@ -1037,7 +1037,7 @@ REQUEST(GetImage, `
     FIELD(CARD8, `depth')
     FIELD(VISUALID, `visual')
     PAD(20)
-    ARRAYREPLY(BYTE, `data', `R->length * 4')
+    LISTFIELD(BYTE, `data', `R->length * 4')
 ')
 
 VOIDREQUEST(PolyText8, `
@@ -1123,7 +1123,7 @@ REQUEST(ListInstalledColormaps, `
     PAD(1)
     FIELD(CARD16, `cmaps_len')
     PAD(22)
-    ARRAYREPLY(COLORMAP, `cmaps', `R->cmaps_len')
+    LISTFIELD(COLORMAP, `cmaps', `R->cmaps_len')
 ')
 
 REQUEST(AllocColor, `
@@ -1170,8 +1170,8 @@ REQUEST(AllocColorCells, `
     FIELD(CARD16, `pixels_len')
     FIELD(CARD16, `masks_len')
     PAD(20)
-    ARRAYREPLY(CARD32, `pixels', `R->pixels_len')
-    ARRAYREPLY(CARD32, `masks', `R->masks_len')
+    LISTFIELD(CARD32, `pixels', `R->pixels_len')
+    LISTFIELD(CARD32, `masks', `R->masks_len')
 ')
 
 REQUEST(AllocColorPlanes, `
@@ -1190,7 +1190,7 @@ REQUEST(AllocColorPlanes, `
     FIELD(CARD32, `green_mask')
     FIELD(CARD32, `blue_mask')
     PAD(8)
-    ARRAYREPLY(CARD32, `pixels', `R->pixels_len')
+    LISTFIELD(CARD32, `pixels', `R->pixels_len')
 ')
 
 VOIDREQUEST(FreeColors, `
@@ -1246,7 +1246,7 @@ REQUEST(QueryColors, `
     PAD(1)
     FIELD(CARD16, `colors_len')
     PAD(22)
-    ARRAYREPLY(RGB, `colors', `R->colors_len')
+    LISTFIELD(RGB, `colors', `R->colors_len')
 ')
 
 REQUEST(LookupColor, `
@@ -1364,7 +1364,7 @@ REQUEST(GetKeyboardMapping, `
 ', `
     FIELD(BYTE, `keysyms_per_keycode')
     PAD(24)
-    ARRAYREPLY(KEYSYM, `keysyms', `R->length * 4')
+    LISTFIELD(KEYSYM, `keysyms', `R->length * 4')
 ')
 
 VOIDREQUEST(ChangeKeyboardControl, `
@@ -1496,7 +1496,7 @@ REQUEST(GetPointerMapping, `
 ', `
     FIELD(CARD8, `map_len')
     PAD(24)
-    ARRAYREPLY(CARD8, `map', `R->map_len')
+    LISTFIELD(CARD8, `map', `R->map_len')
 ')
 
 REQUEST(SetModifierMapping, `
@@ -1512,7 +1512,7 @@ REQUEST(GetModifierMapping, `
 ', `
     FIELD(CARD8, `keycodes_per_modifier')
     PAD(24)
-    ARRAYREPLY(KEYCODE, `keycodes', `R->keycodes_per_modifier * 8')
+    LISTFIELD(KEYCODE, `keycodes', `R->keycodes_per_modifier * 8')
 ')
 
 dnl FIXME: NoOperation should allow specifying payload length

@@ -31,7 +31,7 @@ REQUEST(GetXIDList, `
     PAD(1)
     FIELD(CARD32, `ids_len')
     PAD(20)
-    ARRAYREPLY(XID, `ids', `R->ids_len')
+    LISTFIELD(XID, `ids', `R->ids_len')
 ')
 
 POPDIV()

@@ -111,7 +111,7 @@ REQUEST(GetRectangles, `
 ', `
     FIELD(BYTE, `ordering')
     FIELD(CARD32, `rectangles_len')
-    ARRAYREPLY(RECTANGLE, `rectangles', `R->rectangles_len')
+    LISTFIELD(RECTANGLE, `rectangles', `R->rectangles_len')
 ')
 
 POPDIV()

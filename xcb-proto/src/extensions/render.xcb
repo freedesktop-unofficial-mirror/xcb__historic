@@ -215,7 +215,7 @@ REQUEST(`QueryPictFormats', `
     PAD(4)
     LISTFIELD(PICTFORMINFO, `formats', `R->num_formats')
     LISTFIELD(PICTSCREEN, `screens', `R->num_screens')
-    ARRAYREPLY(CARD32, `subpixels', `R->num_subpixel')
+    LISTFIELD(CARD32, `subpixels', `R->num_subpixel')
 ')
 
 dnl from version 0.7
