@@ -244,9 +244,11 @@
             <field type="BYTE" name="error_code" />
           </xsl:if>
           <xsl:apply-templates select="*" mode="field" />
-          <middle>
-            <field type="CARD16" name="sequence" />
-          </middle>
+          <xsl:if test="not(self::event and boolean(@no-sequence-number))">
+            <middle>
+              <field type="CARD16" name="sequence" />
+            </middle>
+          </xsl:if>
         </struct>
       </xsl:when>
       <xsl:when test="self::eventcopy|self::errorcopy">
