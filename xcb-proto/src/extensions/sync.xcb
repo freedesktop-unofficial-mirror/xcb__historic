@@ -62,7 +62,7 @@ ERROR(`Alarm', 1, `
     FIELD(CARD16, `minor_opcode')
     FIELD(CARD8, `major_opcode')
 ')
-    
+
 REQUEST(Initialize, `
     OPCODE(0)
 ', `
@@ -150,7 +150,7 @@ VOIDREQUEST(SetPriority, `
     PARAM(CARD32, `id')
     PARAM(INT32, `priority')
 ')
-    
+
 REQUEST(GetPriority, `
     OPCODE(13)
     PARAM(CARD32, `id')
@@ -176,7 +176,7 @@ EVENT(AlarmNotify, 1, `
     FIELD(INT64, `alarm_value')
     FIELD(TIMESTAMP, `timestamp')
 ')
-    
+
 
 POPDIV()
 ENDEXTENSION

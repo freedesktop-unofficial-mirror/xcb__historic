@@ -1210,7 +1210,7 @@ STRUCT(COLORITEM, `
     FIELD(BYTE, `flags')
     PAD(1)
 ')
-    
+
 VOIDREQUEST(StoreColors, `
     MARSHAL(cmap.xid)
     OPCODE(89)
