@@ -23,6 +23,7 @@ _H`'#define ANSICPP
 _H`'#include <X11/X.h>
 _H`'#include <X11/Xproto.h>
 
+_C`'#undef USENONBLOCKING
 _H`'#define XCB_PAD(E) ((4-((E)%4))%4)
 _H`'#define X_TCP_PORT 6000	/* add display number */
 _H
@@ -60,7 +61,8 @@ _H
 STRUCT(XCB_Connection, `
     FIELD(int, `fd')
     FIELD(pthread_mutex_t, `locked')
-    FIELD(int, `selecting')
+    FIELD(int, `reading')
+    FIELD(int, `writing')
 
     POINTERFIELD(XCB_Reply_Data, `reply_data_head')
     POINTERFIELD(XCB_Reply_Data, `reply_data_tail')
@@ -195,114 +197,84 @@ STATICFUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cu
     return;
 ')
 _C
-STATICFUNCTION(`int blocking_read', `int fd, void *buf, int nread',`
-    int count = nread;
-    while (count > 0) {
-	int n = read(fd, buf, count);
-	if(n == -1) {
-            if (errno == EAGAIN) {
-                n = 0;
-            } else {
-	        perror("blocking_read: read");
-	        abort();
-            }
-	}
-	count -= n;
-	buf += n;
-	if (count > 0 && n == 0) {
-            fd_set rfds;
-            FD_ZERO(&rfds);
-            FD_SET(fd, &rfds);
-	    n = select(fd + 1, &rfds, 0, 0, 0);
-	    if(n == -1) {
-		perror("blocking_read: select");
-		abort();
-	    }
-	}
+STATICFUNCTION(`int XCB_read_internal', `XCB_Connection *c, void *buf, int nread',`
+#ifdef USENONBLOCKING
+    int count = 0;
+    int n;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(c->fd, &rfds);
+    while(nread > 0)
+    {
+        n = read(c->fd, buf, nread);
+        if(n == -1)
+        {
+            if (errno != EAGAIN)
+                return -1;
+            n = 0;
+        }
+        if(n == 0)
+        {
+            if(select(c->fd + 1, &rfds, 0, 0, 0) == -1)
+                return -1;
+        }
+        nread -= n;
+        buf += n;
+        count += n;
     }
-    return nread;
+    return count;
+#else
+    return read(c->fd, buf, nread);
+#endif
+')
+_C
+STATICFUNCTION(`int XCB_write_internal', `XCB_Connection *c, void *buf, int nwrite',`
+#ifdef USENONBLOCKING
+    int count = 0;
+    int n;
+    fd_set wfds;
+    FD_ZERO(&wfds);
+    FD_SET(c->fd, &wfds);
+    while(nwrite > 0)
+    {
+        n = write(c->fd, buf, nwrite);
+        if(n == -1)
+        {
+            if (errno != EAGAIN)
+                return -1;
+            n = 0;
+        }
+        if(n == 0)
+        {
+            if(select(c->fd + 1, 0, &wfds, 0, 0) == -1)
+                return -1;
+        }
+        nwrite -= n;
+        buf += n;
+        count += n;
+    }
+    return count;
+#else
+    return write(c->fd, buf, nwrite);
+#endif
 ')
 _C
 _C`'#define XCB_SEQ_EARLIER(a, b) ((INT16) ((CARD16)a - (CARD16)b) < 0)
 _C`'typedef enum { WAIT_SEQNUM, WAIT_EVENT, WAIT_FLUSH } wait_cmd_t;
 _C
-STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const int prelocked, const int s, xError **e', `
+STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const int s, xError **e', `
     void *ret = 0;
     unsigned char *buf;
-    XCB_Reply_Data *cur = 0, *tmp, *rep;
     fd_set rfds, wfds;
-    int selret;
+    int should_read, selret;
 
-    if(e)
-        *e = 0;
-
-    if(!prelocked)
-        pthread_mutex_lock(&c->locked);
-
-    if(cmd == WAIT_SEQNUM)
-    {
-        cur = XCB_Find_Reply_Data(c, s);
-        if(!cur) /* error: nothing found to hand back */
-            goto done;
-
-        if(cur->pending) /* error: someone else is already waiting */
-            goto done;
-
-        if(!XCB_SEQ_EARLIER(c->recvd_seqnum, s))
-            goto extract_reply;
-
-        assert(cur->data == 0);
-
-        /* my reply not yet recvd */
-
-        if(c->selecting)
-        {
-            cur->pending = 1;
-            pthread_cond_wait(&cur->cond, &c->locked);
-            cur->pending = 0;
-
-            if(!XCB_SEQ_EARLIER(c->recvd_seqnum, s))
-                goto extract_reply;
-        }
-    }
-    else if(cmd == WAIT_EVENT)
-    {
-        if(c->event_data_head)
-            goto extract_reply;
-
-        /* my reply not yet recvd */
-
-        if(c->selecting)
-        {
-            c->event_pending = 1;
-            pthread_cond_wait(&c->event_cond, &c->locked);
-            c->event_pending = 0;
-
-            if(c->event_data_head)
-                goto extract_reply;
-        }
-    }
-    else if(cmd == WAIT_FLUSH)
-    {
-        if(!c->n_outqueue)
-            goto done;
-
-        /* my reply not yet recvd */
-
-        if(c->selecting)
-        {
-            c->flush_pending = 1;
-            pthread_cond_wait(&c->flush_cond, &c->locked);
-            c->flush_pending = 0;
-
-            if(!c->n_outqueue)
-                goto done;
-        }
-    }
+    /* If anyone gets here, somebody needs to be reading.
+     * Maybe it should be me, but only if it is nobody else. */
+    should_read = !c->reading;
+    if(should_read)
+        c->reading = 1;
 
     /* i am in charge */
-
-    c->selecting = 1;
 
     FD_ZERO(&rfds);
     FD_ZERO(&wfds);
@@ -310,8 +282,9 @@ ALLOC(unsigned char, buf, 32)
 
     while(1)
     {INDENT()
-        FD_SET(c->fd, &rfds);
-        // if(c->n_outqueue)
+        if(should_read)
+            FD_SET(c->fd, &rfds);
+        if(c->n_outqueue)
             FD_SET(c->fd, &wfds);
 
         pthread_mutex_unlock(&c->locked);
@@ -323,7 +296,8 @@ ALLOC(unsigned char, buf, 32)
 
         if(FD_ISSET(c->fd, &rfds))
         {INDENT()
-            assert(blocking_read(c->fd, buf, 32) == 32);
+            XCB_Reply_Data *rep;
+            assert(XCB_read_internal(c, buf, 32) == 32);
             if(!(buf[0] & ~1)) /* reply or error packet */
             {INDENT()
                 c->recvd_seqnum = ((xGenericReply *) buf)->sequenceNumber;
@@ -336,7 +310,7 @@ ALLOC(unsigned char, buf, 32)
                     {INDENT()
 REALLOC(unsigned char, buf, 32 + length * 4)
 
-                        assert(blocking_read(c->fd, buf + 32, length * 4) == length * 4);
+                        assert(XCB_read_internal(c, buf + 32, length * 4) == length * 4);
                     }UNINDENT()
                 }UNINDENT()
             }UNINDENT()
@@ -376,14 +350,7 @@ ALLOC(XCB_Event_Data, event, 1)
 
         if(FD_ISSET(c->fd, &wfds))
         {INDENT()
-            char *qp = c->outqueue;
-            int count = c->n_outqueue;
-            while (count) {
-              int n = write(c->fd, qp, count);
-              qp += n;
-              count -= n;
-              /* FIXME: this spins when n == 0 */
-            }
+            XCB_write_internal(c, c->outqueue, c->n_outqueue);
             c->n_outqueue = 0;
             if(c->n_outvec)
             {
@@ -402,88 +369,168 @@ ALLOC(XCB_Event_Data, event, 1)
         }UNINDENT()
     }UNINDENT()
 
-    /* my reply is recvd */
+    /* my work here is done */
 
-    c->selecting = 0;
+    if(should_read)
+        c->reading = 0;
 
-    /* note: if any threads are blocked after checking the selecting variable,
-     * I must wake up *exactly* one of them, because whichever ones I wake
-     * up will become selectors without checking whether that is OK. */
+    /* If I was a writer, I can safely wake up the next writer, since there
+     * clearly are not any other writers right now. In that case, if I was a
+     * reader, I should let the next writer be a reader too.
+     *
+     * If I was a writer but there are no writers waiting, I might not be
+     * able to wake anyone up, but I can always wake up a reader if I was a
+     * reader.
+     *
+     * If I was not a writer, it is not safe to wake up a writer, but I can
+     * wake up a reader. */
 
-    if(c->event_pending)
-        pthread_cond_signal(&c->event_cond);
-    else if(c->flush_pending)
+    if(cmd == WAIT_FLUSH && c->flush_pending)
         pthread_cond_signal(&c->flush_cond);
-    else
+    else if(should_read)
     {
-        if(cmd == WAIT_SEQNUM)
-            tmp = cur->next;
+        if(c->event_pending)
+            pthread_cond_signal(&c->event_cond);
         else
-            tmp = c->reply_data_head;
-
-        while(tmp)
         {
-            if(tmp->pending)
+            /* XXX: could start from cur->next if cmd == WAIT_SEQNUM, but this
+             * should be OK too. */
+            XCB_Reply_Data *tmp = c->reply_data_head;
+    
+            while(tmp)
             {
-                pthread_cond_signal(&tmp->cond);
-                break;
+                if(tmp->pending)
+                {
+                    pthread_cond_signal(&tmp->cond);
+                    break;
+                }
+                tmp = tmp->next;
             }
-            tmp = tmp->next;
         }
     }
 
-extract_reply:
-    if(cmd == WAIT_SEQNUM)
-    {
-        if(cur->error)
-        {INDENT()
-            if(!e)
-            {INDENT()
-                XCB_Event_Data *event;
-ALLOC(XCB_Event_Data, event, 1)
-
-                event->event = (XCB_Event *) cur->data;
-                XCB_Add_Event_Data(c, event);
-            }UNINDENT()
-            else
-                *e = (xError *) cur->data;
-        }UNINDENT()
-        else
-            ret = cur->data;
-
-        XCB_Remove_Reply_Data(c, s);
-        free(cur);
-    }
-    else if(cmd == WAIT_EVENT)
-    {
-        XCB_Event_Data *event = c->event_data_head;
-        ret = event->event;
-        c->event_data_head = event->next;
-        if(!c->event_data_head)
-            c->event_data_tail = 0;
-        free(event);
-    }
-
-done:
-    if(!prelocked)
-        pthread_mutex_unlock(&c->locked);
     return ret;
 ')
 
 FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
-    return XCB_Wait(c, WAIT_SEQNUM, 0, seqnum, e);
+    void *ret = 0;
+    XCB_Reply_Data *cur = 0;
+    if(e)
+        *e = 0;
+
+    pthread_mutex_lock(&c->locked);
+    cur = XCB_Find_Reply_Data(c, seqnum);
+    if(!cur) /* error: nothing found to hand back */
+        goto done;
+
+    /* FIXME: This test could be re-entered while another thread is in
+     * select() waiting for the same sequence number. Bad. */
+    if(cur->pending) /* error: someone else is already waiting */
+        goto done;
+
+    if(!XCB_SEQ_EARLIER(c->recvd_seqnum, seqnum))
+        goto extract_reply;
+
+    assert(cur->data == 0);
+
+    /* my reply not yet recvd */
+
+    if(c->reading)
+    {
+        ++cur->pending;
+        pthread_cond_wait(&cur->cond, &c->locked);
+        --cur->pending;
+
+        if(!XCB_SEQ_EARLIER(c->recvd_seqnum, seqnum))
+            goto extract_reply;
+    }
+
+    ret = XCB_Wait(c, WAIT_SEQNUM, seqnum, e);
+
+extract_reply:
+    if(cur->error)
+    {INDENT()
+        if(!e)
+        {INDENT()
+            XCB_Event_Data *event;
+ALLOC(XCB_Event_Data, event, 1)
+
+            event->event = (XCB_Event *) cur->data;
+            XCB_Add_Event_Data(c, event);
+        }UNINDENT()
+        else
+            *e = (xError *) cur->data;
+    }UNINDENT()
+    else
+        ret = cur->data;
+
+    XCB_Remove_Reply_Data(c, seqnum);
+    free(cur);
+
+done:
+    pthread_mutex_unlock(&c->locked);
+    return ret;
 ')
 _C
 FUNCTION(`XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
-    return (XCB_Event *) XCB_Wait(c, WAIT_EVENT, 0, 0, 0);
+    void *ret = 0;
+    XCB_Event_Data *event;
+    pthread_mutex_lock(&c->locked);
+    if(c->event_data_head)
+        goto extract_reply;
+
+    /* no event yet recvd */
+
+    if(c->reading)
+    {
+        ++c->event_pending;
+        pthread_cond_wait(&c->event_cond, &c->locked);
+        --c->event_pending;
+
+        if(c->event_data_head)
+            goto extract_reply;
+    }
+
+    ret = XCB_Wait(c, WAIT_EVENT, 0, 0);
+
+extract_reply:
+    event = c->event_data_head;
+    ret = event->event;
+    c->event_data_head = event->next;
+    if(!c->event_data_head)
+        c->event_data_tail = 0;
+    free(event);
+
+done:
+    pthread_mutex_unlock(&c->locked);
+    return (XCB_Event *) ret;
 ')
 _C
 FUNCTION(`void XCB_Flush', `XCB_Connection *c', `
-    XCB_Wait(c, WAIT_FLUSH, 0, 0, 0);
+    pthread_mutex_lock(&c->locked);
+    XCB_Flush_locked(c);
+    pthread_mutex_unlock(&c->locked);
 ')
 _C
 FUNCTION(`void XCB_Flush_locked', `XCB_Connection *c', `
-    XCB_Wait(c, WAIT_FLUSH, 1, 0, 0);
+    if(!c->n_outqueue)
+        return;
+
+    /* my request not yet flushed */
+
+    if(c->writing)
+    {
+        ++c->flush_pending;
+        pthread_cond_wait(&c->flush_cond, &c->locked);
+        --c->flush_pending;
+
+        if(!c->n_outqueue)
+            return;
+    }
+
+    c->writing = 1;
+    XCB_Wait(c, WAIT_FLUSH, 0, 0);
+    c->writing = 0;
 ')
 
 /* PRE: c is locked */
@@ -598,11 +645,14 @@ FUNCTION(`XCB_Connection *XCB_Connect', `int fd', `
 
 ALLOC(XCB_Connection, c, 1)
 
+#ifdef USENONBLOCKING
     if (fcntl(fd, F_SETFL, (long)O_NONBLOCK) == -1)
         return 0;
+#endif
     c->fd = fd;
     pthread_mutex_init(&c->locked, 0);
-    c->selecting = 0;
+    c->reading = 0;
+    c->writing = 0;
 
     c->reply_data_head = 0;
     c->reply_data_tail = 0;
@@ -639,13 +689,13 @@ ALLOC(XCB_Connection, c, 1)
     XCB_Flush(c);
 
     /* Read the server response */
-    assert(blocking_read(c->fd, &c->setup_prefix, SIZEOF(xConnSetupPrefix))
+    assert(XCB_read_internal(c, &c->setup_prefix, SIZEOF(xConnSetupPrefix))
       == SIZEOF(xConnSetupPrefix));
 
     clen += c->setup_prefix.length * 4 - SIZEOF(xConnSetup);
     c = (XCB_Connection *) realloc(c, clen);
     assert(c);
-    assert(blocking_read(c->fd, &c->setup, c->setup_prefix.length * 4)
+    assert(XCB_read_internal(c, &c->setup, c->setup_prefix.length * 4)
       == c->setup_prefix.length * 4);
 
     /* 0 = failed, 2 = authenticate, 1 = success */
