@@ -2,23 +2,27 @@ lib_LTLIBRARIES = libXCB.la
 
 M4FLAGS = $(XCBPROTO_CFLAGS)
 
+EXTENSIONS = \
+		extensions/shm.c extensions/shm.h \
+		extensions/shape.c extensions/shape.h \
+		extensions/render.c extensions/render.h \
+		extensions/dpms.c extensions/dpms.h
+
 COREPROTO = xcb.h xproto.c xcb_types.c
 
-xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb
+xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb \
+		extensions/shm.h extensions/shape.h \
+		extensions/render.h extensions/dpms.h
 
 AM_CFLAGS = $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
 libXCB_la_LIBADD = $(XCBPROTO_LIBS) $(XPROTO_LIBS) $(XAU_LIBS)
 libXCB_la_SOURCES = \
 		xcb_conn.c xcb_auth.c xcb_io.c \
 		xcb_list.c xcb_event.c \
-		$(COREPROTO) \
-		extensions/shm.c extensions/shm.h \
-		extensions/shape.c extensions/shape.h \
-		extensions/render.c extensions/render.h \
-		extensions/dpms.c extensions/dpms.h
+		$(COREPROTO) $(EXTENSIONS)
 
-BUILT_SOURCES = $(COREPROTO) $(libXCBext_la_SOURCES)
-CLEANFILES = $(COREPROTO) $(libXCBext_la_SOURCES)
+BUILT_SOURCES = $(COREPROTO) $(EXTENSIONS)
+CLEANFILES = $(COREPROTO) $(EXTENSIONS)
 clean-local:
 	rmdir extensions || true
 
