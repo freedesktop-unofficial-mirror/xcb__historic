@@ -1,5 +1,17 @@
 2004-08-13  Jamey Sharp  <jamey@minilop.net>
 
+	* configure.ac:
+	* src/Makefile.am:
+	* src/.cvsignore:
+	* src/check_all.c:
+	* src/check_suites.h:
+	* src/check_public.c:
+	Add the first unit tests for XCB. This adds a build
+	dependency on 'check'; I hope somebody will make it
+	more of a build recommendation.
+
+2004-08-13  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_conn.c:
 	Add a sanity check: assert() that _xcb_conn_wait
 	will not be re-entered within the same thread. This
