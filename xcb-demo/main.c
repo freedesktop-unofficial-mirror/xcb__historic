@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     mask |= XCBCWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XCBCreateWindow(c, XCBSCREENAllowedDepths(root).data->depth,
+    XCBCreateWindow(c, /* depth */ 0,
         window, root->root,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
