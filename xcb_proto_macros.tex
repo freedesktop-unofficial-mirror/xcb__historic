@@ -1,0 +1,282 @@
+%% LyX 1.1 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{verbose,letterpaper,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{babel}
+\setlength\parskip{\medskipamount}
+\setlength\parindent{0pt}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\providecommand{\LyX}{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\@}
+
+\makeatother
+\begin{document}
+
+\title{XCB Protocol Implementation Macro Language}
+
+
+\author{Jamey Sharp}
+
+\maketitle
+
+\section{Requests and Replies}
+
+
+\subsection{VOIDREQUEST}
+
+VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
+
+Creates a function named XCB\_<name> returning XCB\_void\_cookie and
+accepting whatever parameters are necessary to deliver the given PARAMs
+and FIELDs to the X server. Requests created with this macro do not
+expect a reply.
+
+
+\subsection{REQUEST}
+
+REQUEST(name, 0 or more PARAMs, 0 or more REPLYFIELDs)
+
+Creates a function named XCB\_<name> returning XCB\_<name>\_cookie
+and accepting whatever parameters are necessary to deliver the given
+PARAMs and FIELDs to the X server. Declares the struct XCB\_<name>\_cookie.
+Creates a function named XCB\_<name>\_Reply returning a pointer to
+x<name>Reply from Xproto.h which forces a cookie returned from XCB\_<name>,
+waiting for the response from the server if necessary. If any REPLYFIELDs
+are given, they must be quoted.
+
+
+\subsection{Request Parameters and Fields}
+
+These PARAM and FIELD macros may only appear within the second parameter
+to the REQUEST or VOIDREQUEST macros, and must always be quoted.
+
+VALUEPARAM and LISTPARAM macro calls must appear in the order specified
+by Appendix B (Protocol Encoding) of the X Window System Protocol
+specification. The other macros in this section may appear in any
+order, but it is recommended that all PARAMs be in the same order
+as given in the protocol specification, so that users of the library
+can compare XCB code with the protocol specification.
+
+
+\subsubsection{PARAM}
+
+PARAM(type, name)
+
+Defines a parameter with a field of the same type.
+
+
+\subsubsection{VALUEPARAM}
+
+VALUEPARAM(bitmask type, bitmask name, value array name)
+
+Defines a BITMASK/LISTofVALUE parameter pair. The bitmask type should
+probably be either CARD16 or CARD32, depending on the specified width
+of the bitmask. The value array must be given to the generated function
+in the order the X server expects.
+
+
+\subsubsection{LISTPARAM}
+
+LISTPARAM(element type, list name, length expression)
+
+Defines a LISTofFOO parameter. The length of the list may be given
+as any C expression and may reference any of the other fields of this
+request.
+
+
+\subsubsection{LOCALPARAM}
+
+LOCALPARAM(type, name)
+
+Defines a parameter with no associated field. The name can be used
+in expressions.
+
+
+\subsubsection{STRLENFIELD}
+
+STRLENFIELD(string name, field name)
+
+Defines a field which should be filled in with the length of a string
+parameter. The string parameter must be defined by a corresponding
+LISTPARAM(char, ...), and the field name is available for use in the
+expression of a LISTPARAM or EXPRFIELD.
+
+
+\subsubsection{EXPRFIELD}
+
+EXPRFIELD(field name, expression)
+
+Defines a field which should be filled in with the given expression.
+The field name is \textbf{not} available for use in further expressions.
+
+
+\subsection{REPLYFIELD}
+
+REPLYFIELD(field type, field name, opt length name)
+
+Generates a C pre-processor macro providing access to a variable-length
+portion of a reply. If another reply field follows, the length name
+must be provided. The length name is the name of a field in the fixed-length
+portion of the response which contains the number of elements in this
+section.
+
+
+\section{Utility Macros}
+
+
+\subsection{Header File Generation}
+
+
+\subsubsection{\_H and \_C}
+
+For code which should appear only in a header (.h) file or only in
+an implementation (.c) file, lines may be prefixed with the \_H and
+\_C macros, respectively.
+
+
+\subsubsection{XCBGEN and ENDXCBGEN}
+
+XCBGEN(header name)\\
+ENDXCBGEN()
+
+The first line (aside from comments) of any XCB protocol implementation
+should contain a call to the XCBGEN macro, and the last line should
+contain a call to the ENDXCBGEN macro. The header name should generally
+be the base name of the source file, with all lowercase letters capitalized,
+and all other characters converted to underscores ({}``\_''): for
+example, xcb\_conn.m4 uses XCB\_CONN here.
+
+
+\subsection{Indentation}
+
+
+\subsubsection{INDENT}
+
+INDENT()
+
+Move line indentation to the right 4 spaces.
+
+
+\subsubsection{UNINDENT}
+
+UNINDENT()
+
+Move line indentation to the left 4 spaces.
+
+
+\subsubsection{TAB}
+
+TAB()
+
+Indent current line appropriately by inserting spaces.
+
+
+\subsection{Functions}
+
+
+\subsubsection{FUNCTION}
+
+FUNCTION(return type and function name, params, body)
+
+Declares a C function, placing the appropriate prototype in the header
+file and the complete function in the implementation file.
+
+
+\subsubsection{STATICFUNCTION}
+
+STATICFUNCTION(return type and function name, params, body)
+
+Declares a static-scope C function. No prototype is placed in the
+header file, and the keyword static is applied to the function in
+the implementation file.
+
+
+\subsection{Memory Allocation}
+
+Note that there is no FREE macro; just call free().
+
+
+\subsubsection{ALLOC}
+
+ALLOC(type, result name, count)
+
+Allocate a block or array of storage with a given name.
+
+
+\subsubsection{REALLOC}
+
+REALLOC(type, result name, count)
+
+Reallocate a previously-allocated block or array of storage with a
+given name, resizing it for the new count.
+
+
+\subsection{Diversions}
+
+
+\subsubsection{PUSHDIV}
+
+PUSHDIV(diversion)
+
+Pushes the given diversion onto the diversion stack, switching to
+it in the process.
+
+
+\subsubsection{POPDIV}
+
+POPDIV()
+
+Pops the current diversion off the diversion stack, returning to the
+diversion which was in effect before the last PUSHDIV.
+
+
+\section{Structures and Unions}
+
+
+\subsection{STRUCT}
+
+STRUCT(name, 1 or more FIELDs)
+
+Typedefs a structure defined to contain the given fields so that it
+has the given name.
+
+
+\subsection{UNION}
+
+UNION(name, 1 or more FIELDs)
+
+Typedefs a union defined to contain the given fields so that it has
+the given name.
+
+
+\subsection{Field Declarations}
+
+These declarations may be used in either STRUCT or UNION definitions.
+
+
+\subsubsection{FIELD}
+
+FIELD(type, name)
+
+Declares a field of the given type with the given name.
+
+
+\subsubsection{ARRAYFIELD}
+
+ARRAYFIELD(type, name, quantity)
+
+Declares an array field with the given quantity of elements of the
+given type.
+
+
+\subsubsection{POINTERFIELD}
+
+POINTERFIELD(type, name)
+
+Declares a field with the given name which is a pointer to the given
+type.
+\end{document}
