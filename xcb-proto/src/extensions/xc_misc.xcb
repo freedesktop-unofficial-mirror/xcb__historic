@@ -1,0 +1,39 @@
+XCBGEN(xc_misc, `
+Copyright (C) 2004 Mikko Torni.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+')
+BEGINEXTENSION(`XC-MISC', XCMisc)
+PUSHDIV(-1)
+
+REQUEST(GetVersion, `
+    OPCODE(0)
+    PARAM(CARD16, `client_major_version')
+    PARAM(CARD16, `client_minor_version')
+', `
+    PAD(1)
+    REPLY(CARD16, `server_major_version')
+    REPLY(CARD16, `server_minor_version')
+')
+
+REQUEST(GetXIDRange, `
+    OPCODE(1)
+', `
+    PAD(1)
+    REPLY(XID, `start_id')
+    REPLY(CARD32, `count')
+')
+
+REQUEST(GetXIDList, `
+    OPCODE(2)
+    PARAM(CARD32, `count')
+', `
+    PAD(1)
+    REPLY(CARD32, `ids_len')
+    PAD(20)
+    ARRAYREPLY(XID, `ids', `R->ids_len')
+')
+
+POPDIV()
+ENDEXTENSION
+ENDXCBGEN
