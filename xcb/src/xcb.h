@@ -114,9 +114,6 @@ int XCBFlush(XCBConnection *c);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error);
 
-int XCBEventQueueLength(XCBConnection *c);
-void XCBEventQueueClear(XCBConnection *c);
-
 
 /* xcb_ext.c */
 

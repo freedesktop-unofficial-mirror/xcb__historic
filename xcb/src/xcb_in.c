@@ -173,22 +173,6 @@ XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error)
     return ret;
 }
 
-int XCBEventQueueLength(XCBConnection *c)
-{
-    int ret;
-    pthread_mutex_lock(&c->iolock);
-    ret = _xcb_in_events_length(c);
-    pthread_mutex_unlock(&c->iolock);
-    return ret;
-}
-
-void XCBEventQueueClear(XCBConnection *c)
-{
-    pthread_mutex_lock(&c->iolock);
-    _xcb_list_clear(c->in.events, free);
-    pthread_mutex_unlock(&c->iolock);
-}
-
 /* Private interface */
 
 int _xcb_in_init(_xcb_in *in)
