@@ -484,6 +484,9 @@ REQUEST(GetSelectionOwner, `
     OPCODE(23)
     PAD(1)
     PARAM(Atom, `selection')
+', `
+    PAD(1)
+    REPLY(Window, `owner')
 ')
 
 VOIDREQUEST(ConvertSelection, `
@@ -514,6 +517,8 @@ REQUEST(GrabPointer, `
     PARAM(Window, `confine_to')
     PARAM(Cursor, `cursor')
     PARAM(Time, `time')
+', `
+    REPLY(BYTE, `status')
 ')
 
 VOIDREQUEST(UngrabPointer, `
@@ -559,6 +564,8 @@ REQUEST(GrabKeyboard, `
     PARAM(Time, `time')
     PARAM(BYTE, `pointer_mode')
     PARAM(BYTE, `keyboard_mode')
+', `
+    REPLY(BYTE, `status')
 ')
 
 VOIDREQUEST(UngrabKeyboard, `
@@ -602,6 +609,15 @@ REQUEST(QueryPointer, `
     OPCODE(38)
     PAD(1)
     PARAM(Window, `window')
+', `
+    REPLY(BOOL, `same_screen')
+    REPLY(Window, `root')
+    REPLY(Window, `child')
+    REPLY(INT16, `root_x')
+    REPLY(INT16, `root_y')
+    REPLY(INT16, `win_x')
+    REPLY(INT16, `win_y')
+    REPLY(CARD16, `mask')
 ')
 
 REQUEST(GetMotionEvents, `
@@ -611,7 +627,10 @@ REQUEST(GetMotionEvents, `
     PARAM(Time, `start')
     PARAM(Time, `stop')
 ', `
-    ARRAYREPLY(xTimecoord, `events')
+    PAD(1)
+    REPLY(CARD32, `events_len')
+    PAD(20)
+    ARRAYREPLY(xTimecoord, `events', `events_len')
 ')
 
 REQUEST(TranslateCoordinates, `
@@ -650,10 +669,16 @@ VOIDREQUEST(SetInputFocus, `
 
 REQUEST(GetInputFocus, `
     OPCODE(43)
+', `
+    REPLY(CARD8, `revert_to')
+    REPLY(Window, `focus')
 ')
 
 REQUEST(QueryKeymap, `
     OPCODE(44)
+', `
+    PAD(1)
+    ARRAYFIELD(CARD8, `keys', `32')
 ')
 
 VOIDREQUEST(OpenFont, `
@@ -670,13 +695,43 @@ VOIDREQUEST(CloseFont, `
     PARAM(Font, `font')
 ')
 
+STRUCT(FONTPROP, `
+    FIELD(Atom, `name')
+    FIELD(CARD32, `value')
+')
+
+STRUCT(CHARINFO, `
+    FIELD(INT16, `left_side_bearing')
+    FIELD(INT16, `right_side_bearing')
+    FIELD(INT16, `character_width')
+    FIELD(INT16, `ascent')
+    FIELD(INT16, `descent')
+    FIELD(CARD16, `attributes')
+')
+
 REQUEST(QueryFont, `
     OPCODE(47)
     PAD(1)
     PARAM(Font, `font')
 ', `
-    ARRAYREPLY(xFontProp, `properties', `nFontProps')
-    ARRAYREPLY(xCharInfo, `char_infos')
+    PAD(1)
+    REPLY(CHARINFO, `min_bounds')
+    PAD(4)
+    REPLY(CHARINFO, `max_bounds')
+    PAD(4)
+    REPLY(CARD16, `min_char_or_byte2')
+    REPLY(CARD16, `max_char_or_byte2')
+    REPLY(CARD16, `default_char')
+    REPLY(CARD16, `properties_len')
+    REPLY(BYTE, `draw_direction')
+    REPLY(CARD8, `min_byte1')
+    REPLY(CARD8, `max_byte1')
+    REPLY(BOOL, `all_chars_exist')
+    REPLY(INT16, `font_ascent')
+    REPLY(INT16, `font_descent')
+    REPLY(CARD32, `char_infos_len')
+    ARRAYREPLY(FONTPROP, `properties', `properties_len')
+    ARRAYREPLY(CHARINFO, `char_infos', `char_infos_len')
 ')
 
 REQUEST(QueryTextExtents, `
@@ -685,6 +740,15 @@ REQUEST(QueryTextExtents, `
     PARAM(Font, `font')
     LOCALPARAM(CARD16, `string_len')
     LISTPARAM(CHAR2B, `string', `string_len')
+', `
+    REPLY(BYTE, `draw_direction')
+    REPLY(INT16, `font_ascent')
+    REPLY(INT16, `font_descent')
+    REPLY(INT16, `overall_ascent')
+    REPLY(INT16, `overall_descent')
+    REPLY(INT32, `overall_width')
+    REPLY(INT32, `overall_left')
+    REPLY(INT32, `overall_right')
 ')
 
 dnl FIXME: ListFonts needs an iterator for the reply - a pointer won't do.
@@ -694,6 +758,11 @@ REQUEST(ListFonts, `
     PARAM(CARD16, `max_names')
     EXPRFIELD(CARD16, `pattern_len', `strlen(pattern)')
     LISTPARAM(char, `pattern', `pattern_len')
+', `
+    PAD(1)
+    REPLY(CARD16, `names_len')
+    PAD(22)
+    dnl LISTREPLY(STR, names, ...)
 ')
 
 /* The ListFontsWithInfo request is not supported by XCB. */
@@ -709,6 +778,11 @@ VOIDREQUEST(SetFontPath, `
 dnl FIXME: GetFontPath needs an iterator for the reply - a pointer won't do.
 REQUEST(GetFontPath, `
     OPCODE(52)
+', `
+    PAD(1)
+    REPLY(CARD16, `path_len')
+    PAD(22)
+    dnl LISTREPLY(STR, path, ...)
 ')
 
 VOIDREQUEST(CreatePixmap, `
@@ -902,6 +976,7 @@ VOIDREQUEST(PutImage, `
     LISTPARAM(BYTE, `data', `data_len')
 ')
 
+dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
 REQUEST(GetImage, `
     OPCODE(73)
     PARAM(CARD8, `format')
@@ -911,7 +986,12 @@ REQUEST(GetImage, `
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
     PARAM(CARD32, `plane_mask')
-', `ARRAYREPLY(BYTE, `data')')
+', `
+    REPLY(CARD8, `depth')
+    REPLY(VisualID, `visual')
+    PAD(20)
+    ARRAYREPLY(BYTE, `data')
+')
 
 VOIDREQUEST(PolyText8, `
     OPCODE(74)
@@ -993,7 +1073,10 @@ REQUEST(ListInstalledColormaps, `
     PAD(1)
     PARAM(Window, `window')
 ', `
-    ARRAYREPLY(Colormap, `cmaps', `nColormaps')
+    PAD(1)
+    REPLY(CARD16, `cmaps_len')
+    PAD(22)
+    ARRAYREPLY(Colormap, `cmaps', `cmaps_len')
 ')
 
 REQUEST(AllocColor, `
@@ -1003,6 +1086,13 @@ REQUEST(AllocColor, `
     PARAM(CARD16, `red')
     PARAM(CARD16, `green')
     PARAM(CARD16, `blue')
+', `
+    PAD(1)
+    REPLY(CARD16, `red')
+    REPLY(CARD16, `green')
+    REPLY(CARD16, `blue')
+    PAD(2)
+    REPLY(CARD32, `pixel')
 ')
 
 REQUEST(AllocNamedColor, `
@@ -1011,6 +1101,15 @@ REQUEST(AllocNamedColor, `
     PARAM(Colormap, `cmap')
     EXPRFIELD(CARD16, `name_len', `strlen(name)')
     LISTPARAM(char, `name', `name_len')
+', `
+    PAD(1)
+    REPLY(CARD32, `pixel')
+    REPLY(CARD16, `exact_red')
+    REPLY(CARD16, `exact_green')
+    REPLY(CARD16, `exact_blue')
+    REPLY(CARD16, `visual_red')
+    REPLY(CARD16, `visual_green')
+    REPLY(CARD16, `visual_blue')
 ')
 
 REQUEST(AllocColorCells, `
@@ -1020,8 +1119,12 @@ REQUEST(AllocColorCells, `
     PARAM(CARD16, `colors')
     PARAM(CARD16, `planes')
 ', `
-    ARRAYREPLY(CARD32, `pixels', `nPixels')
-    ARRAYREPLY(CARD32, `masks', `nMasks')
+    PAD(1)
+    REPLY(CARD16, `pixels_len')
+    REPLY(CARD16, `mask_len')
+    PAD(20)
+    ARRAYREPLY(CARD32, `pixels', `pixels_len')
+    ARRAYREPLY(CARD32, `masks', `masks_len')
 ')
 
 REQUEST(AllocColorPlanes, `
@@ -1033,7 +1136,14 @@ REQUEST(AllocColorPlanes, `
     PARAM(CARD16, `greens')
     PARAM(CARD16, `blues')
 ', `
-    ARRAYREPLY(CARD32, `pixels', `nPixels')
+    PAD(1)
+    REPLY(CARD16, `pixels_len')
+    PAD(2)
+    REPLY(CARD32, `red_mask')
+    REPLY(CARD32, `green_mask')
+    REPLY(CARD32, `blue_mask')
+    PAD(8)
+    ARRAYREPLY(CARD32, `pixels', `pixels_len')
 ')
 
 VOIDREQUEST(FreeColors, `
@@ -1060,12 +1170,24 @@ VOIDREQUEST(StoreNamedColor, `
     LISTPARAM(char, `name', `name_len')
 ')
 
+STRUCT(RGB, `
+    FIELD(CARD16, `red')
+    FIELD(CARD16, `green')
+    FIELD(CARD16, `blue')
+    PAD(2)
+')
+
 REQUEST(QueryColors, `
     OPCODE(91)
     PAD(1)
     PARAM(Colormap, `cmap')
     LOCALPARAM(CARD16, `pixels_len')
     LISTPARAM(CARD32, `pixels', `pixels_len')
+', `
+    PAD(1)
+    REPLY(CARD16, `colors_len')
+    PAD(22)
+    ARRAYREPLY(RGB, `colors', `colors_len')
 ')
 
 REQUEST(LookupColor, `
@@ -1074,6 +1196,14 @@ REQUEST(LookupColor, `
     PARAM(Colormap, `cmap')
     EXPRFIELD(CARD16, `name_len', `strlen(name)')
     LISTPARAM(char, `name', `name_len')
+', `
+    PAD(1)
+    REPLY(CARD16, `exact_red')
+    REPLY(CARD16, `exact_green')
+    REPLY(CARD16, `exact_blue')
+    REPLY(CARD16, `visual_red')
+    REPLY(CARD16, `visual_green')
+    REPLY(CARD16, `visual_blue')
 ')
 
 VOIDREQUEST(CreateCursor, `
@@ -1132,6 +1262,10 @@ REQUEST(QueryBestSize, `
     PARAM(Drawable, `drawable')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
+', `
+    PAD(1)
+    REPLY(CARD16, `width')
+    REPLY(CARD16, `height')
 ')
 
 REQUEST(QueryExtension, `
@@ -1150,6 +1284,10 @@ REQUEST(QueryExtension, `
 dnl FIXME: ListExtensions needs an iterator for the reply - a pointer won't do.
 REQUEST(ListExtensions, `
     OPCODE(99)
+', `
+    REPLY(CARD8, `names_len')
+    PAD(24)
+    dnl LISTREPLY(STR, names, ...)
 ')
 
 VOIDREQUEST(ChangeKeyboardMapping, `
@@ -1160,11 +1298,16 @@ VOIDREQUEST(ChangeKeyboardMapping, `
     LISTPARAM(KeySym, `keysyms', `keycode_count * keysyms_per_keycode')
 ')
 
+dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
 REQUEST(GetKeyboardMapping, `
     OPCODE(101)
     PAD(1)
     PARAM(KeyCode, `first_keycode')
     PARAM(CARD8, `count')
+', `
+    REPLY(BYTE, `keysyms_per_keycode')
+    PAD(24)
+    ARRAYREPLY(Keysym, `keysyms')
 ')
 
 VOIDREQUEST(ChangeKeyboardControl, `
@@ -1175,6 +1318,15 @@ VOIDREQUEST(ChangeKeyboardControl, `
 
 REQUEST(GetKeyboardControl, `
     OPCODE(103)
+', `
+    REPLY(BYTE, `global_auto_repeat')
+    REPLY(CARD32, `led_mask')
+    REPLY(CARD8, `key_click_percent')
+    REPLY(CARD8, `bell_percent')
+    REPLY(CARD16, `bell_pitch')
+    REPLY(CARD16, `bell_duration')
+    PAD(2)
+    ARRAYFIELD(CARD8, `auto_repeats', `32')
 ')
 
 VOIDREQUEST(Bell, `
@@ -1194,6 +1346,11 @@ VOIDREQUEST(ChangePointerControl, `
 
 REQUEST(GetPointerControl, `
     OPCODE(106)
+', `
+    PAD(1)
+    REPLY(CARD16, `acceleration_numerator')
+    REPLY(CARD16, `acceleration_denominator')
+    REPLY(CARD16, `threshold')
 ')
 
 VOIDREQUEST(SetScreenSaver, `
@@ -1207,6 +1364,12 @@ VOIDREQUEST(SetScreenSaver, `
 
 REQUEST(GetScreenSaver, `
     OPCODE(108)
+', `
+    PAD(1)
+    REPLY(CARD16, `timeout')
+    REPLY(CARD16, `interval')
+    REPLY(BYTE, `prefer_blanking')
+    REPLY(BYTE, `allow_exposures')
 ')
 
 VOIDREQUEST(ChangeHosts, `
@@ -1218,6 +1381,7 @@ VOIDREQUEST(ChangeHosts, `
     LISTPARAM(char, `address', `address_len')
 ')
 
+dnl XXX: examine the HOST structure to decide if I need an iterator here
 REQUEST(ListHosts, `
     OPCODE(110)
 ')
@@ -1255,20 +1419,33 @@ REQUEST(SetPointerMapping, `
     OPCODE(116)
     PARAM(CARD8, `map_len')
     LISTPARAM(CARD8, `map', `map_len')
+', `
+    REPLY(BYTE, `status')
 ')
 
 REQUEST(GetPointerMapping, `
     OPCODE(117)
+', `
+    REPLY(CARD8, `map_len')
+    PAD(24)
+    ARRAYREPLY(CARD8, `map', `map_len')
 ')
 
 REQUEST(SetModifierMapping, `
     OPCODE(118)
     PARAM(CARD8, `keycodes_per_modifier')
-    LISTPARAM(KeyCode, `keycodes', `8 * keycodes_per_modifier')
+    LISTPARAM(KeyCode, `keycodes', `keycodes_per_modifier * 8')
+', `
+    REPLY(BYTE, `status')
 ')
 
+dnl FIXME: ARRAYREPLY length param needs to depend on reply length field.
 REQUEST(GetModifierMapping, `
     OPCODE(119)
+', `
+    REPLY(CARD8, `keycodes_per_modifier')
+    PAD(24)
+    ARRAYREPLY(KeyCode, `keycodes', `keycodes_per_modifier * 8')
 ')
 
 dnl FIXME: NoOperation should allow specifying payload length
