@@ -405,7 +405,7 @@ pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
 FUNCTION($1Rep `*XCB'EXTENSION`$1Reply',
 `XCBConnection *c,' $1Cookie `cookie, XCBGenericError **e', `
-    return (XCB`'EXTENSION`'$1`'Rep *) XCBWaitReply(c, cookie.sequence, e);
+    return (XCB`'EXTENSION`'$1`'Rep *) XCBWaitForReply(c, cookie.sequence, e);
 ')popdef(`NEXTFIELD')')
 
 

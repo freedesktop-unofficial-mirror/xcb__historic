@@ -1,5 +1,12 @@
 2004-09-30  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcbext.h:
+	* src/xcb_in.c:
+	* src/client-c.xcb:
+	Renamed XCBWaitReply to XCBWaitForReply for new API.
+
+2004-09-30  Jamey Sharp  <jamey@minilop.net>
+
 	* src/Makefile.am:
 	Fix build failure when compiling tests.
 

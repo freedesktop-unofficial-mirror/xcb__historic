@@ -51,7 +51,7 @@ static void wake_up_next_reader(XCBConnection *c)
 
 /* Public interface */
 
-void *XCBWaitReply(XCBConnection *c, unsigned int request, XCBGenericError **e)
+void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **e)
 {
     void *ret = 0;
     XCBReplyData *cur;

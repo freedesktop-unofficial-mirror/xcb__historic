@@ -26,7 +26,7 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
 
 /* xcb_in.c */
 
-void *XCBWaitReply(XCBConnection *c, unsigned int request, XCBGenericError **e);
+void *XCBWaitForReply(XCBConnection *c, unsigned int request, XCBGenericError **e);
 
 
 /* xcb_xid.c */
