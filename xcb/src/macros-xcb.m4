@@ -197,7 +197,7 @@ TAB()i.rem = (`$3');
 TAB()return i;
 ')
 
-define(`NEXTFIELD', `$1AfterIter(REQ`$2'((REQ *) R))')')
+define(`NEXTFIELD', `$1AfterIter(REQ`$2'((REQ`'KIND *) R))')')
 
 
 dnl Creates a function named XCB<name> returning XCBVoidCookie and
