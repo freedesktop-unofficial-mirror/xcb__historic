@@ -34,7 +34,6 @@
 
 #include "xcb.h"
 #include "xcbint.h"
-#include "extensions/bigreq.h"
 
 static int write_setup(XCBConnection *c, XCBAuthInfo *auth_info)
 {
@@ -114,22 +113,6 @@ static int read_setup(XCBConnection *c)
     return 1;
 }
 
-static int set_maximum_request_length(XCBConnection *c)
-{
-    const XCBQueryExtensionRep *ext;
-    c->maximum_request_length = c->setup->maximum_request_length;
-    ext = XCBBigRequestsInit(c);
-    if(!ext)
-        return 0;
-    if(ext->present)
-    {
-        XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
-        c->maximum_request_length = r->maximum_request_length;
-        free(r);
-    }
-    return 1;
-}
-
 /* Public interface */
 
 XCBConnSetupSuccessRep *XCBGetSetup(XCBConnection *c)
@@ -142,12 +125,6 @@ int XCBGetFileDescriptor(XCBConnection *c)
 {
     /* doesn't need locking because it's never written to. */
     return c->fd;
-}
-
-CARD32 XCBGetMaximumRequestLength(XCBConnection *c)
-{
-    /* doesn't need locking because it's never written to. */
-    return c->maximum_request_length;
 }
 
 XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
@@ -168,7 +145,6 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
         write_setup(c, auth_info) &&
         read_setup(c) &&
         _xcb_ext_init(c) &&
-        set_maximum_request_length(c) &&
         _xcb_xid_init(c)
         ))
     {

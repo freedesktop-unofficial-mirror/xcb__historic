@@ -107,6 +107,7 @@ int XCBGetAuthInfo(int fd, XCBAuthInfo *info);
 /* xcb_out.c */
 
 int XCBFlush(XCBConnection *c);
+CARD32 XCBGetMaximumRequestLength(XCBConnection *c);
 
 
 /* xcb_in.c */
@@ -130,7 +131,6 @@ void XCBPrefetchExtensionData(XCBConnection *c, XCBExtension *ext);
 
 XCBConnSetupSuccessRep *XCBGetSetup(XCBConnection *c);
 int XCBGetFileDescriptor(XCBConnection *c);
-CARD32 XCBGetMaximumRequestLength(XCBConnection *c);
 
 XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
 void XCBDisconnect(XCBConnection *c);

@@ -33,8 +33,28 @@
 #include "xcb.h"
 #include "xcbext.h"
 #include "xcbint.h"
+#include "extensions/bigreq.h"
 
 /* Public interface */
+
+CARD32 XCBGetMaximumRequestLength(XCBConnection *c)
+{
+    pthread_mutex_lock(&c->out.reqlenlock);
+    if(!c->out.maximum_request_length)
+    {
+        const XCBQueryExtensionRep *ext;
+        c->out.maximum_request_length = c->setup->maximum_request_length;
+        ext = XCBGetExtensionData(c, &XCBBigRequestsId);
+        if(ext && ext->present)
+        {
+            XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
+            c->out.maximum_request_length = r->maximum_request_length;
+            free(r);
+        }
+    }
+    pthread_mutex_unlock(&c->out.reqlenlock);
+    return c->out.maximum_request_length;
+}
 
 int XCBSendRequest(XCBConnection *c, unsigned int *request, struct iovec *vector, const XCBProtocolRequest *req)
 {
@@ -52,14 +72,19 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, struct iovec *vector
     /* put together the length field, possibly using BIGREQUESTS */
     for(i = 0; i < req->count; ++i)
         longlen += XCB_CEIL(vector[i].iov_len) >> 2;
-    if(longlen > c->maximum_request_length)
-        return 0; /* server can't take this; maybe need BIGREQUESTS? */
-    if(longlen <= c->setup->maximum_request_length)
+
+    if(longlen > c->setup->maximum_request_length)
+    {
+        if(longlen > XCBGetMaximumRequestLength(c))
+            return 0; /* server can't take this; maybe need BIGREQUESTS? */
+    }
+    else
     {
         /* we don't need BIGREQUESTS. */
         shortlen = longlen;
         longlen = 0;
     }
+
     /* set the length field. */
     i = 0;
     prefix[i].iov_base = vector[0].iov_base;
@@ -134,12 +159,17 @@ int _xcb_out_init(_xcb_out *out)
     out->request = 0;
     out->request_written = 0;
 
+    if(pthread_mutex_init(&out->reqlenlock, 0))
+        return 0;
+    out->maximum_request_length = 0;
+
     return 1;
 }
 
 void _xcb_out_destroy(_xcb_out *out)
 {
     pthread_cond_destroy(&out->cond);
+    pthread_mutex_destroy(&out->reqlenlock);
     free(out->vec);
 }
 

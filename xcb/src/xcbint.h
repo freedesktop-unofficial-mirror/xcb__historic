@@ -97,6 +97,9 @@ typedef struct _xcb_out {
     void *last_request;
     unsigned int request;
     unsigned int request_written;
+
+    pthread_mutex_t reqlenlock;
+    CARD32 maximum_request_length;
 } _xcb_out;
 
 int _xcb_out_init(_xcb_out *out);
@@ -166,7 +169,6 @@ struct XCBConnection {
     /* constant data */
     XCBConnSetupSuccessRep *setup;
     int fd;
-    CARD32 maximum_request_length;
 
     /* I/O data */
     pthread_mutex_t iolock;

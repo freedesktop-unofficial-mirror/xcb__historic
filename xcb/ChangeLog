@@ -1,5 +1,15 @@
 2005-03-31  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb.h, src/xcb_conn.c, src/xcb_out.c, src/xcbint.h:
+	Lazily check for BIG-REQUESTS support. The first call to
+	XCBGetMaximumRequestLength takes the two-round-trip penalty for
+	discovering BIG-REQUESTS support, and caches the result for
+	subsequent calls. Also XCBSendRequest is now careful to only ask
+	for the true maximum request length if the length from the
+	connection setup data isn't sufficient for the current request.
+
+2005-03-31  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_in.c:
 	Fix X error handling to, uh, not hang.
 
