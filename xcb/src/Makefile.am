@@ -13,6 +13,7 @@ EXTHEADERS = \
 		extensions/sync.h \
 		extensions/xc_misc.h \
 		extensions/xevie.h \
+		extensions/xf86dri.h \
 		extensions/xfixes.h
 EXTSOURCES = \
 		extensions/bigreq.c \
@@ -27,6 +28,7 @@ EXTSOURCES = \
 		extensions/sync.c \
 		extensions/xc_misc.c \
 		extensions/xevie.c \
+		extensions/xf86dri.c \
 		extensions/xfixes.c
 EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
