@@ -768,7 +768,7 @@ REQUEST(QueryTextExtents, `
     OPCODE(48)
     EXPRFIELD(BOOL, `odd_length', `string_len & 1')
     PARAM(FONTABLE, `font')
-    LOCALPARAM(CARD16, `string_len')
+    LOCALPARAM(CARD32, `string_len')
     LISTPARAM(CHAR2B, `string', `string_len')
 ', `
     REPLY(BYTE, `draw_direction')
@@ -803,7 +803,7 @@ VOIDREQUEST(SetFontPath, `
     OPCODE(51)
     PAD(1)
     PARAM(CARD16, `font_qty')
-    LOCALPARAM(CARD16, `path_len')
+    LOCALPARAM(CARD32, `path_len')
     LISTPARAM(char, `path', `path_len')
 ')
 
@@ -869,7 +869,7 @@ VOIDREQUEST(SetClipRectangles, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `clip_x_origin')
     PARAM(INT16, `clip_y_origin')
-    LOCALPARAM(CARD16, `rectangles_len')
+    LOCALPARAM(CARD32, `rectangles_len')
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
@@ -924,7 +924,7 @@ VOIDREQUEST(PolyPoint, `
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `points_len')
+    LOCALPARAM(CARD32, `points_len')
     LISTPARAM(POINT, `points', `points_len')
 ')
 
@@ -934,7 +934,7 @@ VOIDREQUEST(PolyLine, `
     PARAM(BYTE, `coordinate_mode')
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `points_len')
+    LOCALPARAM(CARD32, `points_len')
     LISTPARAM(POINT, `points', `points_len')
 ')
 
@@ -951,7 +951,7 @@ VOIDREQUEST(PolySegment, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `segments_len')
+    LOCALPARAM(CARD32, `segments_len')
     LISTPARAM(SEGMENT, `segments', `segments_len')
 ')
 
@@ -961,7 +961,7 @@ VOIDREQUEST(PolyRectangle, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `rectangles_len')
+    LOCALPARAM(CARD32, `rectangles_len')
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
@@ -973,7 +973,7 @@ VOIDREQUEST(PolyArc, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `arcs_len')
+    LOCALPARAM(CARD32, `arcs_len')
     LISTPARAM(ARC, `arcs', `arcs_len')
 ')
 
@@ -984,7 +984,7 @@ VOIDREQUEST(FillPoly, `
     PARAM(GCONTEXT, `gc')
     PARAM(CARD8, `shape')
     PARAM(CARD8, `coordinate_mode')
-    LOCALPARAM(CARD16, `points_len')
+    LOCALPARAM(CARD32, `points_len')
     LISTPARAM(POINT, `points', `points_len')
 ')
 
@@ -994,7 +994,7 @@ VOIDREQUEST(PolyFillRectangle, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `rectangles_len')
+    LOCALPARAM(CARD32, `rectangles_len')
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
@@ -1004,7 +1004,7 @@ VOIDREQUEST(PolyFillArc, `
     PAD(1)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
-    LOCALPARAM(CARD16, `arcs_len')
+    LOCALPARAM(CARD32, `arcs_len')
     LISTPARAM(ARC, `arcs', `arcs_len')
 ')
 
@@ -1019,7 +1019,7 @@ VOIDREQUEST(PutImage, `
     PARAM(INT16, `dst_y')
     PARAM(CARD8, `left_pad')
     PARAM(CARD8, `depth')
-    LOCALPARAM(CARD16, `data_len')
+    LOCALPARAM(CARD32, `data_len')
     LISTPARAM(BYTE, `data', `data_len')
 ')
 
@@ -1047,7 +1047,7 @@ VOIDREQUEST(PolyText8, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD16, `items_len')
+    LOCALPARAM(CARD32, `items_len')
     LISTPARAM(BYTE, `items', `items_len')
 ')
 
@@ -1058,7 +1058,7 @@ VOIDREQUEST(PolyText16, `
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `x')
     PARAM(INT16, `y')
-    LOCALPARAM(CARD16, `items_len')
+    LOCALPARAM(CARD32, `items_len')
     LISTPARAM(BYTE, `items', `items_len')
 ')
 
@@ -1198,7 +1198,7 @@ VOIDREQUEST(FreeColors, `
     PAD(1)
     PARAM(COLORMAP, `cmap')
     PARAM(CARD32, `plane_mask')
-    LOCALPARAM(CARD16, `pixels_len')
+    LOCALPARAM(CARD32, `pixels_len')
     LISTPARAM(CARD32, `pixels', `pixels_len')
 ')
 
@@ -1216,7 +1216,7 @@ VOIDREQUEST(StoreColors, `
     OPCODE(89)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    LOCALPARAM(CARD16, `items_len')
+    LOCALPARAM(CARD32, `items_len')
     LISTPARAM(COLORITEM, `items', `items_len')
 ')
 
@@ -1240,7 +1240,7 @@ REQUEST(QueryColors, `
     OPCODE(91)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    LOCALPARAM(CARD16, `pixels_len')
+    LOCALPARAM(CARD32, `pixels_len')
     LISTPARAM(CARD32, `pixels', `pixels_len')
 ', `
     PAD(1)
