@@ -5,6 +5,7 @@
 #include <sys/un.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "xcb.h"
 #include "xcbint.h"
@@ -91,26 +92,38 @@ Wrap (
 
 #endif
 
-XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
+static size_t memdup(char **dst, void *src, size_t len)
 {
-    /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
-       xtrans/Xtransutils.c */
-    char sockbuf[sizeof(struct sockaddr) + MAXPATHLEN];
-    unsigned int socknamelen = sizeof(sockbuf);   /* need extra space */
-    struct sockaddr *sockname = (struct sockaddr *) &sockbuf;
+    if(len)
+	*dst = malloc(len);
+    else
+	*dst = 0;
+    if(!*dst)
+	return 0;
+    memcpy(*dst, src, len);
+    return len;
+}
+
+static int authname_match(enum auth_protos kind, char *name, int namelen)
+{
+    if(strlen(authnames[kind]) != namelen)
+	return 0;
+    if(memcmp(authnames[kind], name, namelen))
+	return 0;
+    return 1;
+}
+
+static Xauth *get_authptr(struct sockaddr *sockname, unsigned int socknamelen)
+{
     char *addr = 0;
     int addrlen = 0;
     unsigned short family;
     char hostnamebuf[256];   /* big enough for max hostname */
     char dispbuf[40];   /* big enough to hold more than 2^64 base 10 */
     char *display;
-    Xauth *authptr = 0;
     int authnamelens[N_AUTH_PROTOS];
     int i;
 
-
-    if (getpeername(fd, (struct sockaddr *) sockname, &socknamelen) == -1)
-        return 0;  /* can only authenticate sockets */
     family = FamilyLocal; /* 256 */
     switch (sockname->sa_family) {
     case AF_INET:
@@ -119,10 +132,9 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
 	     assert(sizeof(*si) == socknamelen);
 	     addr = (char *) &si->sin_addr;
 	     addrlen = 4;
-	     family = FamilyInternet; /* 0 */
-	     if (ntohl(si->sin_addr.s_addr) == 0x7f000001)
-		 family = FamilyLocal; /* 256 */
-	     (void) sprintf(dispbuf, "%d", ntohs(si->sin_port) - X_TCP_PORT);
+	     if (ntohl(si->sin_addr.s_addr) != 0x7f000001)
+		 family = FamilyInternet; /* 0 */
+	     snprintf(dispbuf, sizeof(dispbuf), "%d", ntohs(si->sin_port) - X_TCP_PORT);
 	     display = dispbuf;
         }
 	break;
@@ -145,80 +157,107 @@ XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
         addr = hostnamebuf;
         addrlen = strlen(addr);
     }
+
     for (i = 0; i < N_AUTH_PROTOS; i++)
 	authnamelens[i] = strlen(authnames[i]);
-    authptr = XauGetBestAuthByAddr (family,
-                                    (unsigned short) addrlen, addr,
-                                    (unsigned short) strlen(display), display,
-                                    N_AUTH_PROTOS, authnames, authnamelens);
-    if (authptr == 0)
-        return 0;   /* cannot find good auth data */
-    if (strlen(authnames[AUTH_MC1]) == authptr->name_length &&
-        !memcmp(authnames[AUTH_MC1], authptr->name, authptr->name_length)) {
-        (void)memcpy(info->name,
-                     authptr->name,
-                     authptr->name_length);
-        info->namelen = authptr->name_length;
-        (void)memcpy(info->data,
-                     authptr->data,
-                     authptr->data_length);
-        info->datalen = authptr->data_length;
-        XauDisposeAuth(authptr);
-        return info;
+    return XauGetBestAuthByAddr (family,
+                                 (unsigned short) addrlen, addr,
+                                 (unsigned short) strlen(display), display,
+                                 N_AUTH_PROTOS, authnames, authnamelens);
+}
+
+static int compute_auth(XCBAuthInfo *info, Xauth *authptr, struct sockaddr *sockname)
+{
+    if (authname_match(AUTH_MC1, authptr->name, authptr->name_length)) {
+        info->datalen = memdup(&info->data, authptr->data, authptr->data_length);
+        if(!info->datalen)
+            return 0;
+        return 1;
     }
 #ifdef HAS_AUTH_XA1
-    if (strlen(authnames[AUTH_MC1]) == authptr->name_length &&
-        !memcmp(authnames[AUTH_MC1], authptr->name, authptr->name_length)) {
-        int j;
-        long now;
+#define APPEND(buf,idx,val) do { \
+    memcpy((buf) + (idx), &(val), sizeof(val)); \
+    (idx) += sizeof(val); \
+} while(0)
 
-        (void)memcpy(info->name,
-                     authptr->name,
-                     authptr->name_length);
-        info->namelen = authptr->name_length;
-        for (j = 0; j < 8; j++)
-            info->data[j] = authptr->data[j];
-	switch(sockname->sa_family) {
+if (authname_match(AUTH_XA1, authptr->name, authptr->name_length)) {
+    int j;
+
+    info->data = malloc(192 / 8);
+    if(!info->data)
+        return 0;
+
+    for (j = 0; j < 8; j++)
+        info->data[j] = authptr->data[j];
+    switch(sockname->sa_family) {
         case AF_INET:
-	    /*block*/ {
-                struct sockaddr_in *si =
-		    (struct sockaddr_in *) sockname;
-		(void)memcpy(info->data + j,
-			     &si->sin_addr.s_addr,
-			     sizeof(si->sin_addr.s_addr));
-		j += sizeof(si->sin_addr.s_addr);
-		(void)memcpy(info->data + j,
-			     &si->sin_port,
-			     sizeof(si->sin_port));
-		j += sizeof(si->sin_port);
-	    }
-	    break;
+            /*block*/ {
+                struct sockaddr_in *si = (struct sockaddr_in *) sockname;
+                APPEND(info->data, j, si->sin_addr.s_addr);
+                APPEND(info->data, j, si->sin_port);
+            }
+            break;
         case AF_UNIX:
-	    /*block*/ {
-		long fakeaddr = htonl(0xffffffff - nonce);
-		short fakeport = htons(getpid());
-		(void)memcpy(info->data + j, &fakeaddr, sizeof(long));
-		j += sizeof(long);
-		(void)memcpy(info->data + j, &fakeport, sizeof(short));
-		j += sizeof(short);
-	    }
-	    break;
+            /*block*/ {
+                long fakeaddr = htonl(0xffffffff - nonce);
+                short fakeport = htons(getpid());
+                APPEND(info->data, j, fakeaddr);
+                APPEND(info->data, j, fakeport);
+            }
+            break;
         default:
-	    XauDisposeAuth(authptr);
+            free(info->data);
             return 0;   /* do not know how to build this */
-        }
-        (void)time(&now);
-        now = htonl(now);
-        memcpy(info->data + j, &now, sizeof(long));
-        j += sizeof(long);
-        while (j < 192 / 8)
-            info->data[j++] = 0;
-        info->datalen = j;
-	Wrap (info->data, authptr->data + 8, info->data, info->datalen);
-	XauDisposeAuth(authptr);
-        return info;
     }
+    {
+        long now;
+        time(&now);
+        now = htonl(now);
+        APPEND(info->data, j, now);
+    }
+    assert(j <= 192 / 8);
+    while (j < 192 / 8)
+        info->data[j++] = 0;
+    info->datalen = j;
+    Wrap (info->data, authptr->data + 8, info->data, info->datalen);
+    return 1;
+}
+#undef APPEND
 #endif
+
+return 0;   /* Unknown authorization type */
+}
+
+int XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info)
+{
+    /* code adapted from Xlib/ConnDis.c, xtrans/Xtranssocket.c,
+       xtrans/Xtransutils.c */
+    char sockbuf[sizeof(struct sockaddr) + MAXPATHLEN];
+    unsigned int socknamelen = sizeof(sockbuf);   /* need extra space */
+    struct sockaddr *sockname = (struct sockaddr *) &sockbuf;
+    Xauth *authptr = 0;
+    int ret = 1;
+
+    /* ensure info has reasonable contents */
+    info->namelen = info->datalen = 0;
+    info->name = info->data = 0;
+
+    if (getpeername(fd, sockname, &socknamelen) == -1)
+        return 0;  /* can only authenticate sockets */
+
+    authptr = get_authptr(sockname, socknamelen);
+    if (authptr == 0)
+        return 0;   /* cannot find good auth data */
+
+    info->namelen = memdup(&info->name, authptr->name, authptr->name_length);
+    if(info->namelen)
+	ret = compute_auth(info, authptr, sockname);
+    if(!ret)
+    {
+	free(info->name);
+	info->name = 0;
+	info->namelen = 0;
+    }
     XauDisposeAuth(authptr);
-    return 0;   /* Unknown authorization type */
+    return ret;
 }

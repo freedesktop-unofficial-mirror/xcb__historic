@@ -26,7 +26,6 @@
 
 /* Opaque structures */
 
-typedef struct XCBAuthInfo XCBAuthInfo;
 typedef struct XCBIOHandle XCBIOHandle;
 typedef struct XCBList XCBList;
 
@@ -68,7 +67,15 @@ undivert(TYPEDIV)dnl
 
 /* xcb_auth.c */
 
+typedef struct XCBAuthInfo {
+    int namelen;
+    char *name;
+    int datalen;
+    char *data;
+} XCBAuthInfo;
+
 int XCBNextNonce(void);
+int XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
 
 
 /* xcb_conn.c */
@@ -100,7 +107,7 @@ void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollEvent(XCBConnection *c);
 int XCBFlush(XCBConnection *c);
-XCBConnection *XCBConnect(int fd, int nonce);
+XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
 XCBConnection *XCBConnectBasic(void);
 void XCBDisconnect(XCBConnection *c);
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen);

@@ -254,7 +254,7 @@ int XCBFlush(XCBConnection *c)
     return ret;
 }
 
-XCBConnection *XCBConnect(int fd, int nonce)
+XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
 {
     XCBConnection* c;
 
@@ -282,7 +282,6 @@ XCBConnection *XCBConnect(int fd, int nonce)
     /* Write the connection setup request. */
     {
         XCBConnSetupReq *out = XCBAllocOut(c->handle, XCB_CEIL(sizeof(XCBConnSetupReq)));
-        XCBAuthInfo auth, *auth_info;
         int endian = 0x01020304;
 	struct iovec parts[2];
 
@@ -296,14 +295,14 @@ XCBConnection *XCBConnect(int fd, int nonce)
         out->authorization_protocol_name_len = 0;
         out->authorization_protocol_data_len = 0;
 
-        auth_info = XCBGetAuthInfo(fd, nonce, &auth);
-	if (!auth_info)
-	    goto error;
-	parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
-	parts[0].iov_base = auth_info->name;
-	parts[1].iov_len = out->authorization_protocol_data_len = auth_info->datalen;
-	parts[1].iov_base = auth_info->data;
-	XCBWrite(c->handle, parts, 2);
+        if(auth_info)
+        {
+            parts[0].iov_len = out->authorization_protocol_name_len = auth_info->namelen;
+            parts[0].iov_base = auth_info->name;
+            parts[1].iov_len = out->authorization_protocol_data_len = auth_info->datalen;
+            parts[1].iov_base = auth_info->data;
+            XCBWrite(c->handle, parts, 2);
+        }
     }
     if(XCBFlushLocked(c->handle) <= 0)
         goto error;
@@ -357,6 +356,7 @@ XCBConnection *XCBConnectBasic()
     int fd, display = 0, screen = 0;
     char *host;
     XCBConnection *c;
+    XCBAuthInfo auth;
 
     if(!XCBParseDisplay(0, &host, &display, &screen))
     {
@@ -371,13 +371,16 @@ XCBConnection *XCBConnectBasic()
         abort();
     }
 
-    c = XCBConnect(fd, XCBNextNonce());
+    XCBGetAuthInfo(fd, XCBNextNonce(), &auth);
+    c = XCBConnect(fd, &auth);
     if(!c)
     {
         perror("XCBConnect");
         abort();
     }
 
+    free(auth.name);
+    free(auth.data);
     return c;
 }
 
