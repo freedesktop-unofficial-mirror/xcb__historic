@@ -1030,7 +1030,9 @@ authorization from the authors.
       <xsl:with-param name="separator" select="', '" />
       <xsl:with-param name="items">
         <xsl:for-each select="param">
-          <item><xsl:apply-templates mode="output-expression" /></item>
+          <item><xsl:apply-templates mode="output-expression">
+            <xsl:with-param name="field-prefix" select="$field-prefix" />
+          </xsl:apply-templates></item>
         </xsl:for-each>
       </xsl:with-param>
     </xsl:call-template>
