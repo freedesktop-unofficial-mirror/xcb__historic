@@ -101,11 +101,7 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
     XCBIOPeek(h, &genrep, sizeof(genrep));
     /* For reply packets, check that the entire packet is available. */
     if(genrep.response_type == 1)
-    {
         length += genrep.length * 4;
-        if(XCBIOReadable(h) < length)
-            return 0;
-    }
 
     buf = (unsigned char *) malloc((length) * sizeof(unsigned char));
     assert(buf);

@@ -233,15 +233,42 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
     return len;
 }
 
-int XCBRead(XCBIOHandle *h, void *buf, int nread)
+int XCBRead(XCBIOHandle *h, void *target, int len)
 {
-    assert(nread <= sizeof(h->inqueue));
-    while(h->n_inqueue < nread)
-        XCBWait(h, /* should_write */ 0);
-    memcpy(buf, h->inqueue, nread);
-    h->n_inqueue -= nread;
-    if(h->n_inqueue)
-        memmove(h->inqueue, h->inqueue + nread, h->n_inqueue);
+    int nread = 0, saved_reading;
+    XCBIOCallback saved_reader;
+    unsigned char *buf = target;
+    if(!len)
+        return nread;
+
+    /* save everything that's read into the buffer for me! */
+    saved_reader = h->reader;
+    h->reader = 0;
+    saved_reading = h->reading;
+    h->reading = 0;
+
+    do
+    {
+        int cur;
+        /* cur = min(len, h->n_inqueue) */
+        if(len < h->n_inqueue)
+            cur = len;
+        else
+            cur = h->n_inqueue;
+        /* get cur bytes from inqueue */
+        memcpy(buf, h->inqueue, cur);
+        h->n_inqueue -= cur;
+        if(h->n_inqueue)
+            memmove(h->inqueue, h->inqueue + cur, h->n_inqueue);
+        nread += cur;
+        buf += cur;
+        len -= cur;
+    }
+    while(len && XCBWait(h, /* should_write */ 0) > 0);
+
+    h->reader = saved_reader;
+    h->reading = saved_reading;
+
     return nread;
 }
 
