@@ -114,18 +114,14 @@ ALLOC(XCBReplyData, `data', 1)
     XCBListAppend(c->reply_data, data);
 ')
 
-FUNCTION(`int XCBEventQueueIsEmpty', `XCBConnection *c', `
-    return XCBListIsEmpty(c->event_data);
-')
-SOURCEONLY(`
 STATICFUNCTION(`int match_reply_seqnum16', `const void *seqnum, const void *data', `
     return ((CARD16) ((XCBReplyData *) data)->seqnum == (CARD16) *(int *) seqnum);
 ')
-
+_C
 STATICFUNCTION(`int match_reply_seqnum32', `const void *seqnum, const void *data', `
     return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
 ')
-
+_C
 STATICFUNCTION(`int XCBReadPacket', `void *readerdata, XCBIOHandle *h', `
     XCBConnection *c = (XCBConnection *) readerdata;
     int ret;
@@ -172,9 +168,7 @@ ALLOC(unsigned char, buf, length)
 
     return 1; /* I have something for you... */
 ')
-
-')dnl end SOURCEONLY
-
+_C
 FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, int seqnum, XCBGenericEvent **e', `
     void *ret = 0;
     XCBReplyData *cur;
@@ -407,7 +401,7 @@ ALLOC(XCBConnection, c, 1)
             XCBWrite(c->handle, parts, 2);
         }
     }
-    if(XCBFlushLocked(c) <= 0)
+    if(XCBFlushLocked(c->handle) <= 0)
         goto error;
 
     /* Read the server response */

@@ -112,6 +112,15 @@ void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const v
     return 0;
 }
 
+int XCBListLength(XCBList *list)
+{
+    int ret = 0;
+    XCBListNode *cur;
+    for(cur = list->head; cur; cur = cur->next)
+        ++ret;
+    return ret;
+}
+
 int XCBListIsEmpty(XCBList *list)
 {
     return (list->head == 0);

@@ -15,11 +15,15 @@
 #include <netdb.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 /* FIXME: outvec support should be enabled */
 #define USEOUTVEC 0
 #define USENONBLOCKING
+
+#define XCB_PAD(i) ((4 - (i & 3)) & 3)
 
 struct XCBIOHandle {
     int fd;
@@ -192,6 +196,8 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
         for(i = 0; i < count; ++i)
         {
             memcpy(c->outqueue + c->n_outqueue, vector[i].iov_base, vector[i].iov_len);
+            if(vector[i].iov_len & 3)
+                memset(c->outqueue + c->n_outqueue + vector[i].iov_len, 0, XCB_PAD(vector[i].iov_len));
             c->n_outqueue += XCB_CEIL(vector[i].iov_len);
         }
         return XCBFlushLocked(c);

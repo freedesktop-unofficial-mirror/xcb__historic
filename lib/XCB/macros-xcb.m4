@@ -68,12 +68,11 @@ LISTPARAM(CARD32, `$3', `XCBOnes($2)')
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
 dnl request.
-dnl FIXME: using CEIL in iov_len guarentees a buffer overrun in most cases.
 dnl LISTPARAM(element type, list name, length expression)
 define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(OUTDIV)
 TAB()parts[PARTQTY].iov_base = (`$1' *) `$2';
-TAB()parts[PARTQTY].iov_len = XCB_CEIL((`$3') * sizeof(`$1'));
-TAB()out->length += parts[PARTQTY].iov_len >> 2;
+TAB()parts[PARTQTY].iov_len = (`$3') * sizeof(`$1');
+TAB()out->length += (parts[PARTQTY].iov_len + 3) >> 2;
 POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
 
 dnl Defines a field which should be filled in with the given expression.
