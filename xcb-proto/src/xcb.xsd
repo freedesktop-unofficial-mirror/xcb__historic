@@ -47,7 +47,7 @@
     <xsd:complexType>
       <xsd:complexContent>
         <xsd:extension base="var">
-          <xsd:group ref="operand" />
+          <xsd:group ref="expression" />
         </xsd:extension>
       </xsd:complexContent>
     </xsd:complexType>
@@ -57,17 +57,13 @@
   <xsd:element name="localfield" type="var" />
   
   <!-- Expressions -->
-  <xsd:complexType name="expression">
-    <xsd:group ref="operand" />
-  </xsd:complexType>
-  
-  <xsd:group name="operand">
+  <xsd:group name="expression">
     <xsd:choice>
       <xsd:element name="op">
         <xsd:complexType>
           <xsd:sequence>
-            <xsd:group ref="operand" />
-            <xsd:group ref="operand" />
+            <xsd:group ref="expression" />
+            <xsd:group ref="expression" />
           </xsd:sequence>
           <xsd:attribute name="op">
             <xsd:simpleType>
@@ -85,7 +81,15 @@
   
   <!-- Fields in requests that are calculated from other information, not
        supplied by the caller. -->
-  <xsd:element name="exprfield" type="expression" />
+  <xsd:element name="exprfield" >
+    <xsd:complexType>
+      <xsd:complexContent>
+        <xsd:extension base="var">
+          <xsd:group ref="expression" />
+        </xsd:extension>
+      </xsd:complexContent>
+    </xsd:complexType>
+  </xsd:element>
 
   <!-- BITMASK/LISTofVALUE parameter pairs. -->
   <xsd:element name="valueparam">
@@ -175,7 +179,7 @@
           <xsd:sequence minOccurs="1" maxOccurs="unbounded">
             <xsd:element name="item">
               <xsd:complexType>
-                <xsd:group ref="operand" minOccurs="0" maxOccurs="1" />
+                <xsd:group ref="expression" minOccurs="0" maxOccurs="1" />
                 <xsd:attribute name="name" type="xsd:string" />
               </xsd:complexType>
             </xsd:element>
