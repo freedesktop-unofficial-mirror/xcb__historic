@@ -127,6 +127,25 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
     return ret;
 }
 
+XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error)
+{
+    XCBGenericEvent *ret = 0;
+    pthread_mutex_lock(&c->iolock);
+    if(error)
+        *error = 0;
+    if(_xcb_in_events_length(c) >= 0)
+        ret = (XCBGenericEvent *) _xcb_list_remove_head(c->in.events);
+    else if(error)
+        *error = -1;
+    else
+    {
+        fprintf(stderr, "XCBPollForEvent: I/O error occured, but no handler provided.\n");
+        abort();
+    }
+    pthread_mutex_unlock(&c->iolock);
+    return ret;
+}
+
 int XCBEventQueueLength(XCBConnection *c)
 {
     int ret;

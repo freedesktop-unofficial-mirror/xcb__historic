@@ -1,6 +1,12 @@
 2004-09-29  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb.h.m4:
+	* src/xcb_in.c:
+	Added XCBPollForEvent function from new API.
+
+2004-09-29  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb.h.m4:
 	* src/xcbext.h:
 	* src/client-c.xcb:
 	* src/xcb_ext.c:
