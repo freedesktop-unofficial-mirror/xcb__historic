@@ -135,24 +135,6 @@ int XCBEventQueueLength(XCBConnection *c)
     return ret;
 }
 
-XCBGenericEvent *XCBEventQueueRemove(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data)
-{
-    XCBGenericEvent *ret;
-    pthread_mutex_lock(&c->iolock);
-    ret = _xcb_list_remove(c->in.events, (int (*)(const void *, const void *)) cmp, (const void *) data);
-    pthread_mutex_unlock(&c->iolock);
-    return ret;
-}
-
-XCBGenericEvent *XCBEventQueueFind(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data)
-{
-    XCBGenericEvent *ret;
-    pthread_mutex_lock(&c->iolock);
-    ret = _xcb_list_find(c->in.events, (int (*)(const void *, const void *)) cmp, (const void *) data);
-    pthread_mutex_unlock(&c->iolock);
-    return ret;
-}
-
 void XCBEventQueueClear(XCBConnection *c)
 {
     pthread_mutex_lock(&c->iolock);

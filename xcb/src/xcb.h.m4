@@ -82,14 +82,10 @@ int XCBFlush(XCBConnection *c);
 
 /* xcb_in.c */
 
-typedef int (*XCBEventPredicate)(const XCBGenericEvent *, const XCBGenericEvent *);
-
 void *XCBWaitReply(XCBConnection *c, unsigned int request, XCBGenericError **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 
 int XCBEventQueueLength(XCBConnection *c);
-XCBGenericEvent *XCBEventQueueRemove(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data);
-XCBGenericEvent *XCBEventQueueFind(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data);
 void XCBEventQueueClear(XCBConnection *c);
 
 
