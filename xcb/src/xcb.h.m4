@@ -118,7 +118,9 @@ int XCBOpenUnix(const char *file);
 undivert(FUNCDIV)
 undivert(INLINEFUNCDIV)dnl
 
-/* xcb_extension.c */
+/* xcb_conn.c */
+
+int XCBSync(XCBConnection *c, XCBGenericEvent **e);
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */

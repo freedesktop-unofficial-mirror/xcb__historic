@@ -5,9 +5,6 @@
  */
 
 #include <assert.h>
-#include "xcb.h"
-#include "xcbint.h"
-
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -19,6 +16,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "xcb.h"
+#include "xcbint.h"
 
 #undef USENONBLOCKING
 
@@ -44,6 +46,11 @@ typedef struct XCBReplyData {
     int seqnum;
     void *data;
 } XCBReplyData;
+
+typedef struct XCBExtensionRecord {
+    char *name;
+    XCBQueryExtensionRep *info;
+} XCBExtensionRecord;
 
 int XCBOnes(unsigned long mask)
 {
@@ -467,4 +474,44 @@ XCBConnection *XCBConnectBasic()
     }
 
     return c;
+}
+
+int XCBSync(XCBConnection *c, XCBGenericEvent **e)
+{
+    XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
+    free(reply);
+    return (reply != 0);
+}
+
+static int match_extension_string(const void *name, const void *data)
+{
+    return (((XCBExtensionRecord *) data)->name == name);
+}
+
+/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
+ * from the cache. */
+const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericEvent **e)
+{
+    XCBExtensionRecord *data = 0;
+    if(e)
+        *e = 0;
+    pthread_mutex_lock(&c->locked);
+
+    data = (XCBExtensionRecord *) XCBListRemove(c->extension_cache, match_extension_string, name);
+
+    if(!data)
+    {
+	/* cache miss: query the server */
+	pthread_mutex_unlock(&c->locked);
+	data = (XCBExtensionRecord *) malloc((1) * sizeof(XCBExtensionRecord));
+	assert(data);
+	data->name = (char *) name;
+	data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
+	pthread_mutex_lock(&c->locked);
+    }
+
+    XCBListInsert(c->extension_cache, data);
+
+    pthread_mutex_unlock(&c->locked);
+    return data->info;
 }

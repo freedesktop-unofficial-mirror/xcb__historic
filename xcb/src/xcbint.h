@@ -6,7 +6,6 @@
 
 #ifndef __XCBINT_H
 #define __XCBINT_H
-#include <stdlib.h>
 
 /* xcb_io.c */
 

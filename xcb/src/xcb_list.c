@@ -5,6 +5,8 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
+
 #include "xcb.h"
 #include "xcbint.h"
 
