@@ -9,6 +9,7 @@
 #include <X11/Xlib.h>
 #include <X11/XCB/xcb.h>
 #include <X11/XCB/shm.h>
+#include <X11/XCB/xcb_convenient.h>
 #include <X11/XCB/xcb_image.h>
 
 #include "lissajoux.h"
@@ -109,28 +110,6 @@ loop (Data data)
     }
 }
 
-int
-get_depth(XCBConnection   *c,
-	  XCBSCREEN       *root)
-{
-  XCBDRAWABLE drawable = { root->root };
-  XCBGetGeometryRep *geom;
-
-  geom = XCBGetGeometryReply(c, XCBGetGeometry(c, drawable), 0);
-  int depth;
-
-  if(!geom)
-    {
-      perror("GetGeometry(root) failed");
-      exit (0);
-    }
-  
-  depth = geom->depth;
-  free(geom);
-
-  return depth;
-}
-
 /* Return 0 if shm is not availaible, 1 otherwise */
 void
 shm_test (Data data)
@@ -210,7 +189,7 @@ main (int argc, char *argv[])
 
   data.conn = XCBConnectBasic ();
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (data.conn)).data;
-  data.depth = get_depth (data.conn, screen);
+  data.depth = xcb_connection_depth_get (data.conn, screen);
 
   win.window = screen->root;
 
