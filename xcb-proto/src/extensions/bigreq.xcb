@@ -1,0 +1,16 @@
+XCBGEN(bigreq, `
+Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+')
+BEGINEXTENSION(BIGREQUESTS, BigRequests)
+
+REQUEST(BigRequestsEnable, `
+    OPCODE(0)
+', `
+    PAD(1)
+    REPLY(CARD32, `maximum_request_length')
+')
+
+ENDEXTENSION
+ENDXCBGEN
