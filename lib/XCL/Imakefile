@@ -11,12 +11,12 @@ XCOMM for licensing information.
 #define LibName XCL
 #define SoRev SOXCLREV
 #define HasSharedData YES
-#define IncSubdir XCL
+#define IncSubdir X11
+#define IncSubSubdir XCL
 
 SOXCLREV = 1.0
 
-XCB = ../XCB
-REQUIREDLIBS = -L$(XCB) -lXCB
+REQUIREDLIBS = -L../XCB -lXCB
 
 INCLUDES = -I. -I../../exports/include
 
