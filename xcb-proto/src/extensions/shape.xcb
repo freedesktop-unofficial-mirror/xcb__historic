@@ -4,9 +4,10 @@ All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
 BEGINEXTENSION(SHAPE, Shape)
-HEADERONLY(`
-typedef CARD8 SHAPE_OP;
-typedef CARD8 SHAPE_KIND;
+PUSHDIV(-1)
+
+TYPEDEF(CARD8, SHAPE_OP)
+TYPEDEF(CARD8, SHAPE_KIND)
 
 EVENT(`Notify', 0, `
     REPLY(SHAPE_KIND, `shape_kind')
@@ -18,7 +19,7 @@ EVENT(`Notify', 0, `
     REPLY(TIMESTAMP, `server_time')
     REPLY(BOOL, `shaped')
 ')
-')
+
 REQUEST(QueryVersion, `
     OPCODE(0)
 ', `
@@ -97,22 +98,22 @@ VOIDREQUEST(SelectInput, `
 ')
 
 REQUEST(InputSelected, `
-    OPCODE(6)
+    OPCODE(7)
     PARAM(WINDOW, `destination_window')
 ', `
     REPLY(BOOL, `enabled')
 ')
 
 REQUEST(GetRectangles, `
-    OPCODE(7)
+    OPCODE(8)
     PARAM(WINDOW, `window')
     PARAM(SHAPE_KIND, `source_kind')
 ', `
     REPLY(BYTE, `ordering')
-    PAD(1)
     REPLY(CARD32, `rectangles_len')
     ARRAYREPLY(RECTANGLE, `rectangles', `R->rectangles_len')
 ')
 
+POPDIV()
 ENDEXTENSION
 ENDXCBGEN
