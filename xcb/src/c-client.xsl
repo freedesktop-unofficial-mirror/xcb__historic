@@ -69,12 +69,13 @@
   -->
   <xsl:template name="canonical-type-name">
     <xsl:param name="type" select="@type" />
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:choose>
       <!-- First search the current extension/top-level. -->
-      <xsl:when test="(/xcb[not(string($ext))]
+      <xsl:when test="(/xcb[not($ext)]
                       |/xcb/extension[@name=$ext]
                       )/*[((self::struct or self::union
                             or self::xidtype or self::enum
@@ -126,9 +127,10 @@
   </xsl:template>
 
   <xsl:template match="request" mode="pass1">
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:if test="reply">
       <struct name="XCB{$ext}{@name}Cookie">
         <field type="unsigned int" name="sequence" />
@@ -182,9 +184,10 @@
        the context node. -->
   <xsl:template name="make-iterator">
     <xsl:param name="name" select="@name" />
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <struct name="XCB{$ext}{$name}Iter">
       <field type="XCB{$ext}{$name} *" name="data" />
       <field type="int" name="rem" />
@@ -193,9 +196,10 @@
   </xsl:template>
 
   <xsl:template match="xidtype" mode="pass1">
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <struct name="XCB{$ext}{@name}">
       <field type="CARD32" name="xid" />
     </struct>
@@ -209,9 +213,10 @@
   </xsl:template>
 
   <xsl:template match="struct|union" mode="pass1">
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <struct name="XCB{$ext}{@name}">
       <xsl:if test="self::union">
         <xsl:attribute name="kind">union</xsl:attribute>
@@ -222,9 +227,10 @@
   </xsl:template>
 
   <xsl:template match="event|eventcopy|error|errorcopy" mode="pass1">
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
     <xsl:variable name="suffix">
       <xsl:choose>
         <xsl:when test="self::event|self::eventcopy">
@@ -468,9 +474,10 @@
   </xsl:template>
 
   <xsl:template match="function" mode="pass2">
-    <xsl:variable name="ext"><!--
+    <xsl:variable name="ext-retval"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
+    <xsl:variable name="ext" select="string($ext-retval)" />
 
     <xsl:call-template name="type-and-name" />
     <xsl:text>(</xsl:text>
