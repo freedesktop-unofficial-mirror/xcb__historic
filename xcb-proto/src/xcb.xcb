@@ -499,7 +499,7 @@ REQUEST(GetProperty, `
     REPLY(CARD32, `bytes_after')
     REPLY(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(void, `value', `R->bytes_after')
+    ARRAYREPLY(void, `value', `R->value_len * 8 / R->format')
 ')
 
 REQUEST(ListProperties, `
@@ -545,7 +545,7 @@ VOIDREQUEST(SendEvent, `
     PARAM(BOOL, `propagate')
     PARAM(WINDOW, `destination')
     PARAM(CARD32, `event_mask')
-    PARAM(char, `event[32]')
+    LISTPARAM(char, `event', `32')
 ')
 
 REQUEST(GrabPointer, `
