@@ -44,6 +44,9 @@ authorization from the authors.
   <xsl:variable name="h" select="$mode = 'header'" />
   <xsl:variable name="c" select="$mode = 'source'" />
   
+  <!-- String used to indent lines of code. -->
+  <xsl:variable name="indent-string" select="'    '" />
+
   <xsl:variable name="ucase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
   <xsl:variable name="lcase" select="'abcdefghijklmnopqrstuvwxyz'" />
 
@@ -717,8 +720,9 @@ authorization from the authors.
         <xsl:choose>
           <xsl:when test="$struct/list[not(@fixed)]">
             <l>while(i.rem > 0)</l>
-            <l><xsl:text>    </xsl:text><xsl:value-of select="$ref" /><!--
-            -->Next(&amp;i);</l>
+            <indent>
+              <l><xsl:value-of select="$ref" />Next(&amp;i);</l>
+            </indent>
             <l>ret.data = i.data;</l>
             <l>ret.rem = i.rem;</l>
             <l>ret.index = i.index;</l>
@@ -915,14 +919,26 @@ authorization from the authors.
       <xsl:text>
 {
 </xsl:text>
-      <xsl:for-each select="l[text()]">
-        <xsl:text>    </xsl:text><xsl:value-of select="." /><xsl:text>
-</xsl:text>
-      </xsl:for-each>
+      <xsl:apply-templates select="l|indent" mode="function-body">
+        <xsl:with-param name="indent" select="$indent-string" />
+      </xsl:apply-templates>
       <xsl:text>}
 
 </xsl:text>
     </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="l" mode="function-body">
+    <xsl:param name="indent" />
+    <xsl:value-of select="concat($indent, .)" /><xsl:text>
+</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="indent" mode="function-body">
+    <xsl:param name="indent" />
+    <xsl:apply-templates select="l|indent" mode="function-body">
+      <xsl:with-param name="indent" select="concat($indent, $indent-string)" />
+    </xsl:apply-templates>
   </xsl:template>
 
   <xsl:template match="value" mode="output-expression">

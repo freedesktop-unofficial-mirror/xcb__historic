@@ -1,3 +1,9 @@
+2004-11-09  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
+	Add support for an <indent> tag in a function body, which indents
+	the <l>s it contains.
+	
 2004-11-08  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_conn.c:
