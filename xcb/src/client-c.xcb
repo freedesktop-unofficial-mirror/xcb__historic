@@ -24,13 +24,13 @@ TAB()ENUMNAME`$1'ENUMLOOP(shift($@))')')
 dnl PAD(bytes)
 define(`PAD', `FIELD(`CARD8', `pad'PADQTY`'ifelse($1, 1, , `[$1]'))
 define(`PADQTY', eval(1+PADQTY))
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+')
 
 dnl Declares a field of the given type with the given name.
 dnl FIELD(type, name)
 define(`FIELD', `PUSHDIV(STRUCTDIV)dnl
     `$1' PROTECTCXX(`$2');
-POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))')
+POPDIV()define(`FIELDQTY', eval(1+FIELDQTY))ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 
 dnl -- Language-specific macros
@@ -256,22 +256,29 @@ LISTPARAM(CARD32, `$3', `XCBOnes($2)')
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
 dnl any C expression and may reference any of the other fields of this
 dnl request.
-dnl LISTPARAM(element type, list name, length expression)
-define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)dnl
+dnl LISTPARAM(element type, list name, optional length expression)
+define(`LISTPARAM', `
+ifelse(`$3', , `
+    define(`_LENGTH', `$2_len')
+    LOCALPARAM(CARD32, _LENGTH)
+', `
+    define(`_LENGTH', `$3')
+')
+PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)dnl
 TAB()parts[PARTQTY].iov_base = (void *) `$2';
-TAB()parts[PARTQTY].iov_len = (`$3')ifelse(`$1', void, , ` * sizeof(`$1')');
+TAB()parts[PARTQTY].iov_len = (defn(`_LENGTH'))ifelse(`$1', void, , ` * sizeof(`$1')');
 POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
 
 dnl Defines a field which should be filled in with the given expression.
 dnl The field name is available for use in the expression of a LISTPARAM
 dnl or a following EXPRFIELD.
 dnl EXPRFIELD(field type, field name, expression)
-define(`EXPRFIELD', `FIELD(`$1', `$2')
+define(`EXPRFIELD', `
 PUSHDIV(VARDIV)dnl
 TAB()$1 `$2' = `$3';
 divert(ASSNDIV)dnl
 TAB()out.PROTECTCXX(`$2') = `$2';
-POPDIV()ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+POPDIV()FIELD(`$1', `$2')')
 
 dnl Defines a parameter with no associated field. The name can be used in
 dnl expressions.
@@ -280,24 +287,24 @@ define(`LOCALPARAM', `PUSHDIV(PARMDIV), $1 `$2'POPDIV()')
 
 dnl Defines a parameter with a field of the same type.
 dnl PARAM(type, name)
-define(`PARAM', `FIELD($1, `$2')
+define(`PARAM', `
 PUSHDIV(PARMDIV), $1 PROTECTCXX(`$2')`'dnl
 divert(ASSNDIV)dnl
 TAB()out.PROTECTCXX(`$2') = PROTECTCXX(`$2');
 POPDIV()define(`PARAMQTY', eval(1+PARAMQTY))
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+FIELD($1, `$2')')
 
 dnl Sets the major number for all instances of this request to the given code.
 dnl OPCODE(number)
-define(`OPCODE', `ifelse(EXTENSION, , `
+define(`OPCODE', `
     FIELD(CARD8, `major_opcode')
+ifelse(EXTENSION, , `
 PUSHDIV(VARDIV)dnl
 TAB()const CARD8 major_opcode = `$1';
 divert(ASSNDIV)dnl
 TAB()out.major_opcode = major_opcode;
 POPDIV()
 ', `
-    FIELD(CARD8, `major_opcode')
     FIELD(CARD8, `minor_opcode')
 PUSHDIV(VARDIV)dnl
 TAB()const XCBQueryExtensionRep *extension = XCB`'EXTENSION`'Init(c);
@@ -310,7 +317,6 @@ TAB()assert(extension && extension->present);
 TAB()out.major_opcode = major_opcode;
 TAB()out.minor_opcode = minor_opcode;
 POPDIV()
-    ifelse(FIELDQTY, 2, `LENGTHFIELD()')
 ')')
 
 
@@ -320,8 +326,7 @@ define(`MARSHAL', `define(`MARSHALABLE')')
 
 
 dnl REPLY(type, name)
-define(`REPLY', `FIELD(`$1', `$2')
-ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
+define(`REPLY', `FIELD(`$1', `$2')')
 
 dnl Generates a C pre-processor macro providing access to a variable-length
 dnl portion of a structure. The length parameter is an expression, usually

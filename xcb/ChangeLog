@@ -1,3 +1,11 @@
+2004-09-28  Jamey Sharp  <jamey@minilop.net>
+
+	* src/client-c.xcb:
+	Allow LISTPARAMs to omit the length argument. When
+	generating C code, a LOCALPARAM is automatically
+	generated for the length if the length argument is
+	omitted.
+
 2004-08-13  Jamey Sharp  <jamey@minilop.net>
 
 	* configure.ac:
