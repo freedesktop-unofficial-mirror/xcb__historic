@@ -1,2 +1,8 @@
+.deps
+.libs
+Makefile.in
+*.lo
+*.loT
+*.la
 test_xcb_image
 test_xcb_image_shm
