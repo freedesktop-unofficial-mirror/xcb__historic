@@ -159,7 +159,9 @@ See the file COPYING in this package for licensing information.
     <xsl:if test="reply">
       <struct name="XCB{$ext}{@name}Rep">
         <field type="BYTE" name="response_type" />
-        <xsl:apply-templates select="reply/*" mode="field" />
+        <xsl:apply-templates select="reply/*" mode="field">
+          <xsl:with-param name="fixed-length-ok" select="true()" />
+        </xsl:apply-templates>
         <middle>
           <field type="CARD16" name="sequence" />
           <field type="CARD32" name="length" />
@@ -236,7 +238,9 @@ See the file COPYING in this package for licensing information.
           <xsl:if test="self::error">
             <field type="BYTE" name="error_code" />
           </xsl:if>
-          <xsl:apply-templates select="*" mode="field" />
+          <xsl:apply-templates select="*" mode="field">
+            <xsl:with-param name="fixed-length-ok" select="true()" />
+          </xsl:apply-templates>
           <xsl:if test="not(self::event and boolean(@no-sequence-number))">
             <middle>
               <field type="CARD16" name="sequence" />
@@ -295,6 +299,7 @@ See the file COPYING in this package for licensing information.
   </xsl:template>
   
   <xsl:template match="field|exprfield|list" mode="field">
+    <xsl:param name="fixed-length-ok" select="false()" />
     <xsl:copy>
       <xsl:attribute name="type">
         <xsl:call-template name="canonical-type-name" />
@@ -302,6 +307,10 @@ See the file COPYING in this package for licensing information.
       <xsl:attribute name="name">
         <xsl:call-template name="canonical-var-name" />
       </xsl:attribute>
+      <xsl:if test="$fixed-length-ok and self::list
+                    and not(.//*[not(self::value or self::op)])">
+        <xsl:attribute name="fixed">true</xsl:attribute>
+      </xsl:if>
       <xsl:copy-of select="*" />
     </xsl:copy>
   </xsl:template>
@@ -528,7 +537,7 @@ See the file COPYING in this package for licensing information.
                                      //struct[@name=concat($ref,$kind)])" />
     <xsl:variable name="nextfields-rtf">
       <nextfield>R + 1</nextfield>
-      <xsl:for-each select="$struct/list">
+      <xsl:for-each select="$struct/list[not(@fixed)]">
         <xsl:choose>
           <xsl:when test="substring(@type, 1, 3) = 'XCB'">
             <nextfield><xsl:value-of select="@type" />End(<!--
@@ -543,9 +552,12 @@ See the file COPYING in this package for licensing information.
       </xsl:for-each>
     </xsl:variable>
     <xsl:variable name="nextfields" select="e:node-set($nextfields-rtf)" />
-    <xsl:for-each select="$struct/list">
-      <xsl:variable name="number" select="1+count(preceding-sibling::list)" />
+    <xsl:for-each select="$struct/list[not(@fixed)]">
+      <xsl:variable name="number"
+                    select="1+count(preceding-sibling::list[not(@fixed)])" />
       <xsl:variable name="nextfield" select="$nextfields/nextfield[$number]" />
+      <xsl:variable name="is-first"
+                    select="not(preceding-sibling::list[not(@fixed)])" />
       <xsl:variable name="field-name"><!--
         --><xsl:call-template name="capitalize" /><!--
       --></xsl:variable>
@@ -564,15 +576,16 @@ See the file COPYING in this package for licensing information.
         <function type="{@type} *" name="{$ref}{$field-name}">
           <field type="{$ref}{$kind} *" name="R" />
           <xsl:choose>
-            <xsl:when test="preceding-sibling::list">
-              <l>XCBGenericIter prev = <xsl:value-of select="$nextfield" />;</l>
+            <xsl:when test="$is-first">
+              <l>return (<xsl:value-of select="@type" /> *) <!--
+              -->(<xsl:value-of select="$nextfield" />);</l>
+            </xsl:when>
+            <xsl:otherwise>
+              <l>XCBGenericIter prev = <!--
+              --><xsl:value-of select="$nextfield" />;</l>
               <l>return (<xsl:value-of select="@type" /> *) <!--
               -->((char *) prev.data + XCB_TYPE_PAD(<!--
               --><xsl:value-of select="@type" />, prev.index));</l>
-            </xsl:when>
-            <xsl:otherwise>
-              <l>return (<xsl:value-of select="@type" /> *) <!--
-              -->(<xsl:value-of select="$nextfield" />);</l>
             </xsl:otherwise>
           </xsl:choose>
         </function>
@@ -589,16 +602,16 @@ See the file COPYING in this package for licensing information.
             <field type="{$ref}{$kind} *" name="R" />
             <l><xsl:value-of select="@type" />Iter i;</l>
             <xsl:choose>
-              <xsl:when test="preceding-sibling::list">
+              <xsl:when test="$is-first">
+                <l>i.data = (<xsl:value-of select="@type" /> *) <!--
+                -->(<xsl:value-of select="$nextfield" />);</l>
+              </xsl:when>
+              <xsl:otherwise>
                 <l>XCBGenericIter prev = <!--
                 --><xsl:value-of select="$nextfield" />;</l>
                 <l>i.data = (<xsl:value-of select="@type" /> *) <!--
                 -->((char *) prev.data + XCB_TYPE_PAD(<!--
                 --><xsl:value-of select="@type" />, prev.index));</l>
-              </xsl:when>
-              <xsl:otherwise>
-                <l>i.data = (<xsl:value-of select="@type" /> *) <!--
-                -->(<xsl:value-of select="$nextfield" />);</l>
               </xsl:otherwise>
             </xsl:choose>
             <l>i.rem = <xsl:apply-templates mode="output-expression">
@@ -619,18 +632,18 @@ See the file COPYING in this package for licensing information.
             <field type="{$ref}{$kind} *" name="R" />
             <l>XCBGenericIter i;</l>
             <xsl:choose>
-              <xsl:when test="preceding-sibling::list">
-                <l>XCBGenericIter child = <!--
-                --><xsl:value-of select="$nextfield" />;</l>
+              <xsl:when test="$is-first">
                 <l>i.data = ((<xsl:value-of select="$cast" /> *) <!--
-                -->child.data) + (<!--
+                -->(<xsl:value-of select="$nextfield" />)) + (<!--
                 --><xsl:apply-templates mode="output-expression">
                      <xsl:with-param name="field-prefix" select="'R->'" />
                    </xsl:apply-templates>);</l>
               </xsl:when>
               <xsl:otherwise>
+                <l>XCBGenericIter child = <!--
+                --><xsl:value-of select="$nextfield" />;</l>
                 <l>i.data = ((<xsl:value-of select="$cast" /> *) <!--
-                -->(<xsl:value-of select="$nextfield" />)) + (<!--
+                -->child.data) + (<!--
                 --><xsl:apply-templates mode="output-expression">
                      <xsl:with-param name="field-prefix" select="'R->'" />
                    </xsl:apply-templates>);</l>
@@ -647,11 +660,10 @@ See the file COPYING in this package for licensing information.
       <function type="void" name="{$ref}Next">
         <field type="{$ref}Iter *" name="i" />
         <xsl:choose>
-          <xsl:when test="$struct/list">
+          <xsl:when test="$struct/list[not(@fixed)]">
             <l><xsl:value-of select="$ref" /> *R = i->data;</l>
             <l>XCBGenericIter child = <!--
-            --><xsl:value-of select="$nextfields/nextfield
-                                     [1+count($struct/list)]" />;</l>
+            --><xsl:value-of select="$nextfields/nextfield[last()]" />;</l>
             <l>--i->rem;</l>
             <l>i->data = (<xsl:value-of select="$ref" /> *) child.data;</l>
             <l>i->index = child.index;</l>
@@ -667,7 +679,7 @@ See the file COPYING in this package for licensing information.
         <field type="{$ref}Iter" name="i" />
         <l>XCBGenericIter ret;</l>
         <xsl:choose>
-          <xsl:when test="$struct/list">
+          <xsl:when test="$struct/list[not(@fixed)]">
             <l>while(i.rem > 0)</l>
             <l><xsl:text>    </xsl:text><xsl:value-of select="$ref" /><!--
             -->Next(&amp;i);</l>
@@ -699,7 +711,7 @@ See the file COPYING in this package for licensing information.
         -->Error: Parameter "mode" must be "header" or "source".<!--
       --></xsl:message>
     </xsl:if>
-    
+
     <xsl:apply-templates select="$result/*" mode="output" />
   </xsl:template>
 
@@ -783,7 +795,7 @@ See the file COPYING in this package for licensing information.
       <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
       <xsl:text> {
 </xsl:text>
-      <xsl:for-each select="exprfield|field|pad">
+      <xsl:for-each select="exprfield|field|list[@fixed]|pad">
         <xsl:text>    </xsl:text>
         <xsl:apply-templates select="." />
         <xsl:text>;
@@ -898,6 +910,13 @@ See the file COPYING in this package for licensing information.
 
   <xsl:template match="field|exprfield">
     <xsl:call-template name="type-and-name" />
+  </xsl:template>
+
+  <xsl:template match="list[@fixed]">
+    <xsl:call-template name="type-and-name" />
+    <xsl:text>[</xsl:text>
+    <xsl:apply-templates mode="output-expression" />
+    <xsl:text>]</xsl:text>
   </xsl:template>
 
   <xsl:template match="pad">
