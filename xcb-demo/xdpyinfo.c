@@ -11,7 +11,7 @@ void list_extensions(void (*)(int, char *));
 void print_extension(int, char *);
 void query_extension(int, char *);
 void list_screens();
-void print_screen(SCREEN *s);
+void print_screen(XCBSCREEN *s);
 
 int main(int argc, char **argv)
 {
@@ -59,7 +59,7 @@ void print_setup()
 void print_formats()
 {
     int i = XCBConnSetupSuccessRepPixmapFormatsLength(XCBGetSetup(c));
-    FORMAT *p = XCBConnSetupSuccessRepPixmapFormats(XCBGetSetup(c));
+    XCBFORMAT *p = XCBConnSetupSuccessRepPixmapFormats(XCBGetSetup(c));
     printf("\n" "number of supported pixmap formats:    %d", i);
     fputs("\n" "supported pixmap formats:", stdout);
     for(--i; i >= 0; --i, ++p)
@@ -69,7 +69,7 @@ void print_formats()
 void list_extensions(void (*ext_printer)(int, char *))
 {
     XCBListExtensionsRep *r;
-    STRIter i;
+    XCBSTRIter i;
 
     r = XCBListExtensionsReply(c, XCBListExtensions(c), 0);
     if(!r)
@@ -80,10 +80,10 @@ void list_extensions(void (*ext_printer)(int, char *))
 
     i = XCBListExtensionsNames(r);
     printf("\n" "number of extensions:    %d", i.rem);
-    for(; i.rem; STRNext(&i))
+    for(; i.rem; XCBSTRNext(&i))
     {
 	fputs("\n" "    ", stdout);
-	ext_printer(STRNameLength(i.data), STRName(i.data));
+	ext_printer(XCBSTRNameLength(i.data), XCBSTRName(i.data));
     }
 }
 
@@ -129,19 +129,19 @@ void query_extension(int len, char *name)
 
 void list_screens()
 {
-    SCREENIter i;
+    XCBSCREENIter i;
     int cur;
 
     i = XCBConnSetupSuccessRepRoots(XCBGetSetup(c));
     printf("\n" "number of screens:    %d" "\n", i.rem);
-    for(cur = 1; i.rem; SCREENNext(&i), ++cur)
+    for(cur = 1; i.rem; XCBSCREENNext(&i), ++cur)
     {
 	printf("\n" "screen #%d:", cur);
 	print_screen(i.data);
     }
 }
 
-void print_screen(SCREEN *s)
+void print_screen(XCBSCREEN *s)
 {
     printf("\n" "  dimensions:    %dx%d pixels (%dx%d millimeters)", s->width_in_pixels, s->height_in_pixels, s->width_in_millimeters, s->height_in_millimeters);
 }

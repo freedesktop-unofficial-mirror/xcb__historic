@@ -1,5 +1,5 @@
 XCBGEN(xcb_types, `
-Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
@@ -114,7 +114,7 @@ STRUCT(SCREEN, `
     LISTFIELD(DEPTH, `allowed_depths', `R->allowed_depths_len')
 ')
 
-STRUCT(XCBConnSetupReq, `
+STRUCT(ConnSetupReq, `
     FIELD(CARD8, `byte_order')
     PAD(1)
     FIELD(CARD16, `protocol_major_version')
@@ -125,13 +125,13 @@ STRUCT(XCBConnSetupReq, `
     ARRAYFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
 ')
 
-STRUCT(XCBConnSetupGenericRep, `
+STRUCT(ConnSetupGenericRep, `
     FIELD(CARD8, `status')
     PAD(5)
     FIELD(CARD16, `length')
 ')
 
-STRUCT(XCBConnSetupFailedRep, `
+STRUCT(ConnSetupFailedRep, `
     FIELD(CARD8, `status') dnl always 0 -> Failed
     FIELD(CARD8, `reason_len')
     FIELD(CARD16, `protocol_major_version')
@@ -140,14 +140,14 @@ STRUCT(XCBConnSetupFailedRep, `
     ARRAYFIELD(char, `reason', `R->reason_len')
 ')
 
-STRUCT(XCBConnSetupAuthenticateRep, `
+STRUCT(ConnSetupAuthenticateRep, `
     FIELD(CARD8, `status') dnl always 2 -> Authenticate
     PAD(5)
     FIELD(CARD16, `length')
     ARRAYFIELD(char, `reason', `R->length * 4')
 ')
 
-STRUCT(XCBConnSetupSuccessRep, `
+STRUCT(ConnSetupSuccessRep, `
     FIELD(CARD8, `status') dnl always 1 -> Success
     PAD(1)
     FIELD(CARD16, `protocol_major_version')

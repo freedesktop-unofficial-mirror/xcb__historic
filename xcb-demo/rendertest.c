@@ -11,13 +11,13 @@
 void print_version_info(XCBRenderQueryVersionRep *reply);
 int print_formats_info(XCBRenderQueryPictFormatsRep *reply);
 int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply);
-PICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, VISUALID visual);
-PICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, PICTFORMINFO *query);
+XCBRenderPICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, XCBVISUALID visual);
+XCBRenderPICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, XCBRenderPICTFORMINFO *query);
 
 XCBConnection   *c;
-PICTFORMAT pf;
+XCBRenderPICTFORMAT pf;
 
-inline FIXED make_fixed(INT16 i, INT16 f)
+inline XCBRenderFIXED make_fixed(INT16 i, INT16 f)
 {
     return (i << 16) | (f & 0xffff);
 }
@@ -31,13 +31,13 @@ void print_version_info(XCBRenderQueryVersionRep *reply)
 
 int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
 {
-    PICTFORMINFO *first_forminfo;
+    XCBRenderPICTFORMINFO *first_forminfo;
     int num_formats;
     int num_screens;
     int num_depths;
     int num_visuals;
-    PICTFORMINFOIter forminfo_iter;
-    PICTSCREENIter     screen_iter;
+    XCBRenderPICTFORMINFOIter forminfo_iter;
+    XCBRenderPICTSCREENIter     screen_iter;
     
     forminfo_iter = XCBRenderQueryPictFormatsFormats(reply);
     screen_iter =  XCBRenderQueryPictFormatsScreens(reply);
@@ -49,7 +49,7 @@ int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
     pf = first_forminfo->id;
     while(forminfo_iter.rem)
     {
-        PICTFORMINFO *forminfo = (PICTFORMINFO *)forminfo_iter.data;
+        XCBRenderPICTFORMINFO *forminfo = (XCBRenderPICTFORMINFO *)forminfo_iter.data;
 
         fprintf(stdout, "PICTFORMINFO #%d\n", 1 + num_formats - forminfo_iter.rem);
         fprintf(stdout, "    PICTFORMAT ID:          %ld\n", forminfo->id.xid);
@@ -64,65 +64,65 @@ int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
         fprintf(stdout, "        Direct AlphaShift:  %d\n", forminfo->direct.alpha_shift);
         fprintf(stdout, "        Direct AlphaMask:   %d\n", forminfo->direct.alpha_mask);
         fprintf(stdout, "\n");
-        PICTFORMINFONext(&forminfo_iter);
+        XCBRenderPICTFORMINFONext(&forminfo_iter);
     }
 
     num_screens = reply->num_screens;
     while(screen_iter.rem)
     {
-        PICTDEPTHIter depth_iter;
-        PICTSCREEN *cscreen = screen_iter.data;
+        XCBRenderPICTDEPTHIter depth_iter;
+        XCBRenderPICTSCREEN *cscreen = screen_iter.data;
         
         fprintf(stdout, "Screen #%d\n", 1 + num_screens - screen_iter.rem);
         fprintf(stdout, "    Depths for this screen:    %ld\n", cscreen->num_depths);
         fprintf(stdout, "    Fallback PICTFORMAT:       %ld\n", cscreen->fallback.xid);
-        depth_iter = PICTSCREENDepths(cscreen);
+        depth_iter = XCBRenderPICTSCREENDepths(cscreen);
 
         num_depths = cscreen->num_depths;
         while(depth_iter.rem)
         {
-            PICTVISUALIter    visual_iter;
-            PICTDEPTH *cdepth = depth_iter.data;
+            XCBRenderPICTVISUALIter    visual_iter;
+            XCBRenderPICTDEPTH *cdepth = depth_iter.data;
 
             fprintf(stdout, "    Depth #%d\n", 1 + num_depths - depth_iter.rem);
             fprintf(stdout, "        Visuals for this depth:    %d\n", cdepth->num_visuals);
             fprintf(stdout, "        Depth:                     %d\n", cdepth->depth);
-            visual_iter = PICTDEPTHVisuals(cdepth);
+            visual_iter = XCBRenderPICTDEPTHVisuals(cdepth);
 
             num_visuals = cdepth->num_visuals;
             while(visual_iter.rem)
             {
-                PICTVISUAL *cvisual = visual_iter.data;
+                XCBRenderPICTVISUAL *cvisual = visual_iter.data;
                 
                 fprintf(stdout, "        Visual #%d\n", 1 + num_visuals - visual_iter.rem);
                 fprintf(stdout, "            VISUALID:      %ld\n", cvisual->visual.id);
                 fprintf(stdout, "            PICTFORMAT:    %ld\n", cvisual->format.xid);
-                PICTVISUALNext(&visual_iter);
+                XCBRenderPICTVISUALNext(&visual_iter);
             }
-            PICTDEPTHNext(&depth_iter);
+            XCBRenderPICTDEPTHNext(&depth_iter);
         }
-        PICTSCREENNext(&screen_iter);
+        XCBRenderPICTSCREENNext(&screen_iter);
     }
     return 0;
 }
 
 int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
 {
-    WINDOW          window;
-    DRAWABLE        window_drawable, tmp, root_drawable;
-    PIXMAP          surfaces[4], alpha_surface;
-    PICTFORMAT      alpha_mask_format, window_format, surface_format, no_format = {0};
-    PICTURE         window_pict, pict_surfaces[4], alpha_pict, 
+    XCBWINDOW          window;
+    XCBDRAWABLE        window_drawable, tmp, root_drawable;
+    XCBPIXMAP          surfaces[4], alpha_surface;
+    XCBRenderPICTFORMAT      alpha_mask_format, window_format, surface_format, no_format = {0};
+    XCBRenderPICTURE         window_pict, pict_surfaces[4], alpha_pict, 
                         no_picture = {0}, root_picture;
-    PICTFORMINFO    *forminfo_ptr, *alpha_forminfo_ptr, query;
+    XCBRenderPICTFORMINFO    *forminfo_ptr, *alpha_forminfo_ptr, query;
     CARD32          value_mask, value_list[4];
-    RECTANGLE       pict_rect[1], window_rect;
-    COLOR           pict_color[4], back_color, alpha_color;
-    SCREEN          *root;
-    TRAP            traps[4];
-    TRIANGLE        triangles[4];
-    POINTFIX        tristrips[9];
-    POINTFIX        trifans[9];
+    XCBRECTANGLE       pict_rect[1], window_rect;
+    XCBRenderCOLOR           pict_color[4], back_color, alpha_color;
+    XCBSCREEN          *root;
+    XCBRenderTRAP            traps[4];
+    XCBRenderTRIANGLE        triangles[4];
+    XCBRenderPOINTFIX        tristrips[9];
+    XCBRenderPOINTFIX        trifans[9];
     int index;
 
     root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
@@ -130,17 +130,17 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
    
     /* Setting query so that it will search for an 8 bit alpha surface. */
     query.id.xid = 0;
-    query.type = PictTypeDirect;
+    query.type = XCBRenderPictTypeDirect;
     query.depth = 8;
     query.direct.red_mask = 0;
     query.direct.green_mask = 0;
     query.direct.blue_mask = 0;
     query.direct.alpha_mask = 255;
 
-    /* Get the PICTFORMAT associated with the window. */
+    /* Get the XCBRenderPICTFORMAT associated with the window. */
     window_format = get_pictformat_from_visual(reply, root->root_visual);
 
-    /* Get the PICTFORMAT we will use for the alpha mask */
+    /* Get the XCBRenderPICTFORMAT we will use for the alpha mask */
     alpha_forminfo_ptr = get_pictforminfo(reply, &query);
     alpha_mask_format.xid = alpha_forminfo_ptr->id.xid;
     
@@ -148,7 +148,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     query.depth = 32;
     query.direct.alpha_mask = 0;
   
-    /* Get the surface forminfo and PICTFORMAT */
+    /* Get the surface forminfo and XCBRenderPICTFORMAT */
     forminfo_ptr = get_pictforminfo(reply, &query);
     surface_format.xid = forminfo_ptr->id.xid;
     
@@ -156,14 +156,14 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     for(index = 0; index < 4; index++)
     {
         surfaces[index] = XCBPIXMAPNew(conn);
-        pict_surfaces[index] = XCBPICTURENew(conn);
+        pict_surfaces[index] = XCBRenderPICTURENew(conn);
     }
     alpha_surface = XCBPIXMAPNew(conn);
-    alpha_pict = XCBPICTURENew(conn);
+    alpha_pict = XCBRenderPICTURENew(conn);
     window = XCBWINDOWNew(conn);
-    window_pict = XCBPICTURENew(conn);
+    window_pict = XCBRenderPICTURENew(conn);
     window_drawable.window = window;
-    root_picture = XCBPICTURENew(conn);
+    root_picture = XCBRenderPICTURENew(conn);
     
     /* Here we will create the pixmaps that we will use */
     for(index = 0; index < 4; index++)
@@ -186,7 +186,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
             600, 600,   /* width and height */
             0,  /* border width */
             InputOutput,    /* class */
-            root->root_visual,   /* VISUALID */
+            root->root_visual,   /* XCBVISUALID */
             value_mask, value_list); /* LISTofVALUES */
     
     /* 
@@ -322,65 +322,65 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
      * Play around with Render
      */
 
-    XCBRenderFillRectangles(conn, PictOpSrc, alpha_pict, alpha_color, 1, pict_rect);
-    XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[0], pict_color[0], 1, pict_rect);
-    XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[1], pict_color[1], 1, pict_rect);
-    XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[2], pict_color[2], 1, pict_rect);
-    XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[3], pict_color[3], 1, pict_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpSrc, alpha_pict, alpha_color, 1, pict_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpSrc, pict_surfaces[0], pict_color[0], 1, pict_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpSrc, pict_surfaces[1], pict_color[1], 1, pict_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpSrc, pict_surfaces[2], pict_color[2], 1, pict_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpSrc, pict_surfaces[3], pict_color[3], 1, pict_rect);
 
     XCBFlush(conn);
     sleep(1);
 
-    XCBRenderFillRectangles(conn, PictOpOver, window_pict, back_color, 1, &window_rect);
+    XCBRenderFillRectangles(conn, XCBRenderPictOpOver, window_pict, back_color, 1, &window_rect);
 
     XCBFlush(conn);
     sleep(1);
 
 
     /* Composite the first pict_surface onto the window picture */
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], no_picture /* alpha_pict */, window_pict,
+    XCBRenderComposite(conn, XCBRenderPictOpOver, pict_surfaces[0], no_picture /* alpha_pict */, window_pict,
             0, 0, 0, 0, 200, 200,
             400, 400);
     XCBFlush(conn);
     sleep(1);
 /*
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], alpha_pict, window_pict,
+    XCBRenderComposite(conn, XCBRenderPictOpOver, pict_surfaces[0], alpha_pict, window_pict,
             0, 0, 0, 0, 0, 0,
             200, 200);
     XCBFlush(conn);
     sleep(1);
 */
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[1], no_picture /* alpha_pict */, window_pict,
+    XCBRenderComposite(conn, XCBRenderPictOpOver, pict_surfaces[1], no_picture /* alpha_pict */, window_pict,
             0, 0, 0, 0, 0, 0,
             400, 400);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[2], no_picture /* alpha_pict */, window_pict,
+    XCBRenderComposite(conn, XCBRenderPictOpOver, pict_surfaces[2], no_picture /* alpha_pict */, window_pict,
             0, 0, 0, 0, 200, 0,
             400, 400);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderComposite(conn, PictOpOver, pict_surfaces[3],  no_picture /* alpha_pict */, window_pict,
+    XCBRenderComposite(conn, XCBRenderPictOpOver, pict_surfaces[3],  no_picture /* alpha_pict */, window_pict,
             0, 0, 0, 0, 0, 200,
             400, 400);
     XCBFlush(conn);
     sleep(1);
 
-    XCBRenderTrapezoids(conn, PictOpOver, pict_surfaces[0], window_pict, alpha_mask_format, 0, 0, 1, &traps[0]);
+    XCBRenderTrapezoids(conn, XCBRenderPictOpOver, pict_surfaces[0], window_pict, alpha_mask_format, 0, 0, 1, &traps[0]);
     XCBFlush(conn);
     sleep(1);
 
-    XCBRenderTriangles(conn, PictOpOver, pict_surfaces[1], window_pict, no_format, 0, 0, 1, &triangles[0]);
+    XCBRenderTriangles(conn, XCBRenderPictOpOver, pict_surfaces[1], window_pict, no_format, 0, 0, 1, &triangles[0]);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderTriStrip(conn, PictOpOver, pict_surfaces[2], window_pict, no_format, 0, 0, 9, &tristrips[0]);
+    XCBRenderTriStrip(conn, XCBRenderPictOpOver, pict_surfaces[2], window_pict, no_format, 0, 0, 9, &tristrips[0]);
     XCBFlush(conn);
     sleep(1);
     
-    XCBRenderTriFan(conn, PictOpOver, pict_surfaces[3], window_pict, no_format, 0, 0, 8, &trifans[0]);
+    XCBRenderTriFan(conn, XCBRenderPictOpOver, pict_surfaces[3], window_pict, no_format, 0, 0, 8, &trifans[0]);
     XCBFlush(conn);
     sleep(2);
     
@@ -404,21 +404,21 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
 
 /**********************************************************
  * This function searches through the reply for a 
- * PictVisual who's VISUALID is the same as the one
+ * PictVisual who's XCBVISUALID is the same as the one
  * specified in query. The function will then return the
- * PICTFORMAT from that PictVIsual structure. 
- * This is useful for getting the PICTFORMAT that is
+ * XCBRenderPICTFORMAT from that PictVIsual structure. 
+ * This is useful for getting the XCBRenderPICTFORMAT that is
  * the same visual type as the root window.
  **********************************************************/
-PICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, VISUALID query)
+XCBRenderPICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, XCBVISUALID query)
 {
-    PICTSCREENIter screen_iter;
-    PICTSCREEN    *cscreen;
-    PICTDEPTHIter  depth_iter;
-    PICTDEPTH     *cdepth;
-    PICTVISUALIter visual_iter; 
-    PICTVISUAL    *cvisual;
-    PICTFORMAT  return_value;
+    XCBRenderPICTSCREENIter screen_iter;
+    XCBRenderPICTSCREEN    *cscreen;
+    XCBRenderPICTDEPTHIter  depth_iter;
+    XCBRenderPICTDEPTH     *cdepth;
+    XCBRenderPICTVISUALIter visual_iter; 
+    XCBRenderPICTVISUAL    *cvisual;
+    XCBRenderPICTFORMAT  return_value;
     
     screen_iter = XCBRenderQueryPictFormatsScreens(reply);
 
@@ -426,12 +426,12 @@ PICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, VISUA
     {
         cscreen = screen_iter.data;
         
-        depth_iter = PICTSCREENDepths(cscreen);
+        depth_iter = XCBRenderPICTSCREENDepths(cscreen);
         while(depth_iter.rem)
         {
             cdepth = depth_iter.data;
 
-            visual_iter = PICTDEPTHVisuals(cdepth);
+            visual_iter = XCBRenderPICTDEPTHVisuals(cdepth);
             while(visual_iter.rem)
             {
                 cvisual = visual_iter.data;
@@ -440,27 +440,27 @@ PICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *reply, VISUA
                 {
                     return cvisual->format;
                 }
-                PICTVISUALNext(&visual_iter);
+                XCBRenderPICTVISUALNext(&visual_iter);
             }
-            PICTDEPTHNext(&depth_iter);
+            XCBRenderPICTDEPTHNext(&depth_iter);
         }
-        PICTSCREENNext(&screen_iter);
+        XCBRenderPICTSCREENNext(&screen_iter);
     }
     return_value.xid = 0;
     return return_value;
 }
 
-PICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, PICTFORMINFO *query)
+XCBRenderPICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, XCBRenderPICTFORMINFO *query)
 {
-    PICTFORMINFOIter forminfo_iter;
+    XCBRenderPICTFORMINFOIter forminfo_iter;
     
     forminfo_iter = XCBRenderQueryPictFormatsFormats(reply);
 
     while(forminfo_iter.rem)
     {
-        PICTFORMINFO *cformat;
+        XCBRenderPICTFORMINFO *cformat;
         cformat  = forminfo_iter.data;
-        PICTFORMINFONext(&forminfo_iter);
+        XCBRenderPICTFORMINFONext(&forminfo_iter);
 
         if( (query->id.xid != 0) && (query->id.xid != cformat->id.xid) )
         {
@@ -511,10 +511,10 @@ int main(int argc, char *argv[])
     XCBRenderQueryVersionRep    *version_reply;
     XCBRenderQueryPictFormatsCookie formats_cookie;
     XCBRenderQueryPictFormatsRep *formats_reply;
-    PICTFORMAT  rootformat;
-    SCREEN *root;
+    XCBRenderPICTFORMAT  rootformat;
+    XCBSCREEN *root;
     
-    PICTFORMINFO  forminfo_query, *forminfo_result;
+    XCBRenderPICTFORMINFO  forminfo_query, *forminfo_result;
     
     c = XCBConnectBasic();
     root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
     print_formats_info(formats_reply);
    
     forminfo_query.id.xid = 0;
-    forminfo_query.type = PictTypeDirect;
+    forminfo_query.type = XCBRenderPictTypeDirect;
     forminfo_query.depth = 8;
     forminfo_query.direct.red_mask = 0;
     forminfo_query.direct.green_mask = 0;

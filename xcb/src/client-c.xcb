@@ -8,9 +8,9 @@ PUSHDIV(-1) dnl Discard any text until a divert(0).
 dnl -- Implementations of macros specified in global macros.m4
 
 dnl ENUM(type name, name list)
-define(`ENUM', `pushdef(`ENUMNAME', `$1')TYPEDEF(`enum $1 {INDENT()
+define(`ENUM', `pushdef(`ENUMNAME', XCB`'EXTENSION`$1')TYPEDEF(`enum {INDENT()
 TAB()ENUMNAME`$2'ENUMLOOP(shift(shift($@)))
-UNINDENT()}', `$1')popdef(`ENUMNAME')')
+UNINDENT()}', $1)popdef(`ENUMNAME')')
 define(`ENUMLOOP', `ifelse($1, , , `,
 TAB()ENUMNAME`$1'ENUMLOOP(shift($@))')')
 
@@ -99,7 +99,8 @@ $3}UNINDENT()
 dnl -- Type macros
 
 dnl TYPEDEF(old name, new name)
-define(`TYPEDEF', `PUSHDIV(TYPEDIV)HEADERONLY(`typedef $1 $2;
+define(`TYPEDEF', `define(`$2', `XCB'EXTENSION`$2')dnl
+PUSHDIV(TYPEDIV)HEADERONLY(`typedef $1 $2;
 
 ')POPDIV()')
 
@@ -113,32 +114,32 @@ dnl iterating over fixed-length fields.
 dnl
 dnl ITERATOR(base type name)
 define(`ITERATOR', `
-TYPEDEF(`struct `$1'Iter {INDENT()
-TAB()`$1' *data;
+TYPEDEF(`struct {INDENT()
+TAB()$1 *data;
 TAB()int rem;
-UNINDENT()}', ``$1'Iter')
+UNINDENT()}', `$1Iter')
 
 ifelse(NEXTFIELD, `R + 1',
 `dnl Iterate over a fixed-length object.
-FUNCTION(`void `$1'Next', ``$1'Iter *i', `
+FUNCTION(`void XCB'EXTENSION`$1Next', $1Iter `*i', `
 TAB()--i->rem;
 TAB()++i->data;
 ')
 
-FUNCTION(`void *`$1'End', ``$1'Iter i', `
+FUNCTION(`void *XCB'EXTENSION`$1End', $1Iter `i', `
 TAB()return (void *) (i.data + i.rem);
 ')
 ',
 `dnl Iterate over a variable-length object.
-FUNCTION(`void `$1'Next', ``$1'Iter *i', `
+FUNCTION(`void XCB'EXTENSION`$1Next', $1Iter `*i', `
 TAB()$1 *R = i->data;
 TAB()--i->rem;
 TAB()i->data = ($1 *) (NEXTFIELD());
 ')
 
-FUNCTION(`void *`$1'End', ``$1'Iter i', `
+FUNCTION(`void *XCB'EXTENSION`$1End', $1Iter `i', `
 TAB()while(i.rem > 0)INDENT()
-TAB()`$1'Next(&i);UNINDENT()
+TAB()$1`'Next(&i);UNINDENT()
 TAB()return (void *) i.data;
 ')
 ')
@@ -147,9 +148,9 @@ TAB()return (void *) i.data;
 define(`COMPOUND',
 `PUSHDIV(-1)
 define(`NEXTFIELD', `R + 1')
-pushdef(`LENGTHFIELD')pushdef(`REQ', $1)pushdef(`KIND')
+pushdef(`LENGTHFIELD')pushdef(`REQ', XCB`'EXTENSION`'$1)pushdef(`KIND')
 $2
-TYPEDEF(``$3' `$1' {
+TYPEDEF(``$3' {
 undivert(STRUCTDIV)dnl
 }', `$1')
 ifelse(`$3', `union', `
@@ -208,22 +209,24 @@ dnl in the order the X server expects to recieve them in. Parameters to
 dnl the generated request functions will appear in the same order as the
 dnl PARAM/FIELD macros they're related to.
 
+dnl By default, all generated code is part of the core protocol.
+define(`EXTENSION', `')
 
 dnl The X protocol specification says that the X name of the extension
 dnl "should use the ISO Latin-1 encoding, and uppercase and lowercase matter."
 dnl The C name should be a valid C identifier which can be guessed easily
 dnl from the X name, as it will appear in programmer-visible names.
 dnl BEGINEXTENSION(X name, C name)
-define(`BEGINEXTENSION', `define(`EXTENSION', `XCB`'$2`'Id')dnl
+define(`BEGINEXTENSION', `define(`EXTENSION', `$2')dnl
 
-_H`'extern const char EXTENSION[];
-_C`'const char EXTENSION[] = "`$1'";
-FUNCTION(`const XCBQueryExtensionRep *XCB`'$2`'Init', `XCBConnection *c', `
-    return XCBQueryExtensionCached(c, EXTENSION, 0);
+_H`'extern const char XCB`'EXTENSION`'Id[];
+_C`'const char XCB`'EXTENSION`'Id[] = "`$1'";
+FUNCTION(`const XCBQueryExtensionRep *XCB`'EXTENSION`'Init', `XCBConnection *c', `
+    return XCBQueryExtensionCached(c, XCB`'EXTENSION`'Id, 0);
 ')')
 
 dnl ENDEXTENSION()
-define(`ENDEXTENSION', `undefine(`EXTENSION')dnl')
+define(`ENDEXTENSION', `define(`EXTENSION', `')dnl')
 
 
 dnl Defines a BITMASK/LISTofVALUE parameter pair. The bitmask type should
@@ -272,11 +275,18 @@ ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 
 dnl Sets the major number for all instances of this request to the given code.
 dnl OPCODE(number)
-define(`OPCODE', `ifdef(`EXTENSION', `
+define(`OPCODE', `ifelse(EXTENSION, , `
+    FIELD(CARD8, `major_opcode')
+PUSHDIV(VARDIV)dnl
+TAB()const CARD8 major_opcode = `$1';
+divert(ASSNDIV)dnl
+TAB()out.major_opcode = major_opcode;
+POPDIV()
+', `
     FIELD(CARD8, `major_opcode')
     FIELD(CARD8, `minor_opcode')
 PUSHDIV(VARDIV)dnl
-TAB()const XCBQueryExtensionRep *extension = XCBQueryExtensionCached(c, EXTENSION, 0);
+TAB()const XCBQueryExtensionRep *extension = XCB`'EXTENSION`'Init(c);
 TAB()const CARD8 major_opcode = extension->major_opcode;
 TAB()const CARD8 minor_opcode = `$1';
 divert(ASSNDIV)dnl
@@ -287,13 +297,6 @@ TAB()out.major_opcode = major_opcode;
 TAB()out.minor_opcode = minor_opcode;
 POPDIV()
     ifelse(FIELDQTY, 2, `LENGTHFIELD()')
-', `
-    FIELD(CARD8, `major_opcode')
-PUSHDIV(VARDIV)dnl
-TAB()const CARD8 major_opcode = `$1';
-divert(ASSNDIV)dnl
-TAB()out.major_opcode = major_opcode;
-POPDIV()
 ')')
 
 
@@ -361,9 +364,9 @@ define(`REQUEST',`REQUESTFUNCTION(`$1', `$1', `$2')
 _H
 pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
-FUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
-`XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericError **e', `
-    return (XCB`'$1`'Rep *) XCBWaitReply(c, cookie.sequence, e);
+FUNCTION($1Rep `*XCB'EXTENSION`$1Reply',
+`XCBConnection *c,' $1Cookie `cookie, XCBGenericError **e', `
+    return (XCB`'EXTENSION`'$1`'Rep *) XCBWaitReply(c, cookie.sequence, e);
 ')popdef(`NEXTFIELD')')
 
 
@@ -375,10 +378,10 @@ ifelse($1, Void, `dnl', `COOKIETYPE($1)
 _H')
 pushdef(`PARTQTY', 1)pushdef(`PARAMQTY', 0)dnl
 PACKETSTRUCT(`$2', `Req', `$3')
-FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
+FUNCTION($1Cookie `XCB'EXTENSION`$2', `XCBConnection *c`'undivert(PARMDIV)', `
     struct iovec parts[PARTQTY];
-    XCB`$1'Cookie ret;
-    XCB`$2'Req out;
+    $1Cookie ret;
+    $2Req out;
 undivert(VARDIV)`'dnl
 
 undivert(ASSNDIV)`'dnl
@@ -395,8 +398,8 @@ dnl Declares a struct holding an XID, and a function to allocate new
 dnl instances of this struct.
 dnl XIDTYPE(name)
 define(`XIDTYPE', `STRUCT(`$1', `FIELD(`CARD32', `xid')')
-FUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
-    `$1' ret;
+FUNCTION($1 $1`New', `XCBConnection *c', `
+    $1 ret;
     ret.xid = XCBGenerateID(c);
     return ret;
 ')')
@@ -406,34 +409,34 @@ dnl Declares a struct named XCB<name>Cookie with a single "int sequence"
 dnl field.
 dnl COOKIETYPE(name)
 define(`COOKIETYPE', `dnl
-TYPEDEF(`struct XCB`$1'Cookie {
+TYPEDEF(`struct {
     unsigned int sequence;
-}', `XCB`$1'Cookie')')
+}', `$1Cookie')')
 
 
 dnl EVENT(name, number, 1 or more FIELDs)
 define(`EVENT', `dnl
-PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`'EXTENSION`$1' `$2'
 ')POPDIV()
 PACKETSTRUCT(`$1', `Event', `$3')')
 
 dnl EVENTCOPY(new name, new number, old name)
 define(`EVENTCOPY', `dnl
-PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`'EXTENSION`$1' `$2'
 ')POPDIV()
-TYPEDEF(`XCB`$3'Event', `XCB`$1'Event')')
+TYPEDEF($3Event, $1Event)')
 
 dnl ERROR(name, number, 1 or more FIELDs)
 define(`ERROR', `dnl
-PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`'EXTENSION`$1' `$2'
 ')POPDIV()
 PACKETSTRUCT(`$1', `Error', `$3')')
 
 dnl ERRORCOPY(new name, new number, old name)
 define(`ERRORCOPY', `dnl
-PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`'EXTENSION`$1' `$2'
 ')POPDIV()
-TYPEDEF(`XCB`$3'Error', `XCB`$1'Error')')
+TYPEDEF($3Error, $1Error)')
 
 
 dnl EVENTMIDDLE()
@@ -454,7 +457,7 @@ define(`REQMIDDLE', `FIELD(CARD16, `length')')
 dnl for kind in (Event, Error, Rep, Req)
 dnl PACKETSTRUCT(name, kind, 1 or more FIELDs)
 define(`PACKETSTRUCT', `PUSHDIV(-1)
-pushdef(`REQ', `XCB$1')
+pushdef(`REQ', `XCB'EXTENSION`$1')
 pushdef(`KIND', `$2')
 pushdef(`LENGTHFIELD', `TOUPPER($2)MIDDLE')
 define(`NEXTFIELD', `R + 1')
@@ -470,12 +473,10 @@ ifelse(FIELDQTY, 1,
     `ifelse(`$2', `Rep', `PAD(1)')')')
 UNINDENT()
 
-divert(TYPEDIV)HEADERONLY(`dnl
-typedef struct XCB`$1'`$2' {
+divert(-1)
+TYPEDEF(`struct {
 undivert(STRUCTDIV)dnl
-} XCB`$1'`$2';
-
-')divert(-1)
+}', `$1$2')
 
 popdef(`LENGTHFIELD')popdef(`REQ')popdef(`KIND')
 define(`FIELDQTY', 0)define(`PADQTY', 0)
@@ -499,9 +500,13 @@ HEADERONLY(`dnl
 ')SOURCEONLY(`dnl
 #include <assert.h>
 #include "xcb.h"
-ifelse($1, `xproto', `', $1, `xcb_types', `', `#include "$1.h"
+ifelse($1, `xcb_types', `', $1, `xproto', `', `#include "$1.h"
 ')dnl
-')')
+')PUSHDIV(-1)
+ifelse($1, `xcb_types', `', $1, `xproto', `include(`xcb_types.xcb')', `include(`xproto.xcb')')
+define(`VoidCookie', `XCBVoidCookie')
+POPDIV()dnl
+')
 
 dnl Generates the standard suffix in the output code.
 dnl ENDXCBGEN()

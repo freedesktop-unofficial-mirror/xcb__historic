@@ -7,7 +7,7 @@ HEADERONLY(`
 
 /* Core event and error types */
 
-EVENT(KeyPress, 2, `
+EVENT(`KeyPress', 2, `
     REPLY(KEYCODE, `detail')
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `root')
@@ -20,8 +20,8 @@ EVENT(KeyPress, 2, `
     REPLY(CARD16, `state')
     REPLY(BOOL, `same_screen')
 ')
-EVENTCOPY(KeyRelease, 3, KeyPress)
-EVENT(ButtonPress, 4, `
+EVENTCOPY(`KeyRelease', 3, `KeyPress')
+EVENT(`ButtonPress', 4, `
     REPLY(BUTTON, `detail')
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `root')
@@ -34,8 +34,8 @@ EVENT(ButtonPress, 4, `
     REPLY(CARD16, `state')
     REPLY(BOOL, `same_screen')
 ')
-EVENTCOPY(ButtonRelease, 5, ButtonPress)
-EVENT(MotionNotify, 6, `
+EVENTCOPY(`ButtonRelease', 5, `ButtonPress')
+EVENT(`MotionNotify', 6, `
     REPLY(BYTE, `detail')
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `root')
@@ -48,7 +48,7 @@ EVENT(MotionNotify, 6, `
     REPLY(CARD16, `state')
     REPLY(BOOL, `same_screen')
 ')
-EVENT(EnterNotify, 7, `
+EVENT(`EnterNotify', 7, `
     REPLY(BYTE, `detail')
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `root')
@@ -62,18 +62,18 @@ EVENT(EnterNotify, 7, `
     REPLY(BYTE, `mode')
     REPLY(BYTE, `same_screen_focus')
 ')
-EVENTCOPY(LeaveNotify, 8, EnterNotify)
-EVENT(FocusIn, 9, `
+EVENTCOPY(`LeaveNotify', 8, `EnterNotify')
+EVENT(`FocusIn', 9, `
     REPLY(BYTE, `detail')
     REPLY(WINDOW, `event')
     REPLY(BYTE, `mode')
 ')
-EVENTCOPY(FocusOut, 10, FocusIn)
-EVENT(KeymapNotify, 11, `
+EVENTCOPY(`FocusOut', 10, `FocusIn')
+EVENT(`KeymapNotify', 11, `
     define(`FIELDQTY', 0) dnl cancel usual output of seqnum field
     REPLY(CARD8, `keys[31]')
 ')
-EVENT(Expose, 12, `
+EVENT(`Expose', 12, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(CARD16, `x')
@@ -82,7 +82,7 @@ EVENT(Expose, 12, `
     REPLY(CARD16, `height')
     REPLY(CARD16, `count')
 ')
-EVENT(GraphicsExposure, 13, `
+EVENT(`GraphicsExposure', 13, `
     PAD(1)
     REPLY(DRAWABLE, `drawable')
     REPLY(CARD16, `x')
@@ -93,18 +93,18 @@ EVENT(GraphicsExposure, 13, `
     REPLY(CARD16, `count')
     REPLY(CARD8, `major_opcode')
 ')
-EVENT(NoExposure, 14, `
+EVENT(`NoExposure', 14, `
     PAD(1)
     REPLY(DRAWABLE, `drawable')
     REPLY(CARD16, `minor_opcode')
     REPLY(CARD8, `major_opcode')
 ')
-EVENT(VisibilityNotify, 15, `
+EVENT(`VisibilityNotify', 15, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(BYTE, `state')
 ')
-EVENT(CreateNotify, 16, `
+EVENT(`CreateNotify', 16, `
     PAD(1)
     REPLY(WINDOW, `parent')
     REPLY(WINDOW, `window')
@@ -115,29 +115,29 @@ EVENT(CreateNotify, 16, `
     REPLY(CARD16, `border_width')
     REPLY(BOOL, `override_redirect')
 ')
-EVENT(DestroyNotify, 17, `
+EVENT(`DestroyNotify', 17, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
 ')
-EVENT(UnmapNotify, 18, `
+EVENT(`UnmapNotify', 18, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
     REPLY(BOOL, `from_configure')
 ')
-EVENT(MapNotify, 19, `
+EVENT(`MapNotify', 19, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
     REPLY(BOOL, `override_redirect')
 ')
-EVENT(MapRequest, 20, `
+EVENT(`MapRequest', 20, `
     PAD(1)
     REPLY(WINDOW, `parent')
     REPLY(WINDOW, `window')
 ')
-EVENT(ReparentNotify, 21, `
+EVENT(`ReparentNotify', 21, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
@@ -146,7 +146,7 @@ EVENT(ReparentNotify, 21, `
     REPLY(INT16, `y')
     REPLY(BOOL, `override_redirect')
 ')
-EVENT(ConfigureNotify, 22, `
+EVENT(`ConfigureNotify', 22, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
@@ -158,7 +158,7 @@ EVENT(ConfigureNotify, 22, `
     REPLY(CARD16, `border_width')
     REPLY(BOOL, `override_redirect')
 ')
-EVENT(ConfigureRequest, 23, `
+EVENT(`ConfigureRequest', 23, `
     REPLY(BYTE, `stack_mode')
     REPLY(WINDOW, `parent')
     REPLY(WINDOW, `window')
@@ -170,41 +170,41 @@ EVENT(ConfigureRequest, 23, `
     REPLY(CARD16, `border_width')
     REPLY(CARD16, `value_mask')
 ')
-EVENT(GravityNotify, 24, `
+EVENT(`GravityNotify', 24, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
     REPLY(INT16, `x')
     REPLY(INT16, `y')
 ')
-EVENT(ResizeRequest, 25, `
+EVENT(`ResizeRequest', 25, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(CARD16, `width')
     REPLY(CARD16, `height')
 ')
-EVENT(CirculateNotify, 26, `
+EVENT(`CirculateNotify', 26, `
     PAD(1)
     REPLY(WINDOW, `event')
     REPLY(WINDOW, `window')
     PAD(4)
     REPLY(BYTE, `place')
 ')
-EVENTCOPY(CirculateRequest, 27, CirculateNotify)
-EVENT(PropertyNotify, 28, `
+EVENTCOPY(`CirculateRequest', 27, `CirculateNotify')
+EVENT(`PropertyNotify', 28, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(ATOM, `atom')
     REPLY(TIMESTAMP, `time')
     REPLY(BYTE, `state')
 ')
-EVENT(SelectionClear, 29, `
+EVENT(`SelectionClear', 29, `
     PAD(1)
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `owner')
     REPLY(ATOM, `selection')
 ')
-EVENT(SelectionRequest, 30, `
+EVENT(`SelectionRequest', 30, `
     PAD(1)
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `owner')
@@ -213,7 +213,7 @@ EVENT(SelectionRequest, 30, `
     REPLY(ATOM, `target')
     REPLY(ATOM, `property')
 ')
-EVENT(SelectionNotify, 31, `
+EVENT(`SelectionNotify', 31, `
     PAD(1)
     REPLY(TIMESTAMP, `time')
     REPLY(WINDOW, `requestor')
@@ -221,49 +221,49 @@ EVENT(SelectionNotify, 31, `
     REPLY(ATOM, `target')
     REPLY(ATOM, `property')
 ')
-EVENT(ColormapNotify, 32, `
+EVENT(`ColormapNotify', 32, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(COLORMAP, `colormap')
     REPLY(BOOL, `_new')
     REPLY(BYTE, `state')
 ')
-EVENT(ClientMessage, 33, `
+EVENT(`ClientMessage', 33, `
     REPLY(CARD8, `format')
     REPLY(WINDOW, `window')
     REPLY(ATOM, `type')
 ')
-EVENT(MappingNotify, 34, `
+EVENT(`MappingNotify', 34, `
     PAD(1)
     REPLY(BYTE, `request')
     REPLY(KEYCODE, `first_keycode')
     REPLY(CARD8, `count')
 ')
-ERROR(Request, 1, `
+ERROR(`Request', 1, `
     REPLY(CARD32, `bad_value')
     REPLY(CARD16, `minor_opcode')
     REPLY(CARD8, `major_opcode')
 ')
-ERROR(Value, 2, `
+ERROR(`Value', 2, `
     REPLY(CARD32, `bad_value')
     REPLY(CARD16, `minor_opcode')
     REPLY(CARD8, `major_opcode')
 ')
-ERRORCOPY(Window, 3, Value)
-ERRORCOPY(Pixmap, 4, Value)
-ERRORCOPY(Atom, 5, Value)
-ERRORCOPY(Cursor, 6, Value)
-ERRORCOPY(Font, 7, Value)
-ERRORCOPY(Match, 8, Request)
-ERRORCOPY(Drawable, 9, Value)
-ERRORCOPY(Access, 10, Request)
-ERRORCOPY(Alloc, 11, Request)
-ERRORCOPY(Colormap, 12, Value)
-ERRORCOPY(GContext, 13, Value)
-ERRORCOPY(IDChoice, 14, Value)
-ERRORCOPY(Name, 15, Request)
-ERRORCOPY(Length, 16, Request)
-ERRORCOPY(Implementation, 17, Request)
+ERRORCOPY(`Window', 3, `Value')
+ERRORCOPY(`Pixmap', 4, `Value')
+ERRORCOPY(`Atom', 5, `Value')
+ERRORCOPY(`Cursor', 6, `Value')
+ERRORCOPY(`Font', 7, `Value')
+ERRORCOPY(`Match', 8, `Request')
+ERRORCOPY(`Drawable', 9, `Value')
+ERRORCOPY(`Access', 10, `Request')
+ERRORCOPY(`Alloc', 11, `Request')
+ERRORCOPY(`Colormap', 12, `Value')
+ERRORCOPY(`GContext', 13, `Value')
+ERRORCOPY(`IDChoice', 14, `Value')
+ERRORCOPY(`Name', 15, `Request')
+ERRORCOPY(`Length', 16, `Request')
+ERRORCOPY(`Implementation', 17, `Request')
 ')dnl end HEADERONLY
 
 /* The requests, in major number order. */
@@ -274,7 +274,7 @@ ERRORCOPY(Implementation, 17, Request)
 PUSHDIV(-1)
 
 dnl Window attributes for CreateWindow and ChangeWindowAttributes.
-ENUM(XCBCW,
+ENUM(CW,
 BackPixmap = 1L<<0,
 BackPixel = 1L<<1,
 BorderPixmap = 1L<<2,

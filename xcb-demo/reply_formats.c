@@ -9,7 +9,7 @@
 
 #define WINFMT "0x%08x"
 
-int formatGetWindowAttributesReply(WINDOW wid, XCBGetWindowAttributesRep *reply)
+int formatGetWindowAttributesReply(XCBWINDOW wid, XCBGetWindowAttributesRep *reply)
 {
     if(!reply)
     {
@@ -55,7 +55,7 @@ int formatGetWindowAttributesReply(WINDOW wid, XCBGetWindowAttributesRep *reply)
     return 1;
 }
 
-int formatGetGeometryReply(WINDOW wid, XCBGetGeometryRep *reply)
+int formatGetGeometryReply(XCBWINDOW wid, XCBGetGeometryRep *reply)
 {
     if(!reply)
     {
@@ -75,7 +75,7 @@ int formatGetGeometryReply(WINDOW wid, XCBGetGeometryRep *reply)
     return 1;
 }
 
-int formatQueryTreeReply(WINDOW wid, XCBQueryTreeRep *reply)
+int formatQueryTreeReply(XCBWINDOW wid, XCBQueryTreeRep *reply)
 {
     int i;
 

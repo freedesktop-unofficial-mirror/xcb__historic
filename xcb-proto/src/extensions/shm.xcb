@@ -1,25 +1,25 @@
 XCBGEN(shm, `
-Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
 BEGINEXTENSION(MIT-SHM, Shm)
-XIDTYPE(SHMSEG)
-HEADERONLY(`
-EVENT(ShmCompletion, 0, `
+PUSHDIV(-1)
+XIDTYPE(SEG)
+
+EVENT(`Completion', 0, `
     PAD(1)
     REPLY(DRAWABLE, `drawable')
-    REPLY(SHMSEG, `shmseg')
+    REPLY(SEG, `shmseg')
     REPLY(CARD16, `minor_event')
     REPLY(BYTE, `major_event')
     PAD(1)
     REPLY(CARD32, `offset')
 ')
 
-ERRORCOPY(BadShmSeg, 0, Value)
-')
+ERRORCOPY(`BadSeg', 0, `Value')
 
-REQUEST(ShmQueryVersion, `
+REQUEST(QueryVersion, `
     OPCODE(0)
 ', `
     REPLY(BOOL, `shared_pixmaps')
@@ -30,19 +30,19 @@ REQUEST(ShmQueryVersion, `
     REPLY(CARD8, `pixmap_format')
 ')
 
-VOIDREQUEST(ShmAttach, `
+VOIDREQUEST(Attach, `
     OPCODE(1)
-    PARAM(SHMSEG, `shmseg')
+    PARAM(SEG, `shmseg')
     PARAM(CARD32, `shmid')
     PARAM(BOOL, `read_only')
 ')
 
-VOIDREQUEST(ShmDetach, `
+VOIDREQUEST(Detach, `
     OPCODE(2)
-    PARAM(SHMSEG, `shmseg')
+    PARAM(SEG, `shmseg')
 ')
 
-VOIDREQUEST(ShmPutImage, `
+VOIDREQUEST(PutImage, `
     OPCODE(3)
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
@@ -58,11 +58,11 @@ VOIDREQUEST(ShmPutImage, `
     PARAM(CARD8, `format')
     PARAM(CARD8, `send_event')
     PAD(1)
-    PARAM(SHMSEG, `shmseg')
+    PARAM(SEG, `shmseg')
     PARAM(CARD32, `offset')
 ')
 
-REQUEST(ShmGetImage, `
+REQUEST(GetImage, `
     OPCODE(4)
     PARAM(DRAWABLE, `drawable')
     PARAM(INT16, `x')
@@ -72,7 +72,7 @@ REQUEST(ShmGetImage, `
     PARAM(CARD32, `plane_mask')
     PARAM(CARD8, `format')
     PAD(3)
-    PARAM(SHMSEG, `shmseg')
+    PARAM(SEG, `shmseg')
     PARAM(CARD32, `offset')
 ', `
     REPLY(CARD8, `depth')
@@ -80,7 +80,7 @@ REQUEST(ShmGetImage, `
     REPLY(CARD32, `size')
 ')
 
-VOIDREQUEST(ShmCreatePixmap, `
+VOIDREQUEST(CreatePixmap, `
     OPCODE(5)
     PARAM(PIXMAP, `pid')
     PARAM(DRAWABLE, `drawable')
@@ -88,9 +88,10 @@ VOIDREQUEST(ShmCreatePixmap, `
     PARAM(CARD16, `height')
     PARAM(CARD8, `depth')
     PAD(3)
-    PARAM(SHMSEG, `shmseg')
+    PARAM(SEG, `shmseg')
     PARAM(CARD32, `offset')
 ')
 
+POPDIV()
 ENDEXTENSION
 ENDXCBGEN

@@ -22,13 +22,13 @@
 #define PI 3.14159265
 
 static XCBConnection *c;
-static SCREEN *root;
-static GCONTEXT white, black;
+static XCBSCREEN *root;
+static XCBGCONTEXT white, black;
 
 #define WINS 8
 static struct {
-	DRAWABLE w;
-	DRAWABLE p;
+	XCBDRAWABLE w;
+	XCBDRAWABLE p;
 	CARD16 width;
 	CARD16 height;
 	float angv;
@@ -44,7 +44,7 @@ int main()
 
 	CARD32 mask = GCForeground | GCGraphicsExposures;
 	CARD32 values[2];
-	DRAWABLE rootwin;
+	XCBDRAWABLE rootwin;
 
 	c = XCBConnectBasic();
 	root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
@@ -89,7 +89,7 @@ void *run(void *param)
 	int xo, yo;
 	double r, theta = 0;
 
-	POINT line[2];
+	XCBPOINT line[2];
 
 	windows[idx].w.window = XCBWINDOWNew(c);
 	windows[idx].p.pixmap = XCBPIXMAPNew(c);
@@ -109,12 +109,12 @@ void *run(void *param)
 		int depth;
 		CARD32 mask = XCBCWBackPixel | XCBCWEventMask | XCBCWDontPropagate;
 		CARD32 values[3];
-		RECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
+		XCBRECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
 		values[0] = root->white_pixel;
 		values[1] = ButtonReleaseMask | ExposureMask;
 		values[2] = ButtonPressMask;
 
-		depth = SCREENAllowedDepths(root).data->depth;
+		depth = XCBSCREENAllowedDepths(root).data->depth;
 
 		XCBCreateWindow(c, depth, windows[idx].w.window, root->root,
 			/* x */ 0, /* y */ 0,
@@ -157,7 +157,7 @@ void *run(void *param)
 	}
 }
 
-int lookup_window(WINDOW w)
+int lookup_window(XCBWINDOW w)
 {
 	int i;
 	for(i = 0; i < WINS; ++i)

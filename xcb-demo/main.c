@@ -34,14 +34,14 @@ void try_events(XCBConnection *c);
 void wait_events(XCBConnection *c);
 
 static XCBConnection *c;
-static WINDOW window;
+static XCBWINDOW window;
 
 int main(int argc, char **argv)
 {
     CARD32 mask = 0;
     CARD32 values[6];
-    DRAWABLE d;
-    SCREEN *root;
+    XCBDRAWABLE d;
+    XCBSCREEN *root;
 #ifdef TEST_GET_GEOMETRY
     XCBGetGeometryCookie geom[3];
     XCBGetGeometryRep *geomrep[3];
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     mask |= XCBCWDontPropagate;
     values[5] = ButtonPressMask;
 
-    XCBCreateWindow(c, SCREENAllowedDepths(root).data->depth,
+    XCBCreateWindow(c, XCBSCREENAllowedDepths(root).data->depth,
         window, root->root,
         /* x */ 20, /* y */ 200, /* width */ 150, /* height */ 150,
         /* border_width */ 10, /* class */ InputOutput,
@@ -109,15 +109,15 @@ int main(int argc, char **argv)
     atomrep[1] = XCBInternAtomReply(c, atom[1], 0);
     atomrep[0] = XCBInternAtomReply(c, atom[0], 0);
     {
-        ATOM XA_WM_NAME = { 39 };
-        ATOM XA_STRING = { 31 };
+        XCBATOM XA_WM_NAME = { 39 };
+        XCBATOM XA_STRING = { 31 };
         XCBChangeProperty(c, PropModeReplace, window, XA_WM_NAME, XA_STRING, 8, strlen(argv[0]), argv[0]);
     }
     if(atomrep[0] && atomrep[1])
     {
-        ATOM WM_PROTOCOLS = atomrep[0]->atom;
-        ATOM WM_DELETE_WINDOW = atomrep[1]->atom;
-        ATOM XA_ATOM = { 4 };
+        XCBATOM WM_PROTOCOLS = atomrep[0]->atom;
+        XCBATOM WM_DELETE_WINDOW = atomrep[1]->atom;
+        XCBATOM XA_ATOM = { 4 };
         XCBChangeProperty(c, PropModeReplace, window, WM_PROTOCOLS, XA_ATOM, 32, 1, &WM_DELETE_WINDOW);
     }
     free(atomrep[0]);

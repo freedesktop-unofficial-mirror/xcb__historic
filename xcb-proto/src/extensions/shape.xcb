@@ -1,5 +1,5 @@
 XCBGEN(shape, `
-Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
@@ -8,7 +8,7 @@ HEADERONLY(`
 typedef CARD8 SHAPE_OP;
 typedef CARD8 SHAPE_KIND;
 
-EVENT(ShapeNotify, 0, `
+EVENT(`Notify', 0, `
     REPLY(SHAPE_KIND, `shape_kind')
     REPLY(WINDOW, `affected_window')
     REPLY(INT16, `extents_x')
@@ -19,7 +19,7 @@ EVENT(ShapeNotify, 0, `
     REPLY(BOOL, `shaped')
 ')
 ')
-REQUEST(ShapeQueryVersion, `
+REQUEST(QueryVersion, `
     OPCODE(0)
 ', `
     PAD(1)
@@ -27,7 +27,7 @@ REQUEST(ShapeQueryVersion, `
     REPLY(CARD16, `minor_version')
 ')
 
-VOIDREQUEST(ShapeRectangles, `
+VOIDREQUEST(Rectangles, `
     OPCODE(1)
     PARAM(SHAPE_OP, `operation')
     PARAM(SHAPE_KIND, `destination_kind')
@@ -40,7 +40,7 @@ VOIDREQUEST(ShapeRectangles, `
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
-VOIDREQUEST(ShapeMask, `
+VOIDREQUEST(Mask, `
     OPCODE(2)
     PARAM(SHAPE_OP, `operation')
     PARAM(SHAPE_KIND, `destination_kind')
@@ -51,7 +51,7 @@ VOIDREQUEST(ShapeMask, `
     PARAM(PIXMAP, `source_bitmap')
 ')
 
-VOIDREQUEST(ShapeCombine, `
+VOIDREQUEST(Combine, `
     OPCODE(3)
     PARAM(SHAPE_OP, `operation')
     PARAM(SHAPE_KIND, `destination_kind')
@@ -63,7 +63,7 @@ VOIDREQUEST(ShapeCombine, `
     PARAM(WINDOW, `source_window')
 ')
 
-VOIDREQUEST(ShapeOffset, `
+VOIDREQUEST(Offset, `
     OPCODE(4)
     PARAM(SHAPE_KIND, `destination_kind')
     PAD(3)
@@ -72,7 +72,7 @@ VOIDREQUEST(ShapeOffset, `
     PARAM(INT16, `y_offset')
 ')
 
-REQUEST(ShapeQueryExtents, `
+REQUEST(QueryExtents, `
     OPCODE(5)
     PARAM(WINDOW, `destination_window')
 ', `
@@ -90,20 +90,20 @@ REQUEST(ShapeQueryExtents, `
     REPLY(CARD16, `clip_shape_extents_height')
 ')
 
-VOIDREQUEST(ShapeSelectInput, `
+VOIDREQUEST(SelectInput, `
     OPCODE(6)
     PARAM(WINDOW, `destination_window')
     PARAM(BOOL, `enable')
 ')
 
-REQUEST(ShapeInputSelected, `
+REQUEST(InputSelected, `
     OPCODE(6)
     PARAM(WINDOW, `destination_window')
 ', `
     REPLY(BOOL, `enabled')
 ')
 
-REQUEST(ShapeGetRectangles, `
+REQUEST(GetRectangles, `
     OPCODE(7)
     PARAM(WINDOW, `window')
     PARAM(SHAPE_KIND, `source_kind')

@@ -1,5 +1,5 @@
 XCBGEN(render, `
-Copyright (C) 2002 Carl D. Worth
+Copyright (C) 2002-2004 Carl D. Worth, Jamey Sharp, and Bart Massey
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
@@ -66,7 +66,7 @@ ENUM(PolyMode,
     Imprecise,
 )
 
-ENUM(CreatePicture,
+ENUM(CP,
     Repeat = 1 << 0,
     AlphaMap = 1 << 1,
     AlphaXOrigin = 1 << 2,
@@ -99,11 +99,11 @@ XIDTYPE(PICTFORMAT)
 
 TYPEDEF(INT32, FIXED)
 
-ERROR(PictFormat, 0)
-ERROR(Picture, 1)
-ERROR(PictOp, 2)
-ERROR(GlyphSet, 3)
-ERROR(Glyph, 4)
+ERROR(`PictFormat', 0)
+ERROR(`Picture', 1)
+ERROR(`PictOp', 2)
+ERROR(`GlyphSet', 3)
+ERROR(`Glyph', 4)
 
 STRUCT(DIRECTFORMAT, `
     FIELD(CARD16, `red_shift')
@@ -192,7 +192,7 @@ STRUCT(GLYPHINFO, `
 ')
 
 
-REQUEST(RenderQueryVersion, `
+REQUEST(`QueryVersion', `
     OPCODE(0)
     PARAM(CARD32, `client_major_version')
     PARAM(CARD32, `client_minor_version')
@@ -203,7 +203,7 @@ REQUEST(RenderQueryVersion, `
     PAD(16)
 ')
 
-REQUEST(RenderQueryPictFormats, `
+REQUEST(`QueryPictFormats', `
     OPCODE(1)
 ', `
     PAD(1)
@@ -219,7 +219,7 @@ REQUEST(RenderQueryPictFormats, `
 ')
 
 dnl from version 0.7
-REQUEST(RenderQueryPictIndexValues, `
+REQUEST(`QueryPictIndexValues', `
     OPCODE(2)
     PARAM(PICTFORMAT, `format')
 ', `
@@ -231,7 +231,7 @@ REQUEST(RenderQueryPictIndexValues, `
 
 dnl opcode 3 reserved for QueryDithers
 
-VOIDREQUEST(RenderCreatePicture, `
+VOIDREQUEST(`CreatePicture', `
     OPCODE(4)
     PARAM(PICTURE, `pid')
     PARAM(DRAWABLE, `drawable')
@@ -239,13 +239,13 @@ VOIDREQUEST(RenderCreatePicture, `
     VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
-VOIDREQUEST(RenderChangePicture, `
+VOIDREQUEST(`ChangePicture', `
     OPCODE(5)
     PARAM(PICTURE, `picture')
     VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
-VOIDREQUEST(RenderSetPictureClipRectangles, `
+VOIDREQUEST(`SetPictureClipRectangles', `
     OPCODE(6)
     PARAM(PICTURE, `picture')
     PARAM(INT16, `clip_x_origin')
@@ -254,12 +254,12 @@ VOIDREQUEST(RenderSetPictureClipRectangles, `
     LISTPARAM(RECTANGLE, `rectangles', `rectangles_len')
 ')
 
-VOIDREQUEST(RenderFreePicture, `
+VOIDREQUEST(`FreePicture', `
     OPCODE(7)
     PARAM(PICTURE, `picture')
 ')
 
-VOIDREQUEST(RenderComposite, `
+VOIDREQUEST(`Composite', `
     OPCODE(8)
     PARAM(CARD8, `op')
     PAD(3)
@@ -278,7 +278,7 @@ VOIDREQUEST(RenderComposite, `
 
 dnl opcode 9 reserved for Scale
 
-VOIDREQUEST(RenderTrapezoids, `
+VOIDREQUEST(`Trapezoids', `
     OPCODE(10)
     PARAM(CARD8, `op')
     PAD(3)
@@ -291,7 +291,7 @@ VOIDREQUEST(RenderTrapezoids, `
     LISTPARAM(TRAP, `traps', `traps_len')
 ')
 
-VOIDREQUEST(RenderTriangles, `
+VOIDREQUEST(`Triangles', `
     OPCODE(11)
     PARAM(CARD8, `op')
     PAD(3)
@@ -304,7 +304,7 @@ VOIDREQUEST(RenderTriangles, `
     LISTPARAM(TRIANGLE, `triangles', `triangles_len')
 ')
 
-VOIDREQUEST(RenderTriStrip, `
+VOIDREQUEST(`TriStrip', `
     OPCODE(12)
     PARAM(CARD8, `op')
     PAD(3)
@@ -317,7 +317,7 @@ VOIDREQUEST(RenderTriStrip, `
     LISTPARAM(POINTFIX, `points', `points_len')
 ')
 
-VOIDREQUEST(RenderTriFan, `
+VOIDREQUEST(`TriFan', `
     OPCODE(13)
     PARAM(CARD8, `op')
     PAD(3)
@@ -336,24 +336,24 @@ dnl opcode 15 reserved for ColorTriangles
 
 dnl opcode 16 reserved for Transform
 
-VOIDREQUEST(RenderCreateGlyphSet, `
+VOIDREQUEST(`CreateGlyphSet', `
     OPCODE(17)
     PARAM(GLYPHSET, `gsid')
     PARAM(PICTFORMAT, `format')
 ')
 
-VOIDREQUEST(RenderReferenceGlyphSet, `
+VOIDREQUEST(`ReferenceGlyphSet', `
     OPCODE(18)
     PARAM(GLYPHSET, `gsid')
     PARAM(GLYPHSET, `existing')
 ')
 
-VOIDREQUEST(RenderFreeGlyphSet, `
+VOIDREQUEST(`FreeGlyphSet', `
     OPCODE(19)
     PARAM(GLYPHSET, `glyphset')
 ')
 
-VOIDREQUEST(RenderAddGlyphs, `
+VOIDREQUEST(`AddGlyphs', `
     OPCODE(20)
     PARAM(GLYPHSET, `glyphset')
     PARAM(CARD32, `glyphs_len')
@@ -365,7 +365,7 @@ VOIDREQUEST(RenderAddGlyphs, `
 
 dnl opcode 21 reserved for AddGlyphsFromPicture
 
-VOIDREQUEST(RenderFreeGlyphs, `
+VOIDREQUEST(`FreeGlyphs', `
     OPCODE(22)
     PARAM(GLYPHSET, `glyphset')
     LOCALPARAM(CARD16, `glyphs_len')
@@ -394,7 +394,7 @@ UNION(GLYPHITEM$1, `
     FIELD(GLYPHSETELT, `glyphset')
 ')
 
-VOIDREQUEST(RenderCompositeGlyphs$1, `
+VOIDREQUEST(`CompositeGlyphs$1', `
     OPCODE($2)
     PARAM(CARD8, `op')
     PAD(3)
@@ -417,7 +417,7 @@ CompositeGlyphs(32, 25)
 
 dnl new in version 0.1
 
-VOIDREQUEST(RenderFillRectangles, `
+VOIDREQUEST(`FillRectangles', `
     OPCODE(26)
     PARAM(CARD8, `op')
     PAD(3)
@@ -429,7 +429,7 @@ VOIDREQUEST(RenderFillRectangles, `
 
 dnl new in version 0.5
 
-VOIDREQUEST(RenderCreateCursor, `
+VOIDREQUEST(`CreateCursor', `
     OPCODE(27)
     PARAM(CURSOR, `cid')
     PARAM(PICTURE, `source')
@@ -451,13 +451,13 @@ STRUCT(TRANSFORM, `
     FIELD(FIXED, `matrix33')
 ')
 
-VOIDREQUEST(RenderSetPictureTransform, `
+VOIDREQUEST(`SetPictureTransform', `
     OPCODE(28)
     PARAM(PICTURE, `picture')
     PARAM(TRANSFORM, `transform')
 ')
 
-REQUEST(RenderQueryFilters, `
+REQUEST(`QueryFilters', `
     OPCODE(29)
     PARAM(DRAWABLE, `drawable')
 ', `
@@ -469,7 +469,7 @@ REQUEST(RenderQueryFilters, `
     LISTFIELD(STR, `filters', `R->num_filters')
 ')
 
-VOIDREQUEST(RenderSetPictureFilter, `
+VOIDREQUEST(`SetPictureFilter', `
     OPCODE(30)
     PARAM(PICTURE, `picture')
     PARAM(CARD16, `filter_len')
@@ -485,7 +485,7 @@ STRUCT(ANIMCURSORELT, `
     FIELD(CARD32, `delay')
 ')
 
-REQUEST(RenderCreateAnimCursor, `
+REQUEST(`CreateAnimCursor', `
     OPCODE(31)
     PARAM(CURSOR, `cid')
     LOCALPARAM(CARD16, `cursors_len')
