@@ -7,13 +7,13 @@
 
 CARD8
 xcb_connection_depth_get (XCBConnection *c,
-			  XCBSCREEN     *root)
+			  XCBSCREEN     *screen)
 {
-  XCBDRAWABLE drawable;
+  XCBDRAWABLE        drawable;
   XCBGetGeometryRep *geom;
-  int depth;
+  int                depth;
 
-  drawable.window = root->root;
+  drawable.window = screen->root;
   geom = XCBGetGeometryReply (c, XCBGetGeometry(c, drawable), 0);
 
   if (!geom) {

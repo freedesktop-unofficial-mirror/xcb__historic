@@ -3,7 +3,7 @@
 
 
 CARD8          xcb_connection_depth_get      (XCBConnection *c,
-					      XCBSCREEN     *root);
+					      XCBSCREEN     *screen);
 
 XCBSCREEN     *xcb_connection_screen_get     (XCBConnection *c,
 					      int            screen);
