@@ -111,7 +111,11 @@ STATICFUNCTION(`int match_reply_seqnum32', `const void *seqnum, const void *data
     return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
 ')
 _C
-STATICFUNCTION(`int XCBReadPacket', `void *readerdata, XCBIOHandle *h', `
+STATICFUNCTION(
+/* PRE: called immediately after data has been read from the connection */
+/* INV: this function operates entirely out of the I/O layer buffers,
+        and never causes a read or write. */
+int XCBReadPacket, `void *readerdata, XCBIOHandle *h', `
     XCBConnection *c = (XCBConnection *) readerdata;
     int ret;
     int length = 32;
@@ -156,17 +160,6 @@ ALLOC(unsigned char, buf, length)
         XCBListAppend(c->event_data, (XCBGenericEvent *) buf);
 
     return 1; /* I have something for you... */
-')
-_C
-STATICFUNCTION(`int XCBReadWire', `XCBConnection *c', `
-    int num_packets = 0;
-    
-    while( XCBReadPacket((void *) c, c->handle) )
-    {
-        num_packets++;
-    }
-    
-    return num_packets;
 ')
 _C
 FUNCTION(`void *XCBWaitSeqnum', `XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e', `
@@ -233,6 +226,7 @@ FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
     while(XCBListIsEmpty(c->event_data))
         if(XCBWait(c->handle, /*should_write*/ 0) <= 0)
             break;
+    /* XCBListRemoveHead returns 0 on empty list. */
     ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
 
     pthread_mutex_unlock(&c->locked);
@@ -244,17 +238,10 @@ FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
     return ret;
 ')
 _C
+dnl FIXME: should first call something like XCBWait, but without blocking.
 FUNCTION(`XCBGenericEvent *XCBPollEvent', `XCBConnection *c', `
-    XCBGenericEvent *ret = 0;
-    
-    XCBReadWire(c);
-
-    if(!XCBListIsEmpty(c->event_data))
-    {
-        ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
-    }
-
-    return ret;
+    /* XCBListRemoveHead returns 0 on empty list. */
+    return (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
 ')
 _C
 FUNCTION(`int XCBFlush', `XCBConnection *c', `

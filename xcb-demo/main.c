@@ -119,6 +119,8 @@ int main(int argc, char **argv)
     free(atomrep[0]);
     free(atomrep[1]);
 #endif
+    try_events(c);
+
     XCBMapWindow(c, window);
 
     /* Send off a collection of requests */
@@ -159,6 +161,8 @@ int main(int argc, char **argv)
     free(geomrep[1]);
 #endif
 
+    try_events(c);
+
     /* Mix in some more requests */
 #ifdef TEST_QUERY_TREE
     treerep[1] = XCBQueryTreeReply(c, tree[1], 0);
@@ -184,6 +188,8 @@ int main(int argc, char **argv)
     free(treerep[1]);
 #endif
 
+    try_events(c);
+
     /* Get the last reply of the first batch */
 #if 1 /* if 0, leaves a reply in the reply queue */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES
@@ -208,11 +214,9 @@ int main(int argc, char **argv)
     /*NOTREACHED*/
 }
 
-int wait_event(XCBConnection *c)
+int show_event(XCBGenericEvent *e)
 {
     int ret = 1;
-    XCBGenericEvent *e = XCBWaitEvent(c);
-
     if(!formatEvent(e))
         return 0;
 
@@ -224,17 +228,19 @@ int wait_event(XCBConnection *c)
 
 void try_events(XCBConnection *c)
 {
-    while(!XCBEventQueueIsEmpty(c) && wait_event(c))
+    XCBGenericEvent *e;
+    while((e = XCBPollEvent(c)) && show_event(e))
         /* empty statement */ ;
 }
 
 void wait_events(XCBConnection *c)
 {
+    XCBGenericEvent *e;
 #ifdef TEST_THREADS
 # ifdef VERBOSE
     printf("wait_events() thread ID: %ld\n", pthread_self());
 # endif
 #endif
-    while(wait_event(c))
+    while((e = XCBWaitEvent(c)) && show_event(e))
         /* empty statement */ ;
 }
