@@ -8,6 +8,7 @@ EXTHEADERS = \
 		extensions/shape.h \
 		extensions/render.h \
 		extensions/dpms.h \
+		extensions/sync.h \
 		extensions/xc_misc.h
 EXTSOURCES = \
 		extensions/bigreq.c \
@@ -15,6 +16,7 @@ EXTSOURCES = \
 		extensions/shape.c \
 		extensions/render.c \
 		extensions/dpms.c \
+		extensions/sync.c \
 		extensions/xc_misc.c
 EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
