@@ -9,7 +9,7 @@
 #include <X11/Xlib.h>
 #include <X11/XCB/xcb.h>
 #include <X11/XCB/shm.h>
-#include <X11/XCB/xcb_convenient.h>
+#include <X11/XCB/xcb_aux.h>
 #include <X11/XCB/xcb_image.h>
 
 #include "lissajoux.h"
@@ -189,7 +189,7 @@ main (int argc, char *argv[])
 
   data.conn = XCBConnectBasic ();
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (data.conn)).data;
-  data.depth = xcb_connection_depth_get (data.conn, screen);
+  data.depth = XCBAuxGetDepth (data.conn, screen);
 
   win.window = screen->root;
 
