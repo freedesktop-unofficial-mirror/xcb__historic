@@ -3,7 +3,7 @@ dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 dnl
 include(`generics.xcb')dnl
-divert(-1) dnl Discard any text until a divert(0).
+PUSHDIV(-1) dnl Discard any text until a divert(0).
 
 dnl -- Implementations of macros specified in global macros.m4
 
@@ -56,17 +56,6 @@ define(`SOURCEONLY', `PUSHDIV(-1) $1
 POPDIV()')
 ifdef(`_C', `define(`SOURCEONLY', `$1')', `define(`_C', `dnl')')
 
-
-dnl Declare a C pre-processor #define.
-dnl CPPDEFINE(name, expansion)
-define(`CPPDEFINE', `#define `$1' `$2'')
-
-dnl Declare a C pre-processor #undef.
-dnl CPPUNDEF(name)
-define(`CPPUNDEF', `#undef `$1'')
-
-dnl CONSTANT(type, name, value)
-define(`CONSTANT', `CPPDEFINE(`$2', `$3')')
 
 
 dnl Function prototypes and implementations
@@ -178,11 +167,6 @@ define(`UNION', `COMPOUND($@, `union')')
 dnl STRUCT(name, 1 or more FIELDs)
 define(`STRUCT', `COMPOUND($@, `struct')')
 
-dnl CHAR(char-literal)
-changequote([,])
-define([CHAR],['$1'])
-changequote(`,')
-
 
 dnl -- Diversions used internally
 
@@ -240,11 +224,6 @@ FUNCTION(`const XCBQueryExtensionRep *XCB`'$2`'Init', `XCBConnection *c', `
 
 dnl ENDEXTENSION()
 define(`ENDEXTENSION', `undefine(`EXTENSION')dnl')
-
-
-dnl Defines an enumerated protocol type.
-dnl XCBENUM(type name, name list)
-define(`XCBENUM', `ENUM(XCB`$1', shift($@))')
 
 
 dnl Defines a BITMASK/LISTofVALUE parameter pair. The bitmask type should
@@ -334,11 +313,11 @@ dnl at run-time to the number of elements in this array.
 dnl ARRAYFIELD(field type, field name, list length expr)
 define(`ARRAYFIELD', `
 pushdef(`NAME', `JOIN(`', MAP(`UCFIRST', SPLIT(`_', `$2')))')
-INLINEFUNCTION(`$1 *'REQ`'NAME, REQ`'KIND` *R', `
+FUNCTION(`$1 *'REQ`'NAME, REQ`'KIND` *R', `
     return (`$1' *) (NEXTFIELD);
 ')
 
-INLINEFUNCTION(`int 'REQ`'NAME`'Length, REQ`'KIND` *R', `
+FUNCTION(`int 'REQ`'NAME`'Length, REQ`'KIND` *R', `
     return `$3';
 ')
 
@@ -434,21 +413,27 @@ TYPEDEF(`struct XCB`$1'Cookie {
 
 dnl EVENT(name, number, 1 or more FIELDs)
 define(`EVENT', `dnl
-_H`'#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+')POPDIV()
 PACKETSTRUCT(`$1', `Event', `$3')')
 
 dnl EVENTCOPY(new name, new number, old name)
-define(`EVENTCOPY', `HEADERONLY(CPPDEFINE(`XCB'`$1', `$2')
-)TYPEDEF(`XCB`$3'Event', `XCB`$1'Event')')
+define(`EVENTCOPY', `dnl
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+')POPDIV()
+TYPEDEF(`XCB`$3'Event', `XCB`$1'Event')')
 
 dnl ERROR(name, number, 1 or more FIELDs)
 define(`ERROR', `dnl
-_H`'#define XCB`$1' `$2'
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+')POPDIV()
 PACKETSTRUCT(`$1', `Error', `$3')')
 
 dnl ERRORCOPY(new name, new number, old name)
-define(`ERRORCOPY', `HEADERONLY(CPPDEFINE(`XCB'`$1', `$2')
-)TYPEDEF(`XCB`$3'Error', `XCB`$1'Error')')
+define(`ERRORCOPY', `dnl
+PUSHDIV(TYPEDIV)HEADERONLY(`#define XCB`$1' `$2'
+')POPDIV()
+TYPEDEF(`XCB`$3'Error', `XCB`$1'Error')')
 
 
 dnl EVENTMIDDLE()
@@ -526,4 +511,4 @@ undivert(FUNCDIV)dnl
 undivert(INLINEFUNCDIV)dnl
 _H`'#endif')
 
-divert(0)`'dnl
+POPDIV()`'dnl

@@ -53,7 +53,7 @@ CARD32 XCBMaximumRequestLength(XCBConnection *c)
     return c->maximum_request_length;
 }
 
-inline int XCBAddReplyData(XCBConnection *c, int seqnum)
+int XCBAddReplyData(XCBConnection *c, int seqnum)
 {
     XCBReplyData *data;
     data = malloc(sizeof(XCBReplyData));

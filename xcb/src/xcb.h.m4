@@ -32,27 +32,6 @@ typedef struct XCBList XCBList;
 
 /* Other types */
 
-typedef struct XCBGenericRep {
-    BYTE response_type;
-    CARD8 pad0;
-    CARD16 seqnum;
-    CARD32 length;
-} XCBGenericRep;
-
-typedef struct XCBGenericEvent {
-    BYTE response_type;
-} XCBGenericEvent;
-
-typedef struct XCBGenericError {
-    BYTE response_type;
-    BYTE error_code;
-    CARD16 seqnum;
-} XCBGenericError;
-
-typedef struct XCBVoidCookie {
-    unsigned int seqnum;
-} XCBVoidCookie;
-
 divert(-1)
 define(`_H')
 include(`client-c.xcb')
@@ -60,8 +39,15 @@ include(`client-c.xcb')
 define(`XCBGEN')
 define(`ENDXCBGEN')
 
+PACKETSTRUCT(Generic, `Rep')
+PACKETSTRUCT(Generic, `Event')
+PACKETSTRUCT(Generic, `Error')
+
+COOKIETYPE(`Void')
+
 include(`xcb_types.xcb')
 include(`xproto.xcb')
+
 divert(0)dnl
 undivert(TYPEDIV)dnl
 
