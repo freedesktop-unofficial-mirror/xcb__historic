@@ -84,7 +84,7 @@ dnl any C expression and may reference any of the other fields of this
 dnl request.
 dnl LISTPARAM(element type, list name, length expression)
 define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)
-TAB()parts[PARTQTY].iov_base = (`$1' *) `$2';
+TAB()parts[PARTQTY].iov_base = (caddr_t) `$2';
 TAB()parts[PARTQTY].iov_len = (`$3') * sizeof(`$1');
 TAB()out->length += (parts[PARTQTY].iov_len + 3) >> 2;
 POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
