@@ -2,19 +2,23 @@ lib_LTLIBRARIES = libXCB.la
 
 M4FLAGS = $(XCBPROTO_CFLAGS)
 
-EXTENSIONS = \
-		extensions/bigreq.c extensions/bigreq.h \
-		extensions/shm.c extensions/shm.h \
-		extensions/shape.c extensions/shape.h \
-		extensions/render.c extensions/render.h \
-		extensions/dpms.c extensions/dpms.h
+EXTHEADERS = \
+		extensions/bigreq.h \
+		extensions/shm.h \
+		extensions/shape.h \
+		extensions/render.h \
+		extensions/dpms.h
+EXTSOURCES = \
+		extensions/bigreq.c \
+		extensions/shm.c \
+		extensions/shape.c \
+		extensions/render.c \
+		extensions/dpms.c
+EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
 COREPROTO = xcb.h xproto.c xcb_types.c
 
-xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb \
-		extensions/bigreq.h \
-		extensions/shm.h extensions/shape.h \
-		extensions/render.h extensions/dpms.h
+xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb $(EXTHEADERS)
 
 CFLAGS =
 AM_CFLAGS = -include config.h $(CDEBUGFLAGS) $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
