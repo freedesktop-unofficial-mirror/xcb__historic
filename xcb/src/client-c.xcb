@@ -233,10 +233,10 @@ dnl from the X name, as it will appear in programmer-visible names.
 dnl BEGINEXTENSION(X name, C name)
 define(`BEGINEXTENSION', `define(`EXTENSION', `$2')dnl
 
-_H`'extern const char XCB`'EXTENSION`'Id[];
-_C`'const char XCB`'EXTENSION`'Id[] = "`$1'";
+_H`'extern XCBExtension XCB`'EXTENSION`'Id;
+_C`'XCBExtension XCB`'EXTENSION`'Id = { "`$1'" };
 FUNCTION(`const XCBQueryExtensionRep *XCB`'EXTENSION`'Init', `XCBConnection *c', `
-    return XCBQueryExtensionCached(c, XCB`'EXTENSION`'Id, 0);
+    return XCBGetExtensionData(c, &XCB`'EXTENSION`'Id);
 ')')
 
 dnl ENDEXTENSION()

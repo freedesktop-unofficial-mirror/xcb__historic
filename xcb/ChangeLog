@@ -1,5 +1,16 @@
 2004-09-29  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb.h.m4:
+	* src/xcbext.h:
+	* src/client-c.xcb:
+	* src/xcb_ext.c:
+	Update the extension cache for its new API. The
+	optimizations that this API enables are not yet
+	implemented, but the current implementation should
+	at least function correctly.
+
+2004-09-29  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_util.c:
 	* src/xcbext.h:
 	Oops, XCBPopcount was supposed to change argument

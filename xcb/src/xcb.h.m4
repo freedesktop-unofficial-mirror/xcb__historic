@@ -88,9 +88,13 @@ void XCBEventQueueClear(XCBConnection *c);
 
 /* xcb_ext.c */
 
+typedef struct XCBExtension XCBExtension;
+
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e);
+const XCBQueryExtensionRep *XCBGetExtensionData(XCBConnection *c, XCBExtension *ext);
+
+void XCBPrefetchExtensionData(XCBConnection *c, XCBExtension *ext);
 
 
 /* xcb_conn.c */

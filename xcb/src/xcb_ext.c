@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "xcb.h"
+#include "xcbext.h"
 #include "xcbint.h"
 
 typedef struct XCBExtensionRecord {
@@ -29,11 +30,10 @@ static int match_extension_string(const void *name, const void *data)
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e)
+const XCBQueryExtensionRep *XCBGetExtensionData(XCBConnection *c, XCBExtension *ext)
 {
     XCBExtensionRecord *data;
-    if(e)
-        *e = 0;
+    const char *name = ext->name;
 
     pthread_mutex_lock(&c->ext.lock);
 
@@ -47,7 +47,7 @@ const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char
         if(!data)
             return 0;
         data->name = name;
-        data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
+        data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), 0);
         pthread_mutex_lock(&c->ext.lock);
     }
 
@@ -55,6 +55,11 @@ const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char
 
     pthread_mutex_unlock(&c->ext.lock);
     return data->info;
+}
+
+void XCBPrefetchExtensionData(XCBConnection *c, XCBExtension *ext)
+{
+    /* XXX: implement me, I'm an optimization */
 }
 
 /* Private interface */

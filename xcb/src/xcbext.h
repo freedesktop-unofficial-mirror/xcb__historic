@@ -11,6 +11,14 @@
 extern "C" {
 #endif
 
+/* xcb_ext.c */
+
+struct XCBExtension {
+    const char *name;
+    int global_id;
+};
+
+
 /* xcb_out.c */
 
 int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct iovec *vector, size_t count);
