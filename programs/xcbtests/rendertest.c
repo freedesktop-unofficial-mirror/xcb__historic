@@ -178,8 +178,6 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
             root->root_visual,   /* VISUALID */
             value_mask, value_list); /* LISTofVALUES */
     
-    XCBSync(conn, 0);
-    
     /* 
      * Create the pictures 
      */
@@ -199,7 +197,6 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
         XCBRenderCreatePicture(conn, pict_surfaces[index], tmp, surface_format,
                 value_mask, value_list);
     }
-    XCBSync(conn, 0);
 
     /* 
      * initialize the rectangles
@@ -217,10 +214,10 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     /* 
      * initialize the colors
      */
-    back_color.red = 0x0000;
-    back_color.green = 0x0000;
-    back_color.blue = 0x0000;
-    back_color.alpha = 0x3fff;
+    back_color.red = 0xffff;
+    back_color.green = 0xffff;
+    back_color.blue = 0xffff;
+    back_color.alpha = 0xffff;
    
     pict_color[0].red = 0xffff;
     pict_color[0].green = 0x0000;
@@ -250,31 +247,24 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     /* 
      * Map the window
      */
-    XCBSync(conn, 0);
     XCBMapWindow(conn, window);
-    XCBSync(conn, 0);
     
     /*
      * Play around with Render
      */
 
     XCBRenderFillRectangles(conn, PictOpSrc, alpha_pict, alpha_color, 1, pict_rect);
-    XCBSync(conn, 0);
     XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[0], pict_color[0], 1, pict_rect);
-    XCBSync(conn, 0);
     XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[1], pict_color[1], 1, pict_rect);
-    XCBSync(conn, 0);
     XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[2], pict_color[2], 1, pict_rect);
-    XCBSync(conn, 0);
     XCBRenderFillRectangles(conn, PictOpSrc, pict_surfaces[3], pict_color[3], 1, pict_rect);
-    XCBSync(conn, 0);
-    XCBRenderFillRectangles(conn, PictOpOver, window_pict, back_color, 1, &window_rect);
-    XCBSync(conn, 0);
 
-    XCBRenderComposite(conn, PictOpOver, root_picture, alpha_pict, window_pict,
-            0, 0, 0, 0, 0, 0,
-            200, 200);
-    XCBSync(conn, 0);
+    XCBFlush(conn);
+    sleep(1);
+
+    XCBRenderFillRectangles(conn, PictOpOver, window_pict, back_color, 1, &window_rect);
+
+    XCBFlush(conn);
     sleep(1);
 
 
@@ -282,38 +272,32 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], alpha_pict, window_pict,
             0, 0, 0, 0, 100, 100,
             200, 200);
-    XCBSync(conn,0);
+    XCBFlush(conn);
     sleep(1);
 /*
     XCBRenderComposite(conn, PictOpOver, pict_surfaces[0], alpha_pict, window_pict,
             0, 0, 0, 0, 0, 0,
             200, 200);
-    XCBSync(conn,0);
+    XCBFlush(conn);
     sleep(1);
 */
     XCBRenderComposite(conn, PictOpOver, pict_surfaces[1], alpha_pict, window_pict,
             0, 0, 0, 0, 0, 0,
             200, 200);
-    XCBSync(conn,0);
+    XCBFlush(conn);
     sleep(1);
     
     XCBRenderComposite(conn, PictOpOver, pict_surfaces[2], alpha_pict, window_pict,
             0, 0, 0, 0, 100, 0,
             200, 200);
-    XCBSync(conn,0);
+    XCBFlush(conn);
     sleep(1);
     
     XCBRenderComposite(conn, PictOpOver, pict_surfaces[3], alpha_pict, window_pict,
             0, 0, 0, 0, 0, 100,
             200, 200);
-    XCBSync(conn,0);
-    sleep(1);
-    
-    XCBRenderComposite(conn, PictOpOver, root_picture, alpha_pict, window_pict,
-            0, 0, 0, 0, 0, 0,
-            200, 200);
-    XCBSync(conn, 0);
-    sleep(1);
+    XCBFlush(conn);
+    sleep(2);
     
     /* Free up all of the resources we used */
     for(index = 0; index < 4; index++)
@@ -324,6 +308,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     XCBFreePixmap(conn, alpha_surface);
     XCBRenderFreePicture(conn, alpha_pict);
     XCBRenderFreePicture(conn, window_pict);
+    XCBRenderFreePicture(conn, root_picture);
    
     /* sync up and leave the function */
     XCBSync(conn, 0);
