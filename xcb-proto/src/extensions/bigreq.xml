@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xcb header="bigreq">
+<!--
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+-->
+  <extension xname="BIG-REQUESTS" name="BigRequests">
+
+    <request name="Enable" opcode="0">
+      <reply>
+        <pad bytes="1" />
+        <field type="CARD32" name="maximum_request_length" />
+      </reply>
+    </request>
+
+  </extension>
+</xcb>
