@@ -511,7 +511,13 @@
     </xsl:text></xsl:with-param>
       <xsl:with-param name="items">
         <xsl:for-each select="item">
-          <item><xsl:value-of select="@name" /></item>
+          <item>
+            <xsl:value-of select="@name" />
+            <xsl:if test="node()"> <!-- If there is an expression -->
+              <xsl:text> = </xsl:text>
+              <xsl:apply-templates mode="output-expression" />
+            </xsl:if>
+          </item>
         </xsl:for-each>
       </xsl:with-param>
     </xsl:call-template>
@@ -606,6 +612,23 @@
 
 </xsl:text>
     </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="value" mode="output-expression">
+    <xsl:value-of select="." />
+  </xsl:template>
+
+  <xsl:template match="fieldref" mode="output-expression">
+    <!-- FIXME: Validate that the field exists. -->
+    <xsl:value-of select="." />
+  </xsl:template>
+
+  <xsl:template match="op" mode="output-expression">
+    <xsl:text>(</xsl:text>
+    <xsl:apply-templates select="node()[1]" mode="output-expression" />
+    <xsl:value-of select="@op" />
+    <xsl:apply-templates select="node()[2]" mode="output-expression" />
+    <xsl:text>)</xsl:text>
   </xsl:template>
 
   <xsl:template match="field">
