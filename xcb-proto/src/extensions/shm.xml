@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xcb header="shm">
 <!--
-Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
+Copyright (C) 2001-2004 Bart Massey, Jamey Sharp, and Josh Triplett.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 -->
