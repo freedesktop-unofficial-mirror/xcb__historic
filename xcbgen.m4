@@ -197,8 +197,8 @@ undivert(VARDIV)`'dnl
 ifelse(PARTQTY,0,`dnl',`    struct iovec parts[PARTQTY];')
 
     pthread_mutex_lock(&c->locked);
-    if(c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
-        XCB_Flush(c);
+    if(c->n_outvec || c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
+        XCB_Flush_locked(c);
     assert(c->n_outqueue <= sizeof(c->outqueue) - SIZEOF(x`$1'Req));
 
     out = (x`$1'Req *) (c->outqueue + c->n_outqueue);
@@ -263,8 +263,8 @@ undivert(VARDIV)`'dnl
 ifelse(PARTQTY,0,`dnl',`    struct iovec parts[PARTQTY];')
 
     pthread_mutex_lock(&c->locked);
-    if(c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
-        XCB_Flush(c);
+    if(c->n_outvec || c->n_outqueue > sizeof(c->outqueue) - SIZEOF(x`$1'Req))
+        XCB_Flush_locked(c);
     assert(c->n_outqueue <= sizeof(c->outqueue) - SIZEOF(x`$1'Req));
 
     out = (x`$1'Req *) (c->outqueue + c->n_outqueue);
@@ -277,8 +277,8 @@ ifelse(PARAMQTY,0,`dnl')
     ret.seqnum = ++c->seqnum;
 ifelse(PARTQTY,0,`dnl',`    XCB_Write(c, parts, PARTQTY);')
 ALLOC(XCB_Reply_Data, reply_data, 1)
+    pthread_cond_init(&reply_data->cond, 0);
     reply_data->pending = 0;
-    reply_data->received = 0;
     reply_data->error = 0;
     reply_data->seqnum = ret.seqnum;
     reply_data->data = 0;

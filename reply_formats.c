@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "reply_formats.h"
 
+#define WINFMT "0x%08x"
+
 int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
 {
     if(!reply)
@@ -10,7 +12,7 @@ int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
         return 0;
     }
 
-    printf("Window 0x%08x has attributes:\n"
+    printf("Window " WINFMT " has attributes:\n"
            "    backingStore       = %d\n"
            "    visualID           = %#x\n"
            "    class              = %d\n"
@@ -22,7 +24,7 @@ int formatGetWindowAttributesReply(Window wid, xGetWindowAttributesReply *reply)
            "    mapInstalled       = %d\n"
            "    mapState           = %d\n"
            "    override           = %d\n"
-           "    colormap           = %#x\n"
+           "    colormap           = 0x%08x\n"
            "    allEventMasks      = 0x%08x\n"
            "    yourEventMask      = 0x%08x\n"
            "    doNotPropagateMask = 0x%08x\n",
@@ -51,12 +53,12 @@ int formatGetGeometryReply(Window wid, xGetGeometryReply *reply)
 {
     if(!reply)
     {
-        fprintf(stderr, "Failed to get geometry for window 0x%x.\n",
+        fprintf(stderr, "Failed to get geometry for window " WINFMT ".\n",
             (unsigned int) wid);
         return 0;
     }
 
-    printf("Geometry for window 0x%x: %dx%d%+d%+d\n",
+    printf("Geometry for window " WINFMT ": %dx%d%+d%+d\n",
         (unsigned int) wid,
         reply->width,
         reply->height,
@@ -73,12 +75,12 @@ int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
 
     if(!reply)
     {
-        fprintf(stderr, "Failed to query tree for window 0x%x.\n",
+        fprintf(stderr, "Failed to query tree for window " WINFMT ".\n",
             (unsigned int) wid);
         return 0;
     }
 
-    printf("Window 0x%x has parent 0x%x, root 0x%x, and %d children%c\n",
+    printf("Window " WINFMT " has parent " WINFMT ", root " WINFMT ", and %d children%c\n",
         (unsigned int) wid,
         (unsigned int) reply->parent,
         (unsigned int) reply->root,
@@ -86,7 +88,7 @@ int formatQueryTreeReply(Window wid, xQueryTreeReply *reply)
         reply->nChildren ? ':' : '.');
 
     for(i = 0; i < reply->nChildren; ++i)
-        printf("    window 0x%x\n",
+        printf("    window " WINFMT "\n",
             (unsigned int) XCB_QUERYTREE_CHILDREN(reply)[i]);
 
     fflush(stdout);
