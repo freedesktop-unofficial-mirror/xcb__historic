@@ -63,6 +63,8 @@ static void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free)
 
 void _xcb_list_delete(_xcb_list *list, XCBListFreeFunc do_free)
 {
+    if(!list)
+        return;
     _xcb_list_clear(list, do_free);
     free(list);
 }
@@ -162,6 +164,8 @@ _xcb_map *_xcb_map_new(void) __attribute__ ((alias ("_xcb_list_new")));
 void _xcb_map_delete(_xcb_map *q, XCBListFreeFunc do_free)
 {
     map_pair *tmp;
+    if(!q)
+        return;
     while((tmp = _xcb_list_remove_head(q)))
     {
         if(do_free)
