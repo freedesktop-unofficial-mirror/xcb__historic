@@ -167,6 +167,10 @@ PACKETSTRUCT(`$1', `Rep', `$3')
 undivert(OUTDIV)`'dnl
 INLINEFUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
 `XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericEvent **e', `
+#ifdef XCBTRACEREP
+    fprintf(stderr, "$1 reply wait\n");
+#endif
+
     return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
 ')popdef(`NEXTFIELD')')
 
@@ -184,6 +188,10 @@ FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
     XCB`$2'Req *out;
 undivert(VARDIV)`'dnl
 ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
+
+#ifdef XCBTRACEREQ
+    fprintf(stderr, "$2 request send\n");
+#endif
 
     pthread_mutex_lock(&c->locked);
     out = (XCB`$2'Req *) XCBAllocOut(c, XCB_CEIL(sizeof(*out)));
@@ -291,11 +299,16 @@ define(`XCBGEN', `dnl
  * Edit at your peril.
 ` */'
 
-_H`'#ifndef __`'TOUPPER($1)_H
-_H`'#define __`'TOUPPER($1)_H
-_C`'REQUIRE(assert)
-_C`'REQUIRE($1)')
+HEADERONLY(`dnl
+#ifndef __`'TOUPPER($1)_H
+#define __`'TOUPPER($1)_H
 
+#if defined(XCBTRACEREQ) || defined(XCBTRACEREP) || defined(XCBTRACEEVENT)
+REQUIRE(stdio)
+#endif
+')SOURCEONLY(`dnl
+REQUIRE(assert)
+REQUIRE($1)')')
 dnl Generates the standard suffix in the output code.
 dnl ENDXCBGEN()
 define(`ENDXCBGEN', `_H`'#endif')

@@ -373,16 +373,25 @@ done:
 ')
 _C
 FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
-    void *ret;
+    XCBGenericEvent *ret;
+
+#ifdef XCBTRACEEVENT
+    fprintf(stderr, "Entering XCBWaitEvent\n");
+#endif
 
     pthread_mutex_lock(&c->locked);
     while(XCBListIsEmpty(&c->event_data))
         if(XCBWait(c, /*should_write*/ 0) <= 0)
             break;
-    ret = XCBListRemoveHead(&c->event_data);
+    ret = (XCBGenericEvent *) XCBListRemoveHead(&c->event_data);
 
     pthread_mutex_unlock(&c->locked);
-    return (XCBGenericEvent *) ret;
+
+#ifdef XCBTRACEEVENT
+    fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret->response_type);
+#endif
+
+    return ret;
 ')
 _C
 FUNCTION(`int XCBFlush', `XCBConnection *c', `
