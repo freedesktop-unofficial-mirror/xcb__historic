@@ -170,7 +170,9 @@
         <xsl:if test="self::valueparam">
           <field>
             <xsl:attribute name="type">
-              <xsl:call-template name="canonical-type-name" />
+              <xsl:call-template name="canonical-type-name">
+                <xsl:with-param name="type" select="@value-mask-type" />
+              </xsl:call-template>
             </xsl:attribute>
             <xsl:attribute name="name">
               <xsl:call-template name="canonical-var-name">
@@ -179,9 +181,11 @@
             </xsl:attribute>
           </field>
           <field type="const CARD32 *">
-            <xsl:call-template name="canonical-var-name">
-              <xsl:with-param name="name" select="@value-list-name" />
-            </xsl:call-template>
+            <xsl:attribute name="name">
+              <xsl:call-template name="canonical-var-name">
+                <xsl:with-param name="name" select="@value-list-name" />
+              </xsl:call-template>
+            </xsl:attribute>
           </field>
         </xsl:if>
       </xsl:for-each>
