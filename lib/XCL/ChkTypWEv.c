@@ -4,59 +4,50 @@
  * 
  * See the file COPYING for licensing information. */
 #include "xclint.h"
+#include <xcb_event.h>
 
-static Bool _XCheckTypedWindowEvent(Display *dpy, const Window w, const int type, XEvent *event, register _XQEvent **prev)
+/* It doesn't matter how this struct is packed by the compiler. */
+typedef struct
 {
-	register _XQEvent *qelt = *prev ? (*prev)->next : dpy->head;
-	register XEvent *e;
-	while(qelt) {
-		e = &qelt->event;
-		if (e->xany.window == w && e->type == type) {
-			*event = *e;
-			_XDeq(dpy, *prev, qelt);
-			UnlockDisplay(dpy);
-			return True;
-		}
-		*prev = qelt;
-		qelt = qelt->next;
-	}
-	return False;
+	BYTE response_type;
+	Window w;
+	Display *dpy;
+	Bool (*event_proc)(Display *, XEvent *, xEvent *);
+	XEvent *e;
+} TypeWindowEvent;
+
+static int MatchTypeWindowEvent(const XCBGenericEvent *l, const XCBGenericEvent *r)
+{
+	TypeWindowEvent *tw;
+	xEvent *xev;
+	if(l->response_type != r->response_type)
+		return 0;
+
+	/* FIXME: breaks encapsulation: relies on r being the queued item */
+	tw = (TypeWindowEvent *) l;
+	xev = (xEvent *) r;
+
+	if(!tw->event_proc(tw->dpy, tw->e, xev))
+		return 0;
+	if(tw->w != tw->e->xany.window)
+		return 0;
+	return 1;
 }
 
-/* Check existing events in queue to find if any match.  If so, return.
- * If not, flush buffer and see if any more events are readable. If one
- * matches, return.  If all else fails, tell the user no events found. */
+/* Check events for a match, without blocking. */
 /* w: Selected window. */
 /* type: Selected event type. */
 /* event: XEvent to be filled in. */
 Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
 {
-	_XQEvent *prev = NULL;
-	unsigned long qe_serial = 0;
+	register XCBConnection *c = XCBConnectionOfDisplay(dpy);
+	TypeWindowEvent tw = { type, w, dpy, dpy->event_vec[type & 0177], event };
+	XCBGenericEvent *ret;
 
-        LockDisplay(dpy);
-
-	if(_XCheckTypedWindowEvent(dpy, w, type, event, &prev))
-		return True;
-	if (prev)
-		qe_serial = prev->qserial_num;
-	_XEventsQueued(dpy, QueuedAfterReading);
-	if (prev && prev->qserial_num != qe_serial)
-		/* another thread has snatched this event */
-		prev = NULL;
-
-	if(_XCheckTypedWindowEvent(dpy, w, type, event, &prev))
-		return True;
-	if (prev)
-		qe_serial = prev->qserial_num;
-	_XFlush(dpy);
-	if (prev && prev->qserial_num != qe_serial)
-		/* another thread has snatched this event */
-		prev = NULL;
-
-	if(_XCheckTypedWindowEvent(dpy, w, type, event, &prev))
-		return True;
-
-	UnlockDisplay(dpy);
-	return False;
+	_XEventsQueued(dpy, QueuedAfterFlush);
+	ret = XCBEventQueueRemove(c, MatchTypeWindowEvent, (XCBGenericEvent *) &tw);
+	if(!ret)
+		return False;
+	free(ret);
+	return True;
 }

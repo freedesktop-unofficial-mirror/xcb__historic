@@ -4,18 +4,15 @@
  * 
  * See the file COPYING for licensing information. */
 #include "xclint.h"
+#include <xcb_event.h>
 
 /* Read in pending events if needed and return the number of queued events. */
 int XEventsQueued(register Display *dpy, int mode)
 {
-    int ret_val;
-    LockDisplay(dpy);
-    if (dpy->qlen || (mode == QueuedAlready))
-	ret_val = dpy->qlen;
-    else
-	ret_val = _XEventsQueued (dpy, mode);
-    UnlockDisplay(dpy);
-    return ret_val;
+    int ret = XCBEventQueueLength(XCBConnectionOfDisplay(dpy));
+    if(!ret && mode != QueuedAlready)
+	ret = _XEventsQueued(dpy, mode);
+    return ret;
 }
 
 int XPending(Display *dpy)
@@ -25,21 +22,22 @@ int XPending(Display *dpy)
 
 int _XEventsQueued(register Display *dpy, int mode)
 {
-    fd_set fds;
-    struct timeval tv = { 0, 0 };
+    XCBConnection *c = XCBConnectionOfDisplay(dpy);
     if(mode == QueuedAfterFlush)
+	XCBFlush(c);
+
+    /* wait for handle to be readable, without blocking. */
+    /* FIXME: this select/XCBWait hack breaks encapsulation. */
+    if(XCBEventQueueIsEmpty(c))
     {
-	_XFlush(dpy);
-	if(dpy->qlen)
-	    return(dpy->qlen);
-    }
-    if(XCBEventQueueIsEmpty(XCBConnectionOfDisplay(dpy)))
-    {
+	fd_set fds;
+	struct timeval tv = { 0, 0 };
 	FD_ZERO(&fds);
 	FD_SET(dpy->fd, &fds);
 	if(select(dpy->fd + 1, &fds, 0, 0, &tv) < 1)
-	    return(dpy->qlen);
+	    return 0;
+	XCBWait(c->handle, /* should_write */ 0);
     }
-    _XReadEvents(dpy);
-    return(dpy->qlen);
+
+    return XCBEventQueueLength(c);
 }
