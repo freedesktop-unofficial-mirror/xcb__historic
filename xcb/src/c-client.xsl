@@ -316,6 +316,9 @@ See the file COPYING in this package for licensing information.
                     and not(.//*[not(self::value or self::op)])">
         <xsl:attribute name="fixed">true</xsl:attribute>
       </xsl:if>
+      <xsl:if test="self::list and not(node())">
+        <fieldref><xsl:value-of select="concat(@name, '_len')" /></fieldref>
+      </xsl:if>
       <xsl:copy-of select="*" />
     </xsl:copy>
   </xsl:template>
