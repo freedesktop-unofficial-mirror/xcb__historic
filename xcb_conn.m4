@@ -69,6 +69,7 @@ STRUCT(XCB_Connection, `
 
     FIELD(XCB_List, `reply_data')
     FIELD(XCB_List, `event_data')
+    FIELD(XCB_List, `extension_cache')
 
     ARRAYFIELD(CARD8, `outqueue', 4096)
     FIELD(int, `n_outqueue')
@@ -120,11 +121,11 @@ FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
 
 /* Linked list functions */
 
-STATICFUNCTION(`void list_init', `XCB_List *list', `
+FUNCTION(`void XCB_List_init', `XCB_List *list', `
     list->head = list->tail = 0;
 ')
 
-STATICFUNCTION(`void list_insert', `XCB_List *list, void *data', `
+FUNCTION(`void XCB_List_insert', `XCB_List *list, void *data', `
     XCB_ListNode *node;
 ALLOC(XCB_ListNode, `node', 1)
     node->data = data;
@@ -135,7 +136,7 @@ ALLOC(XCB_ListNode, `node', 1)
         list->tail = node;
 ')
 
-STATICFUNCTION(`void list_append', `XCB_List *list, void *data', `
+FUNCTION(`void XCB_List_append', `XCB_List *list, void *data', `
     XCB_ListNode *node;
 ALLOC(XCB_ListNode, `node', 1)
     node->data = data;
@@ -149,7 +150,7 @@ ALLOC(XCB_ListNode, `node', 1)
     list->tail = node;
 ')
 
-STATICFUNCTION(`void *list_remove_head', `XCB_List *list', `
+FUNCTION(`void *XCB_List_remove_head', `XCB_List *list', `
     void *ret;
     XCB_ListNode *tmp = list->head;
     if(!tmp)
@@ -162,8 +163,9 @@ STATICFUNCTION(`void *list_remove_head', `XCB_List *list', `
     return ret;
 ')
 
-STATICFUNCTION(`void *list_remove', `XCB_List *list, int (*cmp)(void *, void *), void *data', `
+FUNCTION(`void *XCB_List_remove', `XCB_List *list, int (*cmp)(const void *, const void *), const void *data', `
     XCB_ListNode *prev = 0, *cur = list->head;
+    void *tmp;
 
     while(cur)
     {
@@ -182,12 +184,12 @@ STATICFUNCTION(`void *list_remove', `XCB_List *list, int (*cmp)(void *, void *),
     if(!cur->next)
         list->tail = prev;
 
-    data = cur->data;
+    tmp = cur->data;
     free(cur);
-    return data;
+    return tmp;
 ')
 
-STATICFUNCTION(`void *list_find', `XCB_List *list, int (*cmp)(void *, void *), void *data', `
+FUNCTION(`void *XCB_List_find', `XCB_List *list, int (*cmp)(const void *, const void *), const void *data', `
     XCB_ListNode *cur = list->head;
     while(cur)
     {
@@ -198,7 +200,7 @@ STATICFUNCTION(`void *list_find', `XCB_List *list, int (*cmp)(void *, void *), v
     return 0;
 ')
 
-STATICFUNCTION(`int list_is_empty', `XCB_List *list', `
+FUNCTION(`int XCB_List_is_empty', `XCB_List *list', `
     return (list->head == 0);
 ')
 
@@ -215,10 +217,10 @@ ALLOC(XCB_Reply_Data, `data', 1)
     data->seqnum = seqnum;
     data->data = 0;
 
-    list_append(&c->reply_data, data);
+    XCB_List_append(&c->reply_data, data);
 ')
 
-STATICFUNCTION(`int match_reply_seqnum', `void *seqnum, void *data', `
+STATICFUNCTION(`int match_reply_seqnum', `const void *seqnum, const void *data', `
     return (((XCB_Reply_Data *) data)->seqnum == *(int *) seqnum);
 ')
 
@@ -226,11 +228,11 @@ STATICFUNCTION(`int match_reply_seqnum', `void *seqnum, void *data', `
 /* POST: *cur points at the desired data or is 0; if prev was not 0,
          (*prev)->next points at the desired data or *prev is 0 */
 STATICFUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
-    return (XCB_Reply_Data *) list_find(&c->reply_data, match_reply_seqnum, &seqnum);
+    return (XCB_Reply_Data *) XCB_List_find(&c->reply_data, match_reply_seqnum, &seqnum);
 ')
 
 FUNCTION(`int XCB_EventQueueIsEmpty', `XCB_Connection *c', `
-    return list_is_empty(&c->event_data);
+    return XCB_List_is_empty(&c->event_data);
 ')
 
 /* read(2)/write(2) wrapper functions */
@@ -337,7 +339,7 @@ REALLOC(unsigned char, buf, 32 + length * 4)
         rep->data = buf;
     }
     else /* event or error without a reply record */
-        list_append(&c->event_data, (XCB_Event *) buf);
+        XCB_List_append(&c->event_data, (XCB_Event *) buf);
 
     return 1; /* I have something for you... */
 ')
@@ -435,7 +437,7 @@ FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
     if(cur->error)
     {
         if(!e)
-            list_append(&c->event_data, (XCB_Event *) cur->data);
+            XCB_List_append(&c->event_data, (XCB_Event *) cur->data);
         else
             *e = (xError *) cur->data;
     }
@@ -444,7 +446,7 @@ FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
 
     if(ret)
     {
-        list_remove(&c->reply_data, match_reply_seqnum, &seqnum);
+        XCB_List_remove(&c->reply_data, match_reply_seqnum, &seqnum);
         free(cur);
     }
 
@@ -457,7 +459,7 @@ FUNCTION(`XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
     void *ret;
 
     pthread_mutex_lock(&c->locked);
-    while(list_is_empty(&c->event_data))
+    while(XCB_List_is_empty(&c->event_data))
     {
         if(c->reading)
             pthread_cond_wait(&c->waiting_threads, &c->locked);
@@ -465,7 +467,7 @@ FUNCTION(`XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
             if(XCB_Wait(c, /*should_write*/ 0) <= 0)
                 break;
     }
-    ret = list_remove_head(&c->event_data);
+    ret = XCB_List_remove_head(&c->event_data);
 
     pthread_mutex_unlock(&c->locked);
     return (XCB_Event *) ret;
@@ -611,8 +613,9 @@ ALLOC(XCB_Connection, c, 1)
     c->reading = 0;
     c->writing = 0;
 
-    list_init(&c->reply_data);
-    list_init(&c->event_data);
+    XCB_List_init(&c->reply_data);
+    XCB_List_init(&c->event_data);
+    XCB_List_init(&c->extension_cache);
 
     /* c->outqueue does not need initialization */
     c->n_outqueue = 0;

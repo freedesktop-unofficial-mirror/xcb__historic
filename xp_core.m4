@@ -1033,35 +1033,44 @@ FUNCTION(`int XCB_Sync', `XCB_Connection *c, xError **e', `
     return (reply != 0);
 ')
 
+STATICSTRUCT(XCB_ExtensionRecord, `
+    POINTERFIELD(char, `name')
+    POINTERFIELD(XCB_QueryExtension_Rep, `info')
+')
+
+STATICFUNCTION(`int match_extension_string', `const void *name, const void *data', `
+    return (((XCB_ExtensionRecord *) data)->name == name);
+')
+
 /* Do not free the returned XCB_QueryExtension_Rep - on return, it's aliased
  * from the cache. */
-/* TODO: implement the cache. This function will leak memory on every call
- *       without the cache implemented. */
 FUNCTION(`const XCB_QueryExtension_Rep *XCB_QueryExtension_Cached',
 `XCB_Connection *c, const char *name, xError **e', `
-    XCB_QueryExtension_Rep *ret = 0;
+    XCB_ExtensionRecord *data = 0;
     if(e)
         *e = 0;
     pthread_mutex_lock(&c->locked);
 
-    /* TODO: search the cache for the given name */
+    data = (XCB_ExtensionRecord *) XCB_List_remove(&c->extension_cache, match_extension_string, name);
 
-    if(ret)
+    if(data)
         goto done; /* cache hit: return from the cache */
 
     /* cache miss: query the server */
+ALLOC(XCB_ExtensionRecord, `data', 1)
+    data->name = (char *) name;
     pthread_mutex_unlock(&c->locked);
     {
         XCB_QueryExtension_cookie cookie = XCB_QueryExtension(c, name);
-        ret = XCB_QueryExtension_Reply(c, cookie, e);
+        data->info = XCB_QueryExtension_Reply(c, cookie, e);
     }
     pthread_mutex_lock(&c->locked);
 
-    /* TODO: cache the query result */
-
 done:
+    XCB_List_insert(&c->extension_cache, data);
+
     pthread_mutex_unlock(&c->locked);
-    return ret;
+    return data->info;
 ')
 _H
 ENDXCBGEN
