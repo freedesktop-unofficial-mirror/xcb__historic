@@ -1024,6 +1024,7 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="function-call" mode="output-expression">
+    <xsl:param name="field-prefix" />
     <xsl:value-of select="@name" />
     <xsl:text>(</xsl:text>
     <xsl:call-template name="list">
