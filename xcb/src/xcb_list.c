@@ -120,8 +120,3 @@ int XCBListLength(XCBList *list)
 {
     return list->len;
 }
-
-int XCBListIsEmpty(XCBList *list)
-{
-    return (list->head == 0);
-}

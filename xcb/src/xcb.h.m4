@@ -91,6 +91,7 @@ typedef struct XCBConnection {
     void *last_request;
     unsigned int seqnum;
     unsigned int seqnum_written;
+    unsigned int seqnum_read;
     CARD32 last_xid;
 
     XCBUnexpectedReplyFunc unexpected_reply_handler;
@@ -103,9 +104,9 @@ int XCBOnes(unsigned long mask);
 CARD32 XCBGenerateID(XCBConnection *c);
 void XCBAddReplyData(XCBConnection *c, int seqnum);
 void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
+unsigned int XCBGetLastSeqnumRead(XCBConnection *c);
 void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
-XCBGenericEvent *XCBPollEvent(XCBConnection *c);
 int XCBFlush(XCBConnection *c);
 XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
 XCBConnection *XCBConnectBasic(void);
@@ -115,7 +116,6 @@ int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
 
 /* xcb_event.c */
 
-int XCBEventQueueIsEmpty(struct XCBConnection *c);
 int XCBEventQueueLength(struct XCBConnection *c);
 
 XCBGenericEvent *XCBEventQueueRemove(struct XCBConnection *c, int (*cmp)(const XCBGenericEvent *, const XCBGenericEvent *), const XCBGenericEvent *data);

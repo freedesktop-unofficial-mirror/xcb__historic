@@ -9,20 +9,15 @@
 #include "xcb.h"
 #include "xcbint.h"
 
-int XCBEventQueueIsEmpty(struct XCBConnection *c)
-{
-    int ret;
-    pthread_mutex_lock(&c->locked);
-    ret = XCBListIsEmpty(c->event_data);
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
-
 int XCBEventQueueLength(struct XCBConnection *c)
 {
-    int ret;
+    int ret = -1;
     pthread_mutex_lock(&c->locked);
-    ret = XCBListLength(c->event_data);
+
+    /* FIXME: follow X meets Z architecture changes. */
+    if(XCBFillBuffer(c->handle) > 0)
+        ret = XCBListLength(c->event_data);
+
     pthread_mutex_unlock(&c->locked);
     return ret;
 }

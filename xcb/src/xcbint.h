@@ -48,7 +48,6 @@ void *XCBListRemoveHead(XCBList *list);
 void *XCBListRemove(XCBList *list, int (*cmp)(const void *, const void *), const void *data);
 void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const void *data);
 int XCBListLength(XCBList *list);
-int XCBListIsEmpty(XCBList *list);
 
 /* Tracing definitions */
 

@@ -66,11 +66,6 @@ static void free_reply_data(XCBReplyData *data)
     free(data);
 }
 
-static int match_reply_seqnum16(const void *seqnum, const void *data)
-{
-    return ((CARD16) ((XCBReplyData *) data)->seqnum == (CARD16) *(int *) seqnum);
-}
-
 static int match_reply_seqnum32(const void *seqnum, const void *data)
 {
     return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
@@ -107,9 +102,18 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
     assert(buf);
     ret = XCBRead(h, buf, length);
 
-    /* Only compare the low 16 bits of the seqnum of the packet. */
+    /* Compute 32-bit sequence number of this packet. */
+    /* XXX: do "sequence lost" check here */
+    if((genrep.response_type & 0x7f) != KeymapNotify)
+    {
+        int lastread = c->seqnum_read;
+        c->seqnum_read = (lastread & 0xffff0000) | genrep.seqnum;
+        if(c->seqnum_read < lastread)
+            c->seqnum_read += 0x10000;
+    }
+
     if(!(buf[0] & ~1)) /* reply or error packet */
-        rep = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum16, &((XCBGenericRep *) buf)->seqnum);
+        rep = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum32, &c->seqnum_read);
 
     if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
     {
@@ -117,7 +121,7 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
         if(c->unexpected_reply_handler && c->unexpected_reply_handler(c->unexpected_reply_data, (XCBGenericRep *) buf))
             ret = 1;
         if(ret < 0)
-            fprintf(stderr, "No reply record found for reply %d.\n", ((XCBGenericRep *) buf)->seqnum);
+            fprintf(stderr, "No reply record found for reply %d.\n", c->seqnum_read);
         free(buf);
         return ret;
     }
@@ -132,6 +136,15 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
         XCBListAppend(c->event_data, (XCBGenericEvent *) buf);
 
     return 1; /* I have something for you... */
+}
+
+unsigned int XCBGetLastSeqnumRead(XCBConnection *c)
+{
+    unsigned int ret;
+    pthread_mutex_lock(&c->locked);
+    ret = c->seqnum_read;
+    pthread_mutex_unlock(&c->locked);
+    return ret;
 }
 
 void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e)
@@ -197,7 +210,7 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 #endif
 
     pthread_mutex_lock(&c->locked);
-    while(XCBListIsEmpty(c->event_data))
+    while(XCBListLength(c->event_data) == 0)
         if(XCBWait(c->handle, /*should_write*/ 0) <= 0)
             break;
     /* XCBListRemoveHead returns 0 on empty list. */
@@ -207,28 +220,6 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 
 #if XCBTRACEEVENT
     fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret ? ret->response_type : -1);
-#endif
-
-    return ret;
-}
-
-XCBGenericEvent *XCBPollEvent(XCBConnection *c)
-{
-    XCBGenericEvent *ret;
-
-#if XCBTRACEEVENT
-    fprintf(stderr, "Entering XCBPollEvent\n");
-#endif
-
-    pthread_mutex_lock(&c->locked);
-    XCBFillBuffer(c->handle);
-    /* XCBListRemoveHead returns 0 on empty list. */
-    ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
-
-    pthread_mutex_unlock(&c->locked);
-
-#if XCBTRACEEVENT
-    fprintf(stderr, "Leaving XCBPollEvent, event type %d\n", ret ? ret->response_type : -1);
 #endif
 
     return ret;
@@ -274,6 +265,7 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
     c->last_request = 0;
     c->seqnum = 0;
     c->seqnum_written = 0;
+    c->seqnum_read = 0;
     c->last_xid = 0;
 
     c->unexpected_reply_handler = 0;

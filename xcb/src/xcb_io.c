@@ -144,6 +144,8 @@ int XCBFillBuffer(XCBIOHandle *h)
     ret = read(h->fd, h->inqueue + h->n_inqueue, sizeof(h->inqueue) - h->n_inqueue);
     if(ret < 0)
         return errno == EAGAIN ? 1 : -1;
+    if(ret == 0)
+        return 0;
     h->n_inqueue += ret;
     if(h->reader)
         while(ret > 0)
@@ -203,7 +205,7 @@ done:
 int XCBFlushLocked(XCBIOHandle *c)
 {
     int ret = 1;
-    while(ret >= 0 && (c->n_outqueue || c->n_outvec))
+    while(ret > 0 && (c->n_outqueue || c->n_outvec))
         ret = XCBWait(c, /*should_write*/ 1);
     return ret;
 }
