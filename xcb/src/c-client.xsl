@@ -382,13 +382,13 @@ authorization from the authors.
                of the list. -->
           <xsl:when test="parent::reply">
             <op op="/">
-              <fieldref>length</fieldref>
-              <op op=">>">
-                <function-call name="sizeof">
-                  <param><xsl:value-of select="$type" /></param>
-                </function-call>
+              <op op="&lt;&lt;">
+                <fieldref>length</fieldref>
                 <value>2</value>
               </op>
+              <function-call name="sizeof">
+                <param><xsl:value-of select="$type" /></param>
+              </function-call>
             </op>
           </xsl:when>
           <!-- Other cases generate an error. -->
