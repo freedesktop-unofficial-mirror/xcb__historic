@@ -304,6 +304,21 @@
     </field>
   </xsl:template>
 
+  <xsl:template match="valueparam" mode="field">
+    <field>
+      <xsl:attribute name="type">
+        <xsl:call-template name="canonical-type-name">
+          <xsl:with-param name="type" select="@value-mask-type" />
+        </xsl:call-template>
+      </xsl:attribute>
+      <xsl:attribute name="name">
+        <xsl:call-template name="canonical-var-name">
+          <xsl:with-param name="name" select="@value-mask-name" />
+        </xsl:call-template>
+      </xsl:attribute>
+    </field>
+  </xsl:template>
+
   <xsl:template match="field|localfield" mode="param">
     <field>
       <xsl:attribute name="type">
