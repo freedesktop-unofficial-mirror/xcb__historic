@@ -7,6 +7,11 @@
 #ifndef __XCBINT_H
 #define __XCBINT_H
 
+/* xcb_conn.c */
+
+int XCBLockWrite(XCBConnection *c, struct iovec *vector, size_t count);
+
+
 /* xcb_auth.c */
 
 /* Maximum size of authentication names and data */

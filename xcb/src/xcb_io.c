@@ -22,8 +22,6 @@
 #include "xcb.h"
 #include "xcbint.h"
 
-/* FIXME: outvec support should be enabled */
-#define USEOUTVEC 0
 #define USENONBLOCKING
 
 struct XCBIOHandle {
@@ -68,7 +66,7 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked)
     h->n_inqueue = 0;
     /* h->outqueue does not need initialization */
     h->n_outqueue = 0;
-    /* h->outvec does not need initialization */
+    h->outvec = 0;
     h->n_outvec = 0;
     h->reader = 0;
     h->readerdata = 0;
@@ -103,28 +101,37 @@ void *XCBAllocOut(XCBIOHandle *c, int size)
 
 static int XCBWriteBuffer(XCBIOHandle *c)
 {
-    int n;
-    n = write(c->fd, c->outqueue, c->n_outqueue);
-    if(n < 0)
-        return errno == EAGAIN ? 1 : -1;
-    c->n_outqueue -= n;
-    if(c->n_outqueue)
-        memmove(c->outqueue, c->outqueue + n, c->n_outqueue);
-
-    if(c->n_outvec)
+    int i, n;
+    if(!c->n_outvec)
     {
-        if(USEOUTVEC)
-        {
-            writev(c->fd, c->outvec, c->n_outvec);
-            c->n_outvec = 0;
-        }
-        else
-        {
-            fputs("XCB error: asked to use outvec\n", stderr);
-            abort();
-        }
+        n = write(c->fd, c->outqueue, c->n_outqueue);
+        if(n < 0)
+            return errno == EAGAIN ? 1 : -1;
+        c->n_outqueue -= n;
+        if(c->n_outqueue)
+            memmove(c->outqueue, c->outqueue + n, c->n_outqueue);
+        return 1;
     }
 
+    n = writev(c->fd, c->outvec, c->n_outvec);
+    if(n < 0)
+        return errno == EAGAIN ? 1 : -1;
+    for(i = 0; i < c->n_outvec; ++i)
+    {
+        int cur = c->outvec[i].iov_len;
+        if(cur > n)
+            cur = n;
+        c->outvec[i].iov_len -= cur;
+        c->outvec[i].iov_base = (char *) c->outvec[i].iov_base + cur;
+        n -= cur;
+        if(c->outvec[i].iov_len)
+            break;
+    }
+    assert(n == 0);
+    assert(i == c->n_outvec || (i < c->n_outvec && c->outvec[i].iov_len > 0));
+    c->n_outvec -= i;
+    if(c->n_outvec)
+        memmove(c->outvec, c->outvec + i, c->n_outvec * sizeof(struct iovec));
     return 1;
 }
 
@@ -193,13 +200,14 @@ done:
 int XCBFlushLocked(XCBIOHandle *c)
 {
     int ret = 1;
-    while(ret >= 0 && c->n_outqueue)
+    while(ret >= 0 && (c->n_outqueue || c->n_outvec))
         ret = XCBWait(c, /*should_write*/ 1);
     return ret;
 }
 
 int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
 {
+    static const char pad[3];
     int i, len;
 
     for(i = 0, len = 0; i < count; ++i)
@@ -219,17 +227,32 @@ int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count)
         return len;
     }
 
-    if(USEOUTVEC)
+    assert(!c->n_outvec);
+    c->outvec = malloc(sizeof(struct iovec) * (1 + count * 2));
+    if(!c->outvec)
+        return -1;
+    if(c->n_outqueue)
     {
-        c->outvec = vector;
-        c->n_outvec = count;
-        len = XCBFlushLocked(c);
+        c->outvec[c->n_outvec].iov_base = c->outqueue;
+        c->outvec[c->n_outvec++].iov_len = c->n_outqueue;
+        c->n_outqueue = 0;
     }
-    else
+    for(i = 0; i < count; ++i)
     {
-        fputs("XCB error: asked to use outvec\n", stderr);
-        abort();
+        if(!vector[i].iov_len)
+            continue;
+        c->outvec[c->n_outvec].iov_base = vector[i].iov_base;
+        c->outvec[c->n_outvec++].iov_len = vector[i].iov_len;
+        if(!XCB_PAD(vector[i].iov_len))
+            continue;
+        c->outvec[c->n_outvec].iov_base = (caddr_t) pad;
+        c->outvec[c->n_outvec++].iov_len = XCB_PAD(vector[i].iov_len);
     }
+    if(XCBFlushLocked(c) < 0)
+        return -1;
+    free(c->outvec);
+    c->outvec = 0;
+
     return len;
 }
 

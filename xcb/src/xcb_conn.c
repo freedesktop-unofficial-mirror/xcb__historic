@@ -234,6 +234,15 @@ XCBGenericEvent *XCBPollEvent(XCBConnection *c)
     return ret;
 }
 
+int XCBLockWrite(XCBConnection *c, struct iovec *vector, size_t count)
+{
+    int ret;
+    pthread_mutex_lock(&c->locked);
+    ret = XCBWrite(c->handle, vector, count);
+    pthread_mutex_unlock(&c->locked);
+    return ret;
+}
+
 int XCBFlush(XCBConnection *c)
 {
     int ret;
