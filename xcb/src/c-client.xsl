@@ -311,7 +311,7 @@ See the file COPYING in this package for licensing information.
     <xsl:copy-of select="." />
   </xsl:template>
   
-  <xsl:template match="field|exprfield" mode="field">
+  <xsl:template match="field|exprfield|list" mode="field">
     <xsl:copy>
       <xsl:attribute name="type">
         <xsl:call-template name="canonical-type-name" />
@@ -565,9 +565,11 @@ See the file COPYING in this package for licensing information.
 </xsl:text>
         </xsl:if>
         <xsl:if test="self::do-request">
+          <xsl:variable name="struct"
+                        select="e:node-set($pass1
+                                           //struct[@name=current()/@ref])" />
 <xsl:text>    struct iovec parts[</xsl:text>
-<!-- FIXME: Variable-length requests are not yet handled. -->
-<xsl:text>1</xsl:text>
+<xsl:value-of select="1+count($struct/list)" />
 <xsl:text>];
     </xsl:text><xsl:value-of select="../@type" /><xsl:text> ret;
     </xsl:text><xsl:value-of select="@ref" /><xsl:text> out;
@@ -590,7 +592,7 @@ See the file COPYING in this package for licensing information.
 </xsl:text>
 </xsl:if>
 
-<xsl:for-each select="$pass1//struct[@name = current()/@ref]/exprfield">
+<xsl:for-each select="$struct/exprfield">
   <xsl:text>    </xsl:text>
   <xsl:call-template name="type-and-name" />
   <xsl:text> = </xsl:text>
@@ -606,8 +608,7 @@ See the file COPYING in this package for licensing information.
 
 <xsl:text>
 </xsl:text>
-<xsl:for-each select="$pass1//struct[@name = current()/@ref]
-                             /*[self::field|self::exprfield]">
+<xsl:for-each select="$struct/*[self::field|self::exprfield]">
   <xsl:text>    out.</xsl:text>
   <xsl:value-of select="@name" />
   <xsl:text> = </xsl:text>
@@ -619,12 +620,36 @@ See the file COPYING in this package for licensing information.
 <xsl:text>
     parts[0].iov_base = &amp;out;
     parts[0].iov_len = sizeof(out);
-    XCBSendRequest(c, &amp;ret.sequence, /* isvoid */ </xsl:text>
+</xsl:text>
+
+<xsl:for-each select="$struct/list">
+  <xsl:text>    parts[</xsl:text>
+  <xsl:number />
+  <xsl:text>].iov_base = (void *) </xsl:text>
+  <xsl:value-of select="@name" />
+  <xsl:text>;
+</xsl:text>
+  <xsl:text>    parts[</xsl:text>
+  <xsl:number />
+  <xsl:text>].iov_len = </xsl:text>
+  <xsl:apply-templates mode="output-expression" />
+  <xsl:if test="not(@type = 'void')">
+    <xsl:text> * sizeof(</xsl:text>
+    <xsl:value-of select="@type" />
+    <xsl:text>)</xsl:text>
+  </xsl:if>
+  <xsl:text>;
+</xsl:text>
+</xsl:for-each>
+
+<xsl:text>    XCBSendRequest(c, &amp;ret.sequence, /* isvoid */ </xsl:text>
     <xsl:choose>
       <xsl:when test="@has-reply = 'yes'">0</xsl:when>
       <xsl:otherwise>1</xsl:otherwise>
     </xsl:choose>
-    <xsl:text>, parts, /* partqty */ 1);
+    <xsl:text>, parts, /* partqty */ </xsl:text>
+    <xsl:value-of select="1+count($struct/list)" />
+    <xsl:text>);
     return ret;
 </xsl:text>
         </xsl:if>
