@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xcb header="shape">
+<!--
+Copyright (C) 2001-2004 Bart Massey and Jamey Sharp.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+-->
+  <extension xname="SHAPE" name="Shape">
+
+    <typedef oldname="CARD8" newname="SHAPE_OP" />
+    <typedef oldname="CARD8" newname="SHAPE_KIND" />
+
+    <event name="Notify" number="0">
+      <field type="SHAPE_KIND" name="shape_kind" />
+      <field type="WINDOW" name="affected_window" />
+      <field type="INT16" name="extents_x" />
+      <field type="INT16" name="extents_y" />
+      <field type="CARD16" name="extents_width" />
+      <field type="CARD16" name="extents_height" />
+      <field type="TIMESTAMP" name="server_time" />
+      <field type="BOOL" name="shaped" />
+    </event>
+
+    <request name="QueryVersion" opcode="0">
+      <reply>
+        <pad bytes="1" />
+        <field type="CARD16" name="major_version" />
+        <field type="CARD16" name="minor_version" />
+      </reply>
+    </request>
+
+    <request name="Rectangles" opcode="1">
+      <field type="SHAPE_OP" name="operation" />
+      <field type="SHAPE_KIND" name="destination_kind" />
+      <field type="BYTE" name="ordering" />
+      <pad bytes="1" />
+      <field type="WINDOW" name="destination_window" />
+      <field type="INT16" name="x_offset" />
+      <field type="INT16" name="y_offset" />
+      <localfield type="CARD32" name="rectangles_len" />
+      <list type="RECTANGLE" name="rectangles">
+        <fieldref>rectangles_len</fieldref>
+      </list>
+    </request>
+
+    <request name="Mask" opcode="2">
+      <field type="SHAPE_OP" name="operation" />
+      <field type="SHAPE_KIND" name="destination_kind" />
+      <pad bytes="2" />
+      <field type="WINDOW" name="destination_window" />
+      <field type="INT16" name="x_offset" />
+      <field type="INT16" name="y_offset" />
+      <field type="PIXMAP" name="source_bitmap" />
+    </request>
+
+    <request name="Combine" opcode="3">
+      <field type="SHAPE_OP" name="operation" />
+      <field type="SHAPE_KIND" name="destination_kind" />
+      <field type="SHAPE_KIND" name="source_kind" />
+      <pad bytes="1" />
+      <field type="WINDOW" name="destination_window" />
+      <field type="INT16" name="x_offset" />
+      <field type="INT16" name="y_offset" />
+      <field type="WINDOW" name="source_window" />
+    </request>
+
+    <request name="Offset" opcode="4">
+      <field type="SHAPE_KIND" name="destination_kind" />
+      <pad bytes="3" />
+      <field type="WINDOW" name="destination_window" />
+      <field type="INT16" name="x_offset" />
+      <field type="INT16" name="y_offset" />
+    </request>
+
+    <request name="QueryExtents" opcode="5">
+      <field type="WINDOW" name="destination_window" />
+      <reply>
+        <pad bytes="1" />
+        <field type="BOOL" name="bounding_shaped" />
+        <field type="BOOL" name="clip_shaped" />
+        <pad bytes="2" />
+        <field type="INT16" name="bounding_shape_extents_x" />
+        <field type="INT16" name="bounding_shape_extents_y" />
+        <field type="CARD16" name="bounding_shape_extents_width" />
+        <field type="CARD16" name="bounding_shape_extents_height" />
+        <field type="INT16" name="clip_shape_extents_x" />
+        <field type="INT16" name="clip_shape_extents_y" />
+        <field type="CARD16" name="clip_shape_extents_width" />
+        <field type="CARD16" name="clip_shape_extents_height" />
+      </reply>
+    </request>
+
+    <request name="SelectInput" opcode="6">
+      <field type="WINDOW" name="destination_window" />
+      <field type="BOOL" name="enable" />
+    </request>
+
+    <request name="InputSelected" opcode="7">
+      <field type="WINDOW" name="destination_window" />
+      <reply>
+        <field type="BOOL" name="enabled" />
+      </reply>
+    </request>
+
+    <request name="GetRectangles" opcode="8">
+      <field type="WINDOW" name="window" />
+      <field type="SHAPE_KIND" name="source_kind" />
+      <reply>
+        <field type="BYTE" name="ordering" />
+        <field type="CARD32" name="rectangles_len" />
+        <list type="RECTANGLE" name="rectangles">
+          <fieldref>rectangles_len</fieldref>
+        </list>
+      </reply>
+    </request>
+
+  </extension>
+</xcb>
