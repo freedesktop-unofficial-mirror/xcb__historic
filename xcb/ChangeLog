@@ -1,6 +1,12 @@
 2004-11-10  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
+	Don't create a separate local variable for exprfields, and change
+	an explicit xsl:for-each to an xsl:apply-templates.
+
+2004-11-10  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
 	Prefix variables in request functions with "xcb_" to avoid
 	collisions with field names.
 
