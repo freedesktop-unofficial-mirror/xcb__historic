@@ -1,373 +1,74 @@
-/*
- * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
- * All Rights Reserved.  See the file COPYING in this directory
- * for licensing information.
- */
+/* Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
+ * See the file COPYING for licensing information. */
+
+/* Connection management: the core of XCB. */
 
 #include <assert.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
+#include <netinet/in.h>
 
 #include "xcb.h"
 #include "xcbint.h"
 #include "extensions/bigreq.h"
 
-#undef USENONBLOCKING
-
-typedef struct XCBReplyData {
-    int pending;
-    int error;
-    int seqnum;
-    void *data;
-} XCBReplyData;
-
-typedef struct XCBExtensionRecord {
-    char *name;
-    XCBQueryExtensionRep *info;
-} XCBExtensionRecord;
-
-int XCBOnes(unsigned long mask)
+static int write_setup(XCBConnection *c, XCBAuthInfo *auth_info)
 {
-    register unsigned long y;
-    y = (mask >> 1) & 033333333333;
-    y = mask - y - ((y >> 1) & 033333333333);
-    return ((y + (y >> 3)) & 030707070707) % 077;
-}
+    XCBConnSetupReq out;
+    struct iovec parts[3];
+    int count = 0;
+    int endian = 0x01020304;
+    int ret;
 
-CARD32 XCBGenerateID(XCBConnection *c)
-{
-    CARD32 ret;
-    pthread_mutex_lock(&c->locked);
-    ret = c->last_xid | c->setup->resource_id_base;
-    c->last_xid += c->setup->resource_id_mask & -(c->setup->resource_id_mask);
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
+    /* B = 0x42 = MSB first, l = 0x6c = LSB first */
+    if(htonl(endian) == endian)
+        out.byte_order = 0x42;
+    else
+        out.byte_order = 0x6c;
+    out.protocol_major_version = X_PROTOCOL;
+    out.protocol_minor_version = X_PROTOCOL_REVISION;
+    out.authorization_protocol_name_len = 0;
+    out.authorization_protocol_data_len = 0;
+    parts[count].iov_len = sizeof(XCBConnSetupReq);
+    parts[count++].iov_base = (caddr_t) &out;
 
-CARD32 XCBMaximumRequestLength(XCBConnection *c)
-{
-    /* doesn't need locking because it's never written to. */
-    return c->maximum_request_length;
-}
+    if(auth_info)
+    {
+        parts[count].iov_len = out.authorization_protocol_name_len = auth_info->namelen;
+        parts[count++].iov_base = auth_info->name;
+        parts[count].iov_len = out.authorization_protocol_data_len = auth_info->datalen;
+        parts[count++].iov_base = auth_info->data;
+    }
 
-int XCBAddReplyData(XCBConnection *c, int seqnum)
-{
-    XCBReplyData *data;
-    data = malloc(sizeof(XCBReplyData));
-    if(!data)
+    pthread_mutex_lock(&c->iolock);
+    _xcb_out_write_block(c, parts, count);
+    ret = _xcb_out_flush(c);
+    pthread_mutex_unlock(&c->iolock);
+    if(ret <= 0)
         return 0;
-
-    data->pending = 0;
-    data->error = 0;
-    data->seqnum = seqnum;
-    data->data = 0;
-
-    XCBListAppend(c->reply_data, data);
     return 1;
 }
 
-int XCBSendRequest(XCBConnection *c, unsigned int *seqnum, int isvoid, struct iovec *vector, size_t count)
+static int read_setup(XCBConnection *c)
 {
-    int ret;
-    int i;
-    struct iovec prefix[2];
-    CARD16 shortlen = 0;
-    CARD32 longlen = 0;
-
-    assert(c != 0);
-    assert(seqnum != 0);
-    assert(vector != 0);
-    assert(count > 0);
-
-    /* put together the length field, possibly using BIGREQUESTS */
-    for(i = 0; i < count; ++i)
-        longlen += XCB_CEIL(vector[i].iov_len) >> 2;
-    if(longlen > c->maximum_request_length)
-        return 0; /* server can't take this; maybe need BIGREQUESTS? */
-    if(longlen <= c->setup->maximum_request_length)
-    {
-        /* we don't need BIGREQUESTS. */
-        shortlen = longlen;
-        longlen = 0;
-    }
-    /* set the length field. */
-    i = 0;
-    prefix[i].iov_base = vector[0].iov_base;
-    prefix[i].iov_len = sizeof(CARD32);
-    vector[0].iov_base = ((char *) vector[0].iov_base) + sizeof(CARD32);
-    vector[0].iov_len -= sizeof(CARD32);
-    ((CARD16 *) prefix[i].iov_base)[1] = shortlen;
-    ++i;
-    if(!shortlen)
-    {
-        prefix[i].iov_base = &longlen;
-        prefix[i].iov_len = sizeof(CARD32);
-        ++i;
-    }
-
-    /* get a sequence number and arrange for delivery. */
-    pthread_mutex_lock(&c->locked);
-    *seqnum = ++c->seqnum;
-
-    if(!isvoid)
-        XCBAddReplyData(c, *seqnum);
-
-    ret = XCBWrite(c->handle, prefix, i);
-    if(ret > 0)
-        ret = XCBWrite(c->handle, vector, count);
-    pthread_mutex_unlock(&c->locked);
-
-    return ret;
-}
-
-static void free_reply_data(XCBReplyData *data)
-{
-    free(data->data);
-    free(data);
-}
-
-static int match_reply_seqnum32(const void *seqnum, const void *data)
-{
-    return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
-}
-
-void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data)
-{
-    c->unexpected_reply_handler = handler;
-    c->unexpected_reply_data = data;
-}
-
-static /* PRE: called immediately after data has been read from the connection */
-/* INV: this function operates entirely out of the I/O layer buffers,
-        and never causes a read or write. */
-int XCBReadPacket(void *readerdata, XCBIOHandle *h)
-{
-    XCBConnection *c = (XCBConnection *) readerdata;
-    int ret;
-    int length = 32;
-    XCBGenericRep genrep;
-    XCBReplyData *rep = 0;
-    unsigned char *buf;
-
-    /* Wait for there to be enough data for us to read a whole packet */
-    if(XCBIOReadable(h) < length)
-        return 0;
-
-    XCBIOPeek(h, &genrep, sizeof(genrep));
-    /* For reply packets, check that the entire packet is available. */
-    if(genrep.response_type == 1)
-        length += genrep.length * 4;
-
-    buf = (unsigned char *) malloc((length) * sizeof(unsigned char));
-    assert(buf);
-    ret = XCBRead(h, buf, length);
-
-    /* Compute 32-bit sequence number of this packet. */
-    /* XXX: do "sequence lost" check here */
-    if((genrep.response_type & 0x7f) != KeymapNotify)
-    {
-        int lastread = c->seqnum_read;
-        c->seqnum_read = (lastread & 0xffff0000) | genrep.seqnum;
-        if(c->seqnum_read < lastread)
-            c->seqnum_read += 0x10000;
-    }
-
-    if(!(buf[0] & ~1)) /* reply or error packet */
-        rep = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum32, &c->seqnum_read);
-
-    if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
-    {
-        int ret = -1;
-        if(c->unexpected_reply_handler && c->unexpected_reply_handler(c->unexpected_reply_data, (XCBGenericRep *) buf))
-            ret = 1;
-        if(ret < 0)
-            fprintf(stderr, "No reply record found for reply %d.\n", c->seqnum_read);
-        free(buf);
-        return ret;
-    }
-
-    if(rep) /* reply or error with a reply record. */
-    {
-        assert(rep->data == 0);
-        rep->error = (buf[0] == 0);
-        rep->data = buf;
-    }
-    else /* event or error without a reply record */
-        XCBListAppend(c->event_data, (XCBGenericEvent *) buf);
-
-    return 1; /* I have something for you... */
-}
-
-unsigned int XCBGetLastSeqnumRead(XCBConnection *c)
-{
-    unsigned int ret;
-    pthread_mutex_lock(&c->locked);
-    ret = c->seqnum_read;
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
-
-void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e)
-{
-    void *ret = 0;
-    XCBReplyData *cur;
-    if(e)
-        *e = 0;
-
-    pthread_mutex_lock(&c->locked);
-    /* If this request has not been written yet, write it. */
-    if((signed int) (c->seqnum_written - seqnum) < 0)
-    {
-        if(XCBFlushLocked(c->handle) <= 0)
-            goto done; /* error */
-        c->last_request = 0;
-        c->seqnum_written = c->seqnum;
-    }
-
-    /* Compare the sequence number as a full int. */
-    cur = (XCBReplyData *) XCBListFind(c->reply_data, match_reply_seqnum32, &seqnum);
-
-    if(!cur || cur->pending)
-        goto done; /* error */
-
-    ++cur->pending;
-
-    while(!cur->data)
-        if(XCBWait(c->handle, /*should_write*/ 0) <= 0)
-        {
-            /* Do not remove the reply record on I/O error. */
-            --cur->pending;
-            goto done;
-        }
-
-    /* No need to update pending flag - about to delete cur anyway. */
-
-    if(cur->error)
-    {
-        if(!e)
-            XCBListAppend(c->event_data, (XCBGenericEvent *) cur->data);
-        else
-            *e = (XCBGenericError *) cur->data;
-    }
-    else
-        ret = cur->data;
-
-    /* Compare the sequence number as a full int. */
-    XCBListRemove(c->reply_data, match_reply_seqnum32, &seqnum);
-    free(cur);
-
-done:
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
-
-XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
-{
-    XCBGenericEvent *ret;
-
-#if XCBTRACEEVENT
-    fprintf(stderr, "Entering XCBWaitEvent\n");
-#endif
-
-    pthread_mutex_lock(&c->locked);
-    while(XCBListLength(c->event_data) == 0)
-        if(XCBWait(c->handle, /*should_write*/ 0) <= 0)
-            break;
-    /* XCBListRemoveHead returns 0 on empty list. */
-    ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
-
-    pthread_mutex_unlock(&c->locked);
-
-#if XCBTRACEEVENT
-    fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret ? ret->response_type : -1);
-#endif
-
-    return ret;
-}
-
-int XCBFlush(XCBConnection *c)
-{
-    int ret;
-    pthread_mutex_lock(&c->locked);
-    ret = XCBFlushLocked(c->handle);
-    c->last_request = 0;
-    c->seqnum_written = c->seqnum;
-    pthread_mutex_unlock(&c->locked);
-    return ret;
-}
-
-XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
-{
-    XCBConnection* c;
-
-    c = (XCBConnection *) malloc((1) * sizeof(XCBConnection));
-    assert(c);
-
-    pthread_mutex_init(&c->locked, 0);
-    pthread_mutex_lock(&c->locked);
-
-    c->handle = XCBIOFdOpen(fd, &c->locked);
-    c->reply_data = XCBListNew();
-    c->event_data = XCBListNew();
-    c->extension_cache = XCBListNew();
-    if(!(c->handle && c->reply_data && c->event_data && c->extension_cache))
-        goto error;
-
-    c->last_request = 0;
-    c->seqnum = 0;
-    c->seqnum_written = 0;
-    c->seqnum_read = 0;
-    c->last_xid = 0;
-
-    c->unexpected_reply_handler = 0;
-    c->unexpected_reply_data = 0;
-
-    /* Write the connection setup request. */
-    {
-        XCBConnSetupReq out;
-        struct iovec parts[3];
-        int count = 0;
-        int endian = 0x01020304;
-
-        /* B = 0x42 = MSB first, l = 0x6c = LSB first */
-        if(htonl(endian) == endian)
-            out.byte_order = 0x42;
-        else
-            out.byte_order = 0x6c;
-        out.protocol_major_version = X_PROTOCOL;
-        out.protocol_minor_version = X_PROTOCOL_REVISION;
-        out.authorization_protocol_name_len = 0;
-        out.authorization_protocol_data_len = 0;
-        parts[count].iov_len = sizeof(XCBConnSetupReq);
-        parts[count++].iov_base = (caddr_t) &out;
-
-        if(auth_info)
-        {
-            parts[count].iov_len = out.authorization_protocol_name_len = auth_info->namelen;
-            parts[count++].iov_base = auth_info->name;
-            parts[count].iov_len = out.authorization_protocol_data_len = auth_info->datalen;
-            parts[count++].iov_base = auth_info->data;
-        }
-        XCBWrite(c->handle, parts, count);
-    }
-    if(XCBFlushLocked(c->handle) <= 0)
-        goto error;
-
     /* Read the server response */
     c->setup = malloc(sizeof(XCBConnSetupGenericRep));
-    assert(c->setup);
+    if(!c->setup)
+        return 0;
 
-    if(XCBRead(c->handle, c->setup, sizeof(XCBConnSetupGenericRep)) != sizeof(XCBConnSetupGenericRep))
-        goto error;
+    if(_xcb_read_block(c->fd, c->setup, sizeof(XCBConnSetupGenericRep)) != sizeof(XCBConnSetupGenericRep))
+        return 0;
 
-    c->setup = realloc(c->setup, c->setup->length * 4 + sizeof(XCBConnSetupGenericRep));
-    assert(c->setup);
+    {
+        void *tmp = realloc(c->setup, c->setup->length * 4 + sizeof(XCBConnSetupGenericRep));
+        if(!tmp)
+            return 0;
+        c->setup = tmp;
+    }
 
-    if(XCBRead(c->handle, (char *) c->setup + sizeof(XCBConnSetupGenericRep), c->setup->length * 4) != c->setup->length * 4)
-        goto error;
+    if(_xcb_read_block(c->fd, (char *) c->setup + sizeof(XCBConnSetupGenericRep), c->setup->length * 4) <= 0)
+        return 0;
 
     /* 0 = failed, 2 = authenticate, 1 = success */
     switch(c->setup->status)
@@ -376,151 +77,146 @@ XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
         {
             XCBConnSetupFailedRep *setup = (XCBConnSetupFailedRep *) c->setup;
             write(STDERR_FILENO, XCBConnSetupFailedRepReason(setup), XCBConnSetupFailedRepReasonLength(setup));
-            goto error;
+            return 0;
         }
-        /*NOTREACHED*/
 
     case 2: /* authenticate */
         {
             XCBConnSetupAuthenticateRep *setup = (XCBConnSetupAuthenticateRep *) c->setup;
             write(STDERR_FILENO, XCBConnSetupAuthenticateRepReason(setup), XCBConnSetupAuthenticateRepReasonLength(setup));
-            goto error;
+            return 0;
         }
-        /*NOTREACHED*/
     }
 
+    return 1;
+}
+
+static int set_maximum_request_length(XCBConnection *c)
+{
+    const XCBQueryExtensionRep *ext;
     c->maximum_request_length = c->setup->maximum_request_length;
-
-    XCBIOSetReader(c->handle, XCBReadPacket, c);
-    pthread_mutex_unlock(&c->locked);
-
+    ext = XCBBigRequestsInit(c);
+    if(!ext)
+        return 0;
+    if(ext->present)
     {
-        const XCBQueryExtensionRep *ext = XCBBigRequestsInit(c);
-        if(!ext)
-            goto error;
-        if(ext->present)
-        {
-            XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
-            c->maximum_request_length = r->maximum_request_length;
-        }
+        XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
+        c->maximum_request_length = r->maximum_request_length;
     }
-
-    return c;
-
-error:
-    XCBDisconnect(c);
-    return 0;
+    return 1;
 }
 
-XCBConnection *XCBConnectBasic()
+/* Public interface */
+
+XCBConnSetupSuccessRep *XCBGetSetup(XCBConnection *c)
 {
-    int fd, display = 0, screen = 0;
-    char *host;
-    XCBConnection *c;
-    XCBAuthInfo auth;
+    /* doesn't need locking because it's never written to. */
+    return c->setup;
+}
 
-    if(!XCBParseDisplay(0, &host, &display, &screen))
-    {
-        fprintf(stderr, "Invalid DISPLAY\n");
-        abort();
-    }
-    fd = XCBOpen(host, display);
-    free(host);
-    if(fd == -1)
-    {
-        perror("XCBOpen");
-        abort();
-    }
+int XCBGetFileDescriptor(XCBConnection *c)
+{
+    /* doesn't need locking because it's never written to. */
+    return c->fd;
+}
 
-    XCBGetAuthInfo(fd, XCBNextNonce(), &auth);
-    c = XCBConnect(fd, &auth);
+CARD32 XCBGetMaximumRequestLength(XCBConnection *c)
+{
+    /* doesn't need locking because it's never written to. */
+    return c->maximum_request_length;
+}
+
+XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
+{
+    XCBConnection* c;
+
+    c = calloc(1, sizeof(XCBConnection));
     if(!c)
+        return 0;
+
+    c->fd = fd;
+
+    if(!(
+        _xcb_set_fd_flags(fd) &&
+        pthread_mutex_init(&c->iolock, 0) == 0 &&
+        _xcb_in_init(&c->in) &&
+        _xcb_out_init(&c->out) &&
+        write_setup(c, auth_info) &&
+        read_setup(c) &&
+        _xcb_ext_init(c) &&
+        set_maximum_request_length(c) &&
+        _xcb_xid_init(c)
+        ))
     {
-        perror("XCBConnect");
-        abort();
+        XCBDisconnect(c);
+        return 0;
     }
 
-    free(auth.name);
-    free(auth.data);
     return c;
-}
-
-int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
-{
-    char *colon;
-    if(!name || !*name)
-        name = getenv("DISPLAY");
-    if(!name)
-        return 0;
-    *host = strdup(name);
-    if(!*host)
-        return 0;
-    colon = strchr(*host, ':');
-    if(!colon)
-    {
-        free(*host);
-        *host = 0;
-        return 0;
-    }
-    *colon = '\0';
-    ++colon;
-    return sscanf(colon, "%d.%d", display, screen);
-}
-
-int XCBSync(XCBConnection *c, XCBGenericError **e)
-{
-    XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
-    free(reply);
-    return (reply != 0);
-}
-
-static int match_extension_string(const void *name, const void *data)
-{
-    return (((XCBExtensionRecord *) data)->name == name);
-}
-
-/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
- * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e)
-{
-    XCBExtensionRecord *data = 0;
-    if(e)
-        *e = 0;
-    pthread_mutex_lock(&c->locked);
-
-    data = (XCBExtensionRecord *) XCBListRemove(c->extension_cache, match_extension_string, name);
-
-    if(!data)
-    {
-	/* cache miss: query the server */
-	pthread_mutex_unlock(&c->locked);
-	data = (XCBExtensionRecord *) malloc((1) * sizeof(XCBExtensionRecord));
-	assert(data);
-	data->name = (char *) name;
-	data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
-	pthread_mutex_lock(&c->locked);
-    }
-
-    XCBListInsert(c->extension_cache, data);
-
-    pthread_mutex_unlock(&c->locked);
-    return data->info;
-}
-
-static void free_extension_record(XCBExtensionRecord *data)
-{
-    free(data->info);
-    free(data);
 }
 
 void XCBDisconnect(XCBConnection *c)
 {
     if(!c)
         return;
-    XCBListDelete(c->reply_data, (XCBListFreeFunc) free_reply_data);
-    XCBListDelete(c->event_data, free);
-    XCBListDelete(c->extension_cache, (XCBListFreeFunc) free_extension_record);
-    free(c->handle);
+
     free(c->setup);
+    close(c->fd);
+
+    pthread_mutex_destroy(&c->iolock);
+    _xcb_in_destroy(&c->in);
+    _xcb_out_destroy(&c->out);
+
+    _xcb_ext_destroy(c);
+    _xcb_xid_destroy(c);
+
     free(c);
+}
+
+/* Private interface */
+
+int _xcb_conn_wait(XCBConnection *c, const int should_write, pthread_cond_t *cond)
+{
+    int ret = 1;
+    fd_set rfds, wfds;
+
+    /* If the thing I should be doing is already being done, wait for it. */
+    if(should_write ? c->out.writing : c->in.reading)
+    {
+        pthread_cond_wait(cond, &c->iolock);
+        return 1;
+    }
+
+    FD_ZERO(&rfds);
+    FD_SET(c->fd, &rfds);
+    ++c->in.reading;
+
+    FD_ZERO(&wfds);
+    if(should_write)
+    {
+        FD_SET(c->fd, &wfds);
+        ++c->out.writing;
+    }
+
+    pthread_mutex_unlock(&c->iolock);
+    ret = select(c->fd + 1, &rfds, &wfds, 0, 0);
+    pthread_mutex_lock(&c->iolock);
+
+    if(ret <= 0) /* error: select failed */
+        goto done;
+
+    if(FD_ISSET(c->fd, &rfds))
+        if((ret = _xcb_in_read(c)) <= 0)
+            goto done;
+
+    if(FD_ISSET(c->fd, &wfds))
+        if((ret = _xcb_out_write(c)) <= 0)
+            goto done;
+
+done:
+    if(should_write)
+        --c->out.writing;
+    --c->in.reading;
+
+    return ret;
 }

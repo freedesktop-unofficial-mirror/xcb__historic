@@ -363,7 +363,7 @@ pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
 FUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
 `XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericError **e', `
-    return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
+    return (XCB`'$1`'Rep *) XCBWaitReply(c, cookie.sequence, e);
 ')popdef(`NEXTFIELD')')
 
 
@@ -386,7 +386,7 @@ undivert(ASSNDIV)`'dnl
     parts[0].iov_base = (caddr_t) &out;
     parts[0].iov_len = sizeof(out);
 undivert(LISTDIV)`'dnl
-    XCBSendRequest(c, &ret.seqnum, /* isvoid */ ifelse($1, Void, 1, 0), parts, /* partqty */ PARTQTY);
+    XCBSendRequest(c, &ret.sequence, /* isvoid */ ifelse($1, Void, 1, 0), parts, /* partqty */ PARTQTY);
     return ret;
 ')popdef(`PARAMQTY')popdef(`PARTQTY')undefine(`MARSHALABLE')')
 
@@ -402,12 +402,12 @@ FUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
 ')')
 
 
-dnl Declares a struct named XCB<name>Cookie with a single "int seqnum"
+dnl Declares a struct named XCB<name>Cookie with a single "int sequence"
 dnl field.
 dnl COOKIETYPE(name)
 define(`COOKIETYPE', `dnl
 TYPEDEF(`struct XCB`$1'Cookie {
-    unsigned int seqnum;
+    unsigned int sequence;
 }', `XCB`$1'Cookie')')
 
 
@@ -437,14 +437,14 @@ TYPEDEF(`XCB`$3'Error', `XCB`$1'Error')')
 
 
 dnl EVENTMIDDLE()
-define(`EVENTMIDDLE', `FIELD(CARD16, `seqnum')')
+define(`EVENTMIDDLE', `FIELD(CARD16, `sequence')')
 
 dnl ERRORMIDDLE()
-define(`ERRORMIDDLE', `FIELD(CARD16, `seqnum')')
+define(`ERRORMIDDLE', `FIELD(CARD16, `sequence')')
 
 dnl REPMIDDLE()
 define(`REPMIDDLE', `
-    FIELD(CARD16, `seqnum')
+    FIELD(CARD16, `sequence')
     FIELD(CARD32, `length')
 ')
 

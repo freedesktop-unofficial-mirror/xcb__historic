@@ -26,8 +26,7 @@
 
 /* Opaque structures */
 
-typedef struct XCBIOHandle XCBIOHandle;
-typedef struct XCBList XCBList;
+typedef struct XCBConnection XCBConnection;
 
 
 /* Other types */
@@ -64,60 +63,45 @@ int XCBNextNonce(void);
 int XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
 
 
+/* xcb_out.c */
+
+int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct iovec *vector, size_t count);
+int XCBFlush(XCBConnection *c);
+
+
+/* xcb_in.c */
+
+typedef int (*XCBEventPredicate)(const XCBGenericEvent *, const XCBGenericEvent *);
+
+void *XCBWaitReply(XCBConnection *c, unsigned int request, XCBGenericError **e);
+XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
+
+int XCBEventQueueLength(XCBConnection *c);
+XCBGenericEvent *XCBEventQueueRemove(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data);
+XCBGenericEvent *XCBEventQueueFind(XCBConnection *c, XCBEventPredicate cmp, const XCBGenericEvent *data);
+void XCBEventQueueClear(XCBConnection *c);
+
+
+/* xcb_xid.c */
+
+CARD32 XCBGenerateID(XCBConnection *c);
+
+
+/* xcb_ext.c */
+
+/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
+ * from the cache. */
+const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e);
+
+
 /* xcb_conn.c */
 
-typedef int (*XCBUnexpectedReplyFunc)(void *unexpected_reply_data, XCBGenericRep *buf);
+XCBConnSetupSuccessRep *XCBGetSetup(XCBConnection *c);
+int XCBGetFileDescriptor(XCBConnection *c);
+CARD32 XCBGetMaximumRequestLength(XCBConnection *c);
 
-typedef struct XCBConnection {
-    pthread_mutex_t locked;
-    XCBIOHandle *handle;
-    XCBList *reply_data;
-    XCBList *event_data;
-    XCBList *extension_cache;
-    void *last_request;
-    unsigned int seqnum;
-    unsigned int seqnum_written;
-    unsigned int seqnum_read;
-    CARD32 last_xid;
-    CARD32 maximum_request_length;
-
-    XCBUnexpectedReplyFunc unexpected_reply_handler;
-    void *unexpected_reply_data;
-
-    XCBConnSetupSuccessRep *setup;
-} XCBConnection;
-
-int XCBOnes(unsigned long mask);
-CARD32 XCBGenerateID(XCBConnection *c);
-CARD32 XCBMaximumRequestLength(XCBConnection *c);
-void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
-unsigned int XCBGetLastSeqnumRead(XCBConnection *c);
-int XCBSendRequest(XCBConnection *c, unsigned int *seqnum, int isvoid, struct iovec *vector, size_t count);
-void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericError **e);
-XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
-int XCBFlush(XCBConnection *c);
 XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
-XCBConnection *XCBConnectBasic(void);
 void XCBDisconnect(XCBConnection *c);
-int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
-
-
-/* xcb_event.c */
-
-int XCBEventQueueLength(struct XCBConnection *c);
-
-XCBGenericEvent *XCBEventQueueRemove(struct XCBConnection *c, int (*cmp)(const XCBGenericEvent *, const XCBGenericEvent *), const XCBGenericEvent *data);
-
-XCBGenericEvent *XCBEventQueueFind(struct XCBConnection *c, int (*cmp)(const XCBGenericEvent *, const XCBGenericEvent *), const XCBGenericEvent *data);
-
-void XCBEventQueueClear(struct XCBConnection *c);
-
-
-/* xcb_io.c */
-
-int XCBOpen(const char *host, int display);
-int XCBOpenTCP(const char *host, unsigned short port);
-int XCBOpenUnix(const char *file);
 
 
 /* xproto.c and xcb_types.c */
@@ -125,12 +109,18 @@ int XCBOpenUnix(const char *file);
 undivert(FUNCDIV)
 undivert(INLINEFUNCDIV)dnl
 
-/* xcb_conn.c */
+
+/* xcb_util.c */
+
+int XCBOnes(unsigned long mask);
+
+int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
+int XCBOpen(const char *host, int display);
+int XCBOpenTCP(const char *host, unsigned short port);
+int XCBOpenUnix(const char *file);
+
+XCBConnection *XCBConnectBasic(void);
 
 int XCBSync(XCBConnection *c, XCBGenericError **e);
-
-/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
- * from the cache. */
-const XCBQueryExtensionRep *XCBQueryExtensionCached(XCBConnection *c, const char *name, XCBGenericError **e);
 
 #endif

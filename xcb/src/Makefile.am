@@ -20,8 +20,8 @@ CFLAGS =
 AM_CFLAGS = $(CDEBUGFLAGS) $(XCBPROTO_CFLAGS) $(XPROTO_CFLAGS) $(XAU_CFLAGS)
 libXCB_la_LIBADD = $(XCBPROTO_LIBS) $(XPROTO_LIBS) $(XAU_LIBS)
 libXCB_la_SOURCES = \
-		xcb_conn.c xcb_auth.c xcb_io.c \
-		xcb_list.c xcb_event.c xcb_des.c \
+		xcb_conn.c xcb_out.c xcb_in.c xcb_ext.c xcb_xid.c \
+		xcb_list.c xcb_util.c xcb_auth.c xcb_des.c \
 		$(COREPROTO) $(EXTENSIONS)
 
 xcb_des.c:

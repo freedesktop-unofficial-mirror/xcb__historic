@@ -1,82 +1,85 @@
-/*
- * Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
- * All Rights Reserved.  See the file COPYING in this directory
- * for licensing information.
- */
+/* Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
+ * See the file COPYING for licensing information. */
 
-#include <assert.h>
+/* A generic implementation of a list of void-pointers. */
+
 #include <stdlib.h>
 
 #include "xcb.h"
 #include "xcbint.h"
 
-typedef struct XCBListNode {
-    struct XCBListNode *next;
+typedef struct node {
+    struct node *next;
     void *data;
-} XCBListNode;
+} node;
 
-struct XCBList {
-    XCBListNode *head;
-    XCBListNode **tail;
+struct _xcb_list {
+    node *head;
+    node **tail;
     int len;
 };
 
-/* Linked list functions */
+/* Private interface */
 
-XCBList *XCBListNew()
+_xcb_list *_xcb_list_new()
 {
-    XCBList *list;
-    list = (XCBList *) malloc(sizeof(XCBList));
-    assert(list);
+    _xcb_list *list;
+    list = malloc(sizeof(_xcb_list));
+    if(!list)
+        return 0;
     list->head = 0;
     list->tail = &list->head;
     list->len = 0;
     return list;
 }
 
-void XCBListClear(XCBList *list, XCBListFreeFunc do_free)
+void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free)
 {
     void *tmp;
-    while((tmp = XCBListRemoveHead(list)))
+    while((tmp = _xcb_list_remove_head(list)))
         if(do_free)
             do_free(tmp);
 }
 
-void XCBListDelete(XCBList *list, XCBListFreeFunc do_free)
+void _xcb_list_delete(_xcb_list *list, XCBListFreeFunc do_free)
 {
-    XCBListClear(list, do_free);
+    _xcb_list_clear(list, do_free);
     free(list);
 }
 
-void XCBListInsert(XCBList *list, void *data)
+int _xcb_list_insert(_xcb_list *list, void *data)
 {
-    XCBListNode *node;
-    node = (XCBListNode *) malloc(sizeof(XCBListNode));
-    assert(node);
-    node->data = data;
+    node *cur;
+    cur = malloc(sizeof(node));
+    if(!cur)
+        return 0;
+    cur->data = data;
 
-    node->next = list->head;
-    list->head = node;
+    cur->next = list->head;
+    list->head = cur;
     ++list->len;
+    return 1;
 }
 
-void XCBListAppend(XCBList *list, void *data)
+int _xcb_list_append(_xcb_list *list, void *data)
 {
-    XCBListNode *node;
-    node = (XCBListNode *) malloc(sizeof(XCBListNode));
-    assert(node);
-    node->data = data;
-    node->next = 0;
+    node *cur;
+    cur = malloc(sizeof(node));
+    if(!cur)
+        return 0;
+    cur->data = data;
+    cur->next = 0;
 
-    *list->tail = node;
-    list->tail = &node->next;
+    *list->tail = cur;
+    list->tail = &cur->next;
     ++list->len;
+    return 1;
 }
 
-void *XCBListRemoveHead(XCBList *list)
+void *_xcb_list_remove_head(_xcb_list *list)
 {
     void *ret;
-    XCBListNode *tmp = list->head;
+    node *tmp = list->head;
     if(!tmp)
         return 0;
     ret = tmp->data;
@@ -88,35 +91,35 @@ void *XCBListRemoveHead(XCBList *list)
     return ret;
 }
 
-void *XCBListRemove(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
+void *_xcb_list_remove(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data)
 {
-    XCBListNode **cur;
+    node **cur;
     for(cur = &list->head; *cur; cur = &(*cur)->next)
         if(cmp(data, (*cur)->data))
-	{
-	    XCBListNode *tmp = *cur;
-	    void *ret = (*cur)->data;
-	    *cur = (*cur)->next;
-	    if(!*cur)
-		list->tail = cur;
+        {
+            node *tmp = *cur;
+            void *ret = (*cur)->data;
+            *cur = (*cur)->next;
+            if(!*cur)
+                list->tail = cur;
 
-	    free(tmp);
-	    --list->len;
-	    return ret;
-	}
+            free(tmp);
+            --list->len;
+            return ret;
+        }
     return 0;
 }
 
-void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
+void *_xcb_list_find(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data)
 {
-    XCBListNode *cur;
+    node *cur;
     for(cur = list->head; cur; cur = cur->next)
         if(cmp(data, cur->data))
             return cur->data;
     return 0;
 }
 
-int XCBListLength(XCBList *list)
+int _xcb_list_length(_xcb_list *list)
 {
     return list->len;
 }

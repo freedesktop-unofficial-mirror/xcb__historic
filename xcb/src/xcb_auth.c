@@ -1,3 +1,8 @@
+/* Copyright (C) 2001-2003 Bart Massey and Jamey Sharp.
+ * See the file COPYING for licensing information. */
+
+/* Authorization systems for the X protocol. */
+
 #include <assert.h>
 #include <X11/Xauth.h>
 #include <sys/socket.h>

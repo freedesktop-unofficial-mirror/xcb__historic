@@ -7,84 +7,134 @@
 #ifndef __XCBINT_H
 #define __XCBINT_H
 
-/* xcb_conn.c */
+/* xcb_list.c */
 
-int XCBAddReplyData(XCBConnection *c, int seqnum);
+typedef struct _xcb_list _xcb_list;
+typedef void (*XCBListFreeFunc)(void *);
+
+_xcb_list *_xcb_list_new(void);
+void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free);
+void _xcb_list_delete(_xcb_list *list, XCBListFreeFunc do_free);
+int _xcb_list_insert(_xcb_list *list, void *data);
+int _xcb_list_append(_xcb_list *list, void *data);
+void *_xcb_list_remove_head(_xcb_list *list);
+void *_xcb_list_remove(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
+void *_xcb_list_find(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
+int _xcb_list_length(_xcb_list *list);
 
 
-/* xcb_io.c */
+/* xcb_util.c */
 
 /* Index of nearest 4-byte boundary following E. */
 #define XCB_CEIL(E) (((E)+3)&~3)
 
 #define XCB_PAD(i) ((4 - (i & 3)) & 3)
 
-typedef int (*XCBIOCallback)(void *data, XCBIOHandle *h);
+int _xcb_set_fd_flags(const int fd);
+int _xcb_readn(const int fd, void *buf, const int buflen, int *count);
+int _xcb_read_block(const int fd, void *buf, const size_t len);
+int _xcb_write(const int fd, char (*buf)[], int *count);
+int _xcb_writev(const int fd, struct iovec *vec, int count);
 
-XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked);
-void XCBIOSetReader(XCBIOHandle *h, XCBIOCallback reader, void *readerdata);
 
-int XCBFillBuffer(XCBIOHandle *h);
-int XCBWait(XCBIOHandle *c, const int should_write);
-int XCBFlushLocked(XCBIOHandle *c);
+/* xcb_out.c */
 
-int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count);
-int XCBRead(XCBIOHandle *h, void *buf, int nread);
-int XCBIOPeek(XCBIOHandle *h, void *buf, int nread);
-int XCBIOReadable(XCBIOHandle *h);
+typedef struct _xcb_out {
+    pthread_cond_t cond;
+    int writing;
 
-/* xcb_list.c */
+    char queue[4096];
+    int queue_len;
+    struct iovec *vec;
+    int vec_len;
 
-typedef void (*XCBListFreeFunc)(void *);
+    void *last_request;
+    unsigned int request;
+    unsigned int request_written;
+} _xcb_out;
 
-XCBList *XCBListNew(void);
-void XCBListClear(XCBList *list, XCBListFreeFunc do_free);
-void XCBListDelete(XCBList *list, XCBListFreeFunc do_free);
-void XCBListInsert(XCBList *list, void *data);
-void XCBListAppend(XCBList *list, void *data);
-void *XCBListRemoveHead(XCBList *list);
-void *XCBListRemove(XCBList *list, int (*cmp)(const void *, const void *), const void *data);
-void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const void *data);
-int XCBListLength(XCBList *list);
+int _xcb_out_init(_xcb_out *out);
+void _xcb_out_destroy(_xcb_out *out);
 
-/* Tracing definitions */
+int _xcb_out_write(XCBConnection *c);
+int _xcb_out_write_block(XCBConnection *c, struct iovec *vector, size_t count);
+int _xcb_out_flush(XCBConnection *c);
 
-#ifndef XCBTRACEREQ
-#define XCBTRACEREQ 0
-#endif
 
-#ifndef XCBTRACEMARSHAL
-#define XCBTRACEMARSHAL 0
-#endif
+/* xcb_in.c */
 
-#ifndef XCBTRACEREP
-#define XCBTRACEREP 0
-#endif
+typedef int (*XCBUnexpectedReplyFunc)(void *unexpected_reply_data, XCBGenericRep *buf);
 
-#ifndef XCBTRACEEVENT
-#define XCBTRACEEVENT 0
-#endif
+typedef struct _xcb_in {
+    pthread_cond_t event_cond;
+    int reading;
 
-#if XCBTRACEREQ || XCBTRACEMARSHAL || XCBTRACEREP || XCBTRACEEVENT
-#include <stdio.h>
-#endif
+    char queue[4096];
+    int queue_len;
 
-#if XCBTRACEREP
-#define XCBREPTRACER(id) fputs(id " reply wait\n", stderr);
-#else
-#define XCBREPTRACER(id)
-#endif
+    unsigned int request_read;
 
-#if XCBTRACEREQ
-#define XCBREQTRACER(id) fputs(id " request send\n", stderr);
-#else
-#define XCBREQTRACER(id)
-#endif
+    _xcb_list *replies;
+    _xcb_list *events;
 
-#if XCBTRACEMARSHAL
-#define XCBMARSHALTRACER(id) fputs(id " request marshaled\n", stderr);
-#else
-#define XCBMARSHALTRACER(id)
-#endif
+    XCBUnexpectedReplyFunc unexpected_reply_handler;
+    void *unexpected_reply_data;
+} _xcb_in;
 
+int _xcb_in_init(_xcb_in *in);
+void _xcb_in_destroy(_xcb_in *in);
+
+int _xcb_in_events_length(XCBConnection *c);
+
+int _xcb_in_expect_reply(XCBConnection *c, unsigned int request);
+void _xcb_in_set_unexpected_reply_handler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
+
+int _xcb_in_read_packet(XCBConnection *c);
+int _xcb_in_read(XCBConnection *c);
+int _xcb_in_read_block(XCBConnection *c, void *buf, int nread);
+
+
+/* xcb_xid.c */
+
+typedef struct _xcb_xid {
+    pthread_mutex_t lock;
+    CARD32 last;
+    CARD32 base;
+    CARD32 inc;
+} _xcb_xid;
+
+int _xcb_xid_init(XCBConnection *c);
+void _xcb_xid_destroy(XCBConnection *c);
+
+
+/* xcb_ext.c */
+
+typedef struct _xcb_ext {
+    pthread_mutex_t lock;
+    _xcb_list *extensions;
+} _xcb_ext;
+
+int _xcb_ext_init(XCBConnection *c);
+void _xcb_ext_destroy(XCBConnection *c);
+
+
+/* xcb_conn.c */
+
+struct XCBConnection {
+    /* constant data */
+    XCBConnSetupSuccessRep *setup;
+    int fd;
+    CARD32 maximum_request_length;
+
+    /* I/O data */
+    pthread_mutex_t iolock;
+    _xcb_in in;
+    _xcb_out out;
+
+    /* misc data */
+    _xcb_ext ext;
+    _xcb_xid xid;
+};
+
+int _xcb_conn_wait(XCBConnection *c, const int should_write, pthread_cond_t *cond);
 #endif
