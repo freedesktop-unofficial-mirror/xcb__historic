@@ -1,5 +1,19 @@
 2004-09-28  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcbext.h:
+	* src/xcb.h.m4:
+	* src/Makefile.am:
+	* src/client-c.xcb:
+	* src/xcb_in.c:
+	* src/xcb_out.c:
+	* src/xcb_util.c:
+	* src/xcb_xid.c:
+	Moved declarations that are only useful to protocol
+	implementations into a separate header file,
+	xcbext.h.
+
+2004-09-28  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcbint.h:
 	* src/xcb_conn.c:
 	Add internal sanity check macros for sequence

@@ -22,7 +22,7 @@ EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
 COREPROTO = xcb.h xproto.c xcb_types.c
 
-xcbinclude_HEADERS = xcb.h xcbint.h client-c.xcb $(EXTHEADERS)
+xcbinclude_HEADERS = xcb.h xcbext.h xcbint.h client-c.xcb $(EXTHEADERS)
 
 TESTS = check_all
 noinst_PROGRAMS = check_all

@@ -10,6 +10,7 @@
 #include <errno.h>
 
 #include "xcb.h"
+#include "xcbext.h"
 #include "xcbint.h"
 
 typedef struct XCBReplyData {

@@ -539,6 +539,7 @@ HEADERONLY(`dnl
 ')SOURCEONLY(`dnl
 #include <assert.h>
 #include "xcb.h"
+#include "xcbext.h"
 ifelse($1, `xcb_types', `', $1, `xproto', `', `#include "$1.h"
 ')dnl
 ')PUSHDIV(-1)

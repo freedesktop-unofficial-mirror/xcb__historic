@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include "xcb.h"
+#include "xcbext.h"
 #include "xcbint.h"
 #include "extensions/xc_misc.h"
 

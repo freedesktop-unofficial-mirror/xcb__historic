@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "xcb.h"
+#include "xcbext.h"
 
 int XCBOnes(unsigned long mask)
 {

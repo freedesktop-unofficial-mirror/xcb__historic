@@ -9,6 +9,7 @@
 #include <errno.h>
 
 #include "xcb.h"
+#include "xcbext.h"
 #include "xcbint.h"
 
 /* Public interface */
