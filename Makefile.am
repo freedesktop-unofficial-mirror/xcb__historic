@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUFFIXES = .m4
+SUFFIXES = .m4 .c .h
 
 .m4.h:
 	$(M4) -D"_H" xcbgen.m4 $*.m4 > $*.h
