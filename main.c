@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef VERBOSE
-    if(c->reply_data_head)
+    if(c->reply_data.head)
         printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 
@@ -184,7 +184,7 @@ int wait_event(XCB_Connection *c)
 
 void try_events(XCB_Connection *c)
 {
-    while(c->event_data_head && wait_event(c)) /* don't do this. */
+    while(!XCB_EventQueueIsEmpty(c) && wait_event(c))
         /* empty statement */ ;
 }
 

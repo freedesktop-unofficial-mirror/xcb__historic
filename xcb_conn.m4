@@ -26,14 +26,21 @@ _H`'#include <X11/Xproto.h>
 _C`'#undef USENONBLOCKING
 _H`'#define XCB_PAD(E) ((4-((E)%4))%4)
 _H`'#define X_TCP_PORT 6000	/* add display number */
-_H
+
+STRUCT(XCB_ListNode, `
+    POINTERFIELD(struct XCB_ListNode, `next')
+    POINTERFIELD(void, `data')
+')
+STRUCT(XCB_List, `
+    POINTERFIELD(XCB_ListNode, `head')
+    POINTERFIELD(XCB_ListNode, `tail')
+')
+
 STRUCT(XCB_Reply_Data, `
-    FIELD(pthread_cond_t, `cond')
     FIELD(int, `pending')
     FIELD(int, `error')
     FIELD(int, `seqnum')
     POINTERFIELD(void, `data')
-    POINTERFIELD(struct XCB_Reply_Data, `next')
 ')
 _H
 UNION(XCB_Event, `
@@ -41,11 +48,6 @@ UNION(XCB_Event, `
     FIELD(xError, `error')
     FIELD(xEvent, `event')
     FIELD(xKeymapEvent, `keymapEvent')
-')
-_H
-STRUCT(XCB_Event_Data, `
-    POINTERFIELD(XCB_Event, `event')
-    POINTERFIELD(struct XCB_Event_Data, `next')
 ')
 _H
 STRUCT(XCB_Depth, `
@@ -61,24 +63,17 @@ _H
 STRUCT(XCB_Connection, `
     FIELD(int, `fd')
     FIELD(pthread_mutex_t, `locked')
+    FIELD(pthread_cond_t, `waiting_threads')
     FIELD(int, `reading')
     FIELD(int, `writing')
 
-    POINTERFIELD(XCB_Reply_Data, `reply_data_head')
-    POINTERFIELD(XCB_Reply_Data, `reply_data_tail')
-    FIELD(int, `recvd_seqnum')
-
-    POINTERFIELD(XCB_Event_Data, `event_data_head')
-    POINTERFIELD(XCB_Event_Data, `event_data_tail')
-    FIELD(pthread_cond_t, `event_cond')
-    FIELD(int, `event_pending')
+    FIELD(XCB_List, `reply_data')
+    FIELD(XCB_List, `event_data')
 
     ARRAYFIELD(CARD8, `outqueue', 4096)
     FIELD(int, `n_outqueue')
     POINTERFIELD(struct iovec, `outvec')
     FIELD(int, `n_outvec')
-    FIELD(pthread_cond_t, `flush_cond')
-    FIELD(int, `flush_pending')
 
     FIELD(int, `seqnum')
     FIELD(CARD32, `last_xid')
@@ -93,7 +88,9 @@ STRUCT(XCB_Connection, `
 ')
 _H
 COOKIETYPE(`void')
-_H
+
+/* Utility functions */
+
 FUNCTION(`int XCB_Ones', `unsigned long mask', `
     register unsigned long y;
     y = (mask >> 1) & 033333333333;
@@ -113,7 +110,7 @@ _C
 FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
     void *out;
     if(c->n_outvec || c->n_outqueue + size > sizeof(c->outqueue))
-        XCB_Flush_locked(c);
+        assert(XCB_Flush_locked(c) > 0);
 
     out = c->outqueue + c->n_outqueue;
     c->n_outqueue += size;
@@ -121,82 +118,123 @@ FUNCTION(`void *XCB_Alloc_Out', `XCB_Connection *c, int size', `
     return out;
 ')
 
-/* PRE: c is locked and cur points to valid memory */
-/* POST: cur is in the list */
-FUNCTION(`void XCB_Add_Reply_Data', `XCB_Connection *c, int seqnum', `
-    XCB_Reply_Data *cur;
-ALLOC(XCB_Reply_Data, cur, 1)
-    pthread_cond_init(&cur->cond, 0);
-    cur->pending = 0;
-    cur->error = 0;
-    cur->seqnum = seqnum;
-    cur->data = 0;
-    cur->next = 0;
+/* Linked list functions */
 
-    if(c->reply_data_tail)
-        c->reply_data_tail->next = cur;
+STATICFUNCTION(`void list_init', `XCB_List *list', `
+    list->head = list->tail = 0;
+')
+
+STATICFUNCTION(`void list_insert', `XCB_List *list, void *data', `
+    XCB_ListNode *node;
+ALLOC(XCB_ListNode, `node', 1)
+    node->data = data;
+
+    node->next = list->head;
+    list->head = node;
+    if(!list->tail)
+        list->tail = node;
+')
+
+STATICFUNCTION(`void list_append', `XCB_List *list, void *data', `
+    XCB_ListNode *node;
+ALLOC(XCB_ListNode, `node', 1)
+    node->data = data;
+    node->next = 0;
+
+    if(list->tail)
+        list->tail->next = node;
     else
-        c->reply_data_head = cur;
+        list->head = node;
 
-    c->reply_data_tail = cur;
-    return;
+    list->tail = node;
 ')
 
-/* PRE: c is locked and cur points to valid memory */
-/* POST: *cur points at the desired data or is 0; if prev was not 0,
-         (*prev)->next points at the desired data or *prev is 0 */
-STATICFUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
-    XCB_Reply_Data *cur = c->reply_data_head;
-    while(cur)
-    {
-        if(cur->seqnum == seqnum)
-            return cur;
-        cur = cur->next;
-    }
-    return 0;
+STATICFUNCTION(`void *list_remove_head', `XCB_List *list', `
+    void *ret;
+    XCB_ListNode *tmp = list->head;
+    if(!tmp)
+        return 0;
+    ret = tmp->data;
+    list->head = tmp->next;
+    if(!list->head)
+        list->tail = 0;
+    free(tmp);
+    return ret;
 ')
 
-/* PRE: c is locked */
-/* POST: cur is no longer in the list (but the caller has to free it) */
-STATICFUNCTION(`int XCB_Remove_Reply_Data', `XCB_Connection *c, int seqnum', `
-    XCB_Reply_Data *prev = 0, *cur = c->reply_data_head;
+STATICFUNCTION(`void *list_remove', `XCB_List *list, int (*cmp)(void *, void *), void *data', `
+    XCB_ListNode *prev = 0, *cur = list->head;
 
     while(cur)
     {
-        if(cur->seqnum == seqnum)
+        if(cmp(data, cur->data))
             break;
         prev = cur;
         cur = cur->next;
     }
-
     if(!cur)
         return 0;
 
     if(prev)
         prev->next = cur->next;
     else
-        c->reply_data_head = cur->next;
-
+        list->head = cur->next;
     if(!cur->next)
-        c->reply_data_tail = prev;
+        list->tail = prev;
 
-    return 1;
+    data = cur->data;
+    free(cur);
+    return data;
 ')
+
+STATICFUNCTION(`void *list_find', `XCB_List *list, int (*cmp)(void *, void *), void *data', `
+    XCB_ListNode *cur = list->head;
+    while(cur)
+    {
+        if(cmp(data, cur->data))
+            return cur->data;
+        cur = cur->next;
+    }
+    return 0;
+')
+
+STATICFUNCTION(`int list_is_empty', `XCB_List *list', `
+    return (list->head == 0);
+')
+
+/* Specific list implementations */
 
 /* PRE: c is locked and cur points to valid memory */
 /* POST: cur is in the list */
-STATICFUNCTION(`void XCB_Add_Event_Data', `XCB_Connection *c, XCB_Event_Data *cur', `
-    assert(cur);
-    cur->next = 0;
-    if(c->event_data_tail)
-        c->event_data_tail->next = cur;
-    else
-        c->event_data_head = cur;
+FUNCTION(`void XCB_Add_Reply_Data', `XCB_Connection *c, int seqnum', `
+    XCB_Reply_Data *data;
+ALLOC(XCB_Reply_Data, `data', 1)
 
-    c->event_data_tail = cur;
-    return;
+    data->pending = 0;
+    data->error = 0;
+    data->seqnum = seqnum;
+    data->data = 0;
+
+    list_append(&c->reply_data, data);
 ')
-_C
+
+STATICFUNCTION(`int match_reply_seqnum', `void *seqnum, void *data', `
+    return (((XCB_Reply_Data *) data)->seqnum == *(int *) seqnum);
+')
+
+/* PRE: c is locked and cur points to valid memory */
+/* POST: *cur points at the desired data or is 0; if prev was not 0,
+         (*prev)->next points at the desired data or *prev is 0 */
+STATICFUNCTION(`XCB_Reply_Data *XCB_Find_Reply_Data', `XCB_Connection *c, int seqnum', `
+    return (XCB_Reply_Data *) list_find(&c->reply_data, match_reply_seqnum, &seqnum);
+')
+
+FUNCTION(`int XCB_EventQueueIsEmpty', `XCB_Connection *c', `
+    return list_is_empty(&c->event_data);
+')
+
+/* read(2)/write(2) wrapper functions */
+
 STATICFUNCTION(`int XCB_read_internal', `XCB_Connection *c, void *buf, int nread',`
 #ifdef USENONBLOCKING
     int count = 0;
@@ -259,213 +297,156 @@ STATICFUNCTION(`int XCB_write_internal', `XCB_Connection *c, void *buf, int nwri
 #endif
 ')
 _C
-_C`'#define XCB_SEQ_EARLIER(a, b) ((INT16) ((CARD16)a - (CARD16)b) < 0)
-_C`'typedef enum { WAIT_SEQNUM, WAIT_EVENT, WAIT_FLUSH } wait_cmd_t;
-_C
-STATICFUNCTION(`void *XCB_Wait', `XCB_Connection *c, const wait_cmd_t cmd, const int s, xError **e', `
-    void *ret = 0;
+STATICFUNCTION(`int XCB_read_packet', `XCB_Connection *c', `
+    int ret;
+    XCB_Reply_Data *rep = 0;
     unsigned char *buf;
+ALLOC(unsigned char, buf, 32)
+
+    ret = XCB_read_internal(c, buf, 32);
+    if(ret != 32)
+        return (ret <= 0) ? ret : -1;
+
+    if(buf[0] == 1) /* get the payload for a reply packet */
+    {INDENT()
+        CARD32 length = ((xGenericReply *) buf)->length;
+        if(length)
+        {INDENT()
+REALLOC(unsigned char, buf, 32 + length * 4)
+
+            ret = XCB_read_internal(c, buf + 32, length * 4);
+            if(ret != length * 4)
+                return (ret <= 0) ? ret : -1;
+        }UNINDENT()
+    }UNINDENT()
+
+    if(!(buf[0] & ~1)) /* reply or error packet */
+        rep = XCB_Find_Reply_Data(c, ((xGenericReply *) buf)->sequenceNumber);
+
+    if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
+    {
+        fprintf(stderr, "No reply record found for reply %d.\n", ((xGenericReply *) buf)->sequenceNumber);
+        free(buf);
+        return -1;
+    }
+
+    if(rep) /* reply or error with a reply record. */
+    {
+        assert(rep->data == 0);
+        rep->error = (buf[0] == 0);
+        rep->data = buf;
+    }
+    else /* event or error without a reply record */
+        list_append(&c->event_data, (XCB_Event *) buf);
+
+    return 1; /* I have something for you... */
+')
+_C
+STATICFUNCTION(`int XCB_write_buffer', `XCB_Connection *c', `
+    int ret;
+    ret = XCB_write_internal(c, c->outqueue, c->n_outqueue);
+    if(ret != c->n_outqueue)
+        return (ret <= 0) ? ret : -1;
+
+    c->n_outqueue = 0;
+    if(c->n_outvec)
+    {
+        assert(0);  /* FIXME: outvec support turned off */
+        writev(c->fd, c->outvec, c->n_outvec);
+        c->n_outvec = 0;
+    }
+
+    return 1;
+')
+_C
+STATICFUNCTION(`int XCB_Wait', `XCB_Connection *c, const int should_write', `
+    int ret = 1, should_read;
     fd_set rfds, wfds;
-    int should_read, selret;
 
     /* If anyone gets here, somebody needs to be reading.
      * Maybe it should be me, but only if it is nobody else. */
     should_read = !c->reading;
     if(should_read)
         c->reading = 1;
-
-    /* i am in charge */
+    if(should_write)
+        c->writing = 1;
 
     FD_ZERO(&rfds);
     FD_ZERO(&wfds);
-ALLOC(unsigned char, buf, 32)
-
-    while(1)
-    {INDENT()
-        if(should_read)
-            FD_SET(c->fd, &rfds);
-        if(c->n_outqueue)
-            FD_SET(c->fd, &wfds);
-
-        pthread_mutex_unlock(&c->locked);
-        selret = select(c->fd + 1, &rfds, &wfds, 0, 0);
-        pthread_mutex_lock(&c->locked);
-
-        /* if(selret <= 0) */ /* error: select failed */
-        assert(selret > 0);
-
-        if(FD_ISSET(c->fd, &rfds))
-        {INDENT()
-            XCB_Reply_Data *rep;
-            assert(XCB_read_internal(c, buf, 32) == 32);
-            if(!(buf[0] & ~1)) /* reply or error packet */
-            {INDENT()
-                c->recvd_seqnum = ((xGenericReply *) buf)->sequenceNumber;
-                rep = XCB_Find_Reply_Data(c, c->recvd_seqnum);
-
-                if(buf[0] == 1) /* get the payload for a reply packet */
-                {INDENT()
-                    CARD32 length = ((xGenericReply *) buf)->length;
-                    if(length)
-                    {INDENT()
-REALLOC(unsigned char, buf, 32 + length * 4)
-
-                        assert(XCB_read_internal(c, buf + 32, length * 4) == length * 4);
-                    }UNINDENT()
-                }UNINDENT()
-            }UNINDENT()
-            else
-                rep = 0;
-
-            if(!rep)
-            {INDENT()
-                if(buf[0] != 1) /* event packet or unassociated error */
-                {INDENT()
-                    XCB_Event_Data *event;
-ALLOC(XCB_Event_Data, event, 1)
-
-                    event->event = (XCB_Event *) buf;
-                    XCB_Add_Event_Data(c, event);
-                    if(cmd == WAIT_EVENT)
-                        break;
-                    if(c->event_pending)
-                        pthread_cond_signal(&c->event_cond);
-                }UNINDENT()
-
-                /* else error: no reply record for a reply. Ignore. */
-            }UNINDENT()
-            else
-            {
-                if(buf[0] == 0)
-                    rep->error = 1;
-
-                assert(rep->data == 0);
-                rep->data = buf;
-                if(cmd == WAIT_SEQNUM && !XCB_SEQ_EARLIER(c->recvd_seqnum, s))
-                    break;
-                if(rep->pending)
-                    pthread_cond_signal(&rep->cond);
-            }
-        }UNINDENT()
-
-        if(FD_ISSET(c->fd, &wfds))
-        {INDENT()
-            XCB_write_internal(c, c->outqueue, c->n_outqueue);
-            c->n_outqueue = 0;
-            if(c->n_outvec)
-            {
-                assert(0);  /* FIXME: outvec support turned off */
-                writev(c->fd, c->outvec, c->n_outvec);
-                c->n_outvec = 0;
-            }
-
-            if(!c->n_outqueue)
-            {
-                if(cmd == WAIT_FLUSH)
-                    break;
-                if(c->flush_pending)
-                    pthread_cond_signal(&c->flush_cond);
-            }
-        }UNINDENT()
-    }UNINDENT()
-
-    /* my work here is done */
 
     if(should_read)
+        FD_SET(c->fd, &rfds);
+    if(should_write)
+        FD_SET(c->fd, &wfds);
+
+    pthread_mutex_unlock(&c->locked);
+    ret = select(c->fd + 1, &rfds, &wfds, 0, 0);
+    pthread_mutex_lock(&c->locked);
+
+    if(ret <= 0) /* error: select failed */
+        goto done;
+
+    if(FD_ISSET(c->fd, &rfds))
+        if((ret = XCB_read_packet(c)) <= 0)
+            goto done;
+
+    if(FD_ISSET(c->fd, &wfds))
+        if((ret = XCB_write_buffer(c)) <= 0)
+            goto done;
+
+done:
+    /* Wake up anyone affected by whatever I just did. */
+    pthread_cond_broadcast(&c->waiting_threads);
+
+    if(should_write)
+        c->writing = 0;
+    if(should_read)
         c->reading = 0;
-
-    /* If I was a writer, I can safely wake up the next writer, since there
-     * clearly are not any other writers right now. In that case, if I was a
-     * reader, I should let the next writer be a reader too.
-     *
-     * If I was a writer but there are no writers waiting, I might not be
-     * able to wake anyone up, but I can always wake up a reader if I was a
-     * reader.
-     *
-     * If I was not a writer, it is not safe to wake up a writer, but I can
-     * wake up a reader. */
-
-    if(cmd == WAIT_FLUSH && c->flush_pending)
-        pthread_cond_signal(&c->flush_cond);
-    else if(should_read)
-    {
-        if(c->event_pending)
-            pthread_cond_signal(&c->event_cond);
-        else
-        {
-            /* XXX: could start from cur->next if cmd == WAIT_SEQNUM, but this
-             * should be OK too. */
-            XCB_Reply_Data *tmp = c->reply_data_head;
-    
-            while(tmp)
-            {
-                if(tmp->pending)
-                {
-                    pthread_cond_signal(&tmp->cond);
-                    break;
-                }
-                tmp = tmp->next;
-            }
-        }
-    }
 
     return ret;
 ')
 
 FUNCTION(`void *XCB_Wait_Seqnum', `XCB_Connection *c, int seqnum, xError **e', `
     void *ret = 0;
-    XCB_Reply_Data *cur = 0;
+    XCB_Reply_Data *cur;
     if(e)
         *e = 0;
 
     pthread_mutex_lock(&c->locked);
     cur = XCB_Find_Reply_Data(c, seqnum);
-    if(!cur) /* error: nothing found to hand back */
+
+    if(!cur || cur->pending) /* error */
         goto done;
 
-    /* FIXME: This test could be re-entered while another thread is in
-     * select() waiting for the same sequence number. Bad. */
-    if(cur->pending) /* error: someone else is already waiting */
-        goto done;
+    ++cur->pending;
 
-    if(!XCB_SEQ_EARLIER(c->recvd_seqnum, seqnum))
-        goto extract_reply;
-
-    assert(cur->data == 0);
-
-    /* my reply not yet recvd */
-
-    if(c->reading)
+    assert(XCB_Flush_locked(c) > 0);
+    while(!cur->data)
     {
-        ++cur->pending;
-        pthread_cond_wait(&cur->cond, &c->locked);
-        --cur->pending;
-
-        if(!XCB_SEQ_EARLIER(c->recvd_seqnum, seqnum))
-            goto extract_reply;
+        if(c->reading)
+            pthread_cond_wait(&c->waiting_threads, &c->locked);
+        else
+            if(XCB_Wait(c, /*should_write*/ 0) <= 0)
+                break;
     }
 
-    ret = XCB_Wait(c, WAIT_SEQNUM, seqnum, e);
+    --cur->pending;
 
-extract_reply:
     if(cur->error)
-    {INDENT()
+    {
         if(!e)
-        {INDENT()
-            XCB_Event_Data *event;
-ALLOC(XCB_Event_Data, event, 1)
-
-            event->event = (XCB_Event *) cur->data;
-            XCB_Add_Event_Data(c, event);
-        }UNINDENT()
+            list_append(&c->event_data, (XCB_Event *) cur->data);
         else
             *e = (xError *) cur->data;
-    }UNINDENT()
+    }
     else
         ret = cur->data;
 
-    XCB_Remove_Reply_Data(c, seqnum);
-    free(cur);
+    if(ret)
+    {
+        list_remove(&c->reply_data, match_reply_seqnum, &seqnum);
+        free(cur);
+    }
 
 done:
     pthread_mutex_unlock(&c->locked);
@@ -473,69 +454,45 @@ done:
 ')
 _C
 FUNCTION(`XCB_Event *XCB_Wait_Event', `XCB_Connection *c', `
-    void *ret = 0;
-    XCB_Event_Data *event;
+    void *ret;
+
     pthread_mutex_lock(&c->locked);
-    if(c->event_data_head)
-        goto extract_reply;
-
-    /* no event yet recvd */
-
-    if(c->reading)
+    while(list_is_empty(&c->event_data))
     {
-        ++c->event_pending;
-        pthread_cond_wait(&c->event_cond, &c->locked);
-        --c->event_pending;
-
-        if(c->event_data_head)
-            goto extract_reply;
+        if(c->reading)
+            pthread_cond_wait(&c->waiting_threads, &c->locked);
+        else
+            if(XCB_Wait(c, /*should_write*/ 0) <= 0)
+                break;
     }
+    ret = list_remove_head(&c->event_data);
 
-    ret = XCB_Wait(c, WAIT_EVENT, 0, 0);
-
-extract_reply:
-    event = c->event_data_head;
-    ret = event->event;
-    c->event_data_head = event->next;
-    if(!c->event_data_head)
-        c->event_data_tail = 0;
-    free(event);
-
-done:
     pthread_mutex_unlock(&c->locked);
     return (XCB_Event *) ret;
 ')
 _C
-FUNCTION(`void XCB_Flush', `XCB_Connection *c', `
+FUNCTION(`int XCB_Flush', `XCB_Connection *c', `
+    int ret;
     pthread_mutex_lock(&c->locked);
-    XCB_Flush_locked(c);
+    ret = XCB_Flush_locked(c);
     pthread_mutex_unlock(&c->locked);
+    return ret;
 ')
 _C
-FUNCTION(`void XCB_Flush_locked', `XCB_Connection *c', `
-    if(!c->n_outqueue)
-        return;
-
-    /* my request not yet flushed */
-
-    if(c->writing)
+FUNCTION(`int XCB_Flush_locked', `XCB_Connection *c', `
+    int ret = 1;
+    while(ret > 0 && c->n_outqueue)
     {
-        ++c->flush_pending;
-        pthread_cond_wait(&c->flush_cond, &c->locked);
-        --c->flush_pending;
-
-        if(!c->n_outqueue)
-            return;
+        if(c->writing)
+            pthread_cond_wait(&c->waiting_threads, &c->locked);
+        else
+            ret = XCB_Wait(c, /*should_write*/ 1);
     }
-
-    c->writing = 1;
-    XCB_Wait(c, WAIT_FLUSH, 0, 0);
-    c->writing = 0;
+    return ret;
 ')
 
 /* PRE: c is locked */
-FUNCTION(`void XCB_Write', dnl
-`XCB_Connection *c, struct iovec *vector, size_t count', `
+FUNCTION(`void XCB_Write', `XCB_Connection *c, struct iovec *vector, size_t count', `
     int i, len;
 
     for(i = 0, len = 0; i < count; ++i)
@@ -550,14 +507,14 @@ FUNCTION(`void XCB_Write', dnl
             memcpy(c->outqueue + c->n_outqueue, vector[i].iov_base, vector[i].iov_len);
             c->n_outqueue += vector[i].iov_len;
         }
-        XCB_Flush_locked(c);
+        assert(XCB_Flush_locked(c) > 0);
         return;
     }
 
     assert(0);  /* FIXME: turning off outvec support */
     c->outvec = vector;
     c->n_outvec = count;
-    XCB_Flush_locked(c);
+    assert(XCB_Flush_locked(c) > 0);
 ')
 
 FUNCTION(`int XCB_Open', `const char *display, int *screen', `
@@ -654,21 +611,13 @@ ALLOC(XCB_Connection, c, 1)
     c->reading = 0;
     c->writing = 0;
 
-    c->reply_data_head = 0;
-    c->reply_data_tail = 0;
-    c->recvd_seqnum = -1;
-
-    c->event_data_head = 0;
-    c->event_data_tail = 0;
-    pthread_cond_init(&c->event_cond, 0);
-    c->event_pending = 0;
+    list_init(&c->reply_data);
+    list_init(&c->event_data);
 
     /* c->outqueue does not need initialization */
     c->n_outqueue = 0;
     /* c->outvec does not need initialization */
     c->n_outvec = 0;
-    pthread_cond_init(&c->flush_cond, 0);
-    c->flush_pending = 0;
 
     c->seqnum = 0;
     c->last_xid = 0;
@@ -686,7 +635,7 @@ ALLOC(XCB_Connection, c, 1)
         out->nbytesAuthProto = 0;
         out->nbytesAuthString = 0;
     }
-    XCB_Flush(c);
+    assert(XCB_Flush(c) > 0);
 
     /* Read the server response */
     assert(XCB_read_internal(c, &c->setup_prefix, SIZEOF(xConnSetupPrefix))

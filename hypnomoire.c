@@ -17,7 +17,7 @@
 static XCB_Connection *c;
 static GContext white, black;
 
-#define WINS 5
+#define WINS 8
 static struct { Window w; Pixmap p; CARD16 width; CARD16 height; } windows[WINS];
 
 void *run(void *param);
@@ -98,7 +98,7 @@ void *run(void *param)
 		windows[idx].p, windows[idx].w,
 		windows[idx].width, windows[idx].height);
 
-	// XCB_Sync(c, 0);
+	XCB_Sync(c, 0);
 
 	{
 		xRectangle rects[1] = { { 0, 0, windows[idx].width, windows[idx].height } };
