@@ -1,3 +1,7 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * 
+ * See the file COPYING for licensing information. */
 #ifndef XCL_H
 #define XCL_H
 

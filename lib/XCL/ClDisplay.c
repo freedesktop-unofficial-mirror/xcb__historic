@@ -1,3 +1,8 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1985, 1990, 1998  The Open Group
+ * 
+ * See the file COPYING for licensing information. */
 #include "xclint.h"
 
 #if 0 /* not needed yet */

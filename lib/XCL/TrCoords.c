@@ -1,3 +1,8 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1986, 1998  The Open Group
+ * 
+ * See the file COPYING for licensing information. */
 #include "xclint.h"
 
 Bool XTranslateCoordinates(Display *dpy, Window src_win, Window dest_win, int src_x, int src_y, int *dst_x, int *dst_y, Window *child)

@@ -1,6 +1,10 @@
-/* XDisplayName.c */
-/* 
- * Returns the name of the display XOpenDisplay would use.  This is better
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1994, 1998  The Open Group
+ * 
+ * See the file COPYING for licensing information. */
+
+/* Returns the name of the display XOpenDisplay would use.  This is better
  * than just printing the "display" variable in a program because that
  * could be NULL and/or there could be an environment variable set.
  * This makes it easier for programmers to provide meaningful error

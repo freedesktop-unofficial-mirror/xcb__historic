@@ -1,3 +1,11 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1987, 1988, 1993, 1998  The Open Group
+ * Portions Copyright 1988 by Wyse Technology, Inc., San Jose, Ca.
+ * Portions Copyright 1987 by Digital Equipment Corporation,
+ * Maynard, Massachusetts
+ * 
+ * See the file COPYING for licensing information. */
 #include "xclint.h"
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>

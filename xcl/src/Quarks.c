@@ -1,3 +1,10 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1986, 1998  The Open Group
+ * Portions Copyright 1987, 1988, 1990 by Digital Equipment
+ * Corporation, Maynard
+ * 
+ * See the file COPYING for licensing information. */
 #include "xclint.h"
 #include <X11/Xresource.h>
 

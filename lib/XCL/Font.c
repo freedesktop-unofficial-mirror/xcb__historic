@@ -1,3 +1,9 @@
+/* Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
+ * All Rights Reserved.
+ * Portions Copyright 1986, 1998  The Open Group
+ * Copyright (c) 2000  The XFree86 Project, Inc.
+ * 
+ * See the file COPYING for licensing information. */
 #include "xclint.h"
 
 #if defined(XF86BIGFONT) && !defined(MUSTCOPY)
