@@ -17,7 +17,7 @@ define(`ENUMLOOP', `ifelse($1, , , `    ENUMNAME`$1',
 ENUMLOOP(shift($@))')')
 
 dnl PAD(bytes)
-define(`PAD', `ARRAYFIELD(`CARD8', `pad'PADQTY, `$1')
+define(`PAD', `FIELD(`CARD8', `pad'PADQTY`'ifelse($1, 1, , `[$1]'))
 define(`PADQTY', eval(1+PADQTY))
 ifelse(FIELDQTY, 2, `LENGTHFIELD()')')
 

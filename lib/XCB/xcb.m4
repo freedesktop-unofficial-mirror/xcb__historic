@@ -78,7 +78,8 @@ EVENT(FocusIn, 9, `
 ')
 EVENTCOPY(FocusOut, 10, FocusIn)
 EVENT(KeymapNotify, 11, `
-    ARRAYFIELD(CARD8, `keys', 31)
+    define(`FIELDQTY', 0) dnl cancel usual output of seqnum field
+    REPLY(CARD8, `keys[31]')
 ')
 EVENT(Expose, 12, `
     PAD(1)
@@ -725,7 +726,7 @@ REQUEST(QueryKeymap, `
     OPCODE(44)
 ', `
     PAD(1)
-    ARRAYFIELD(CARD8, `keys', `32')
+    REPLY(CARD8, `keys[32]')
 ')
 
 VOIDREQUEST(OpenFont, `
@@ -1405,7 +1406,7 @@ REQUEST(GetKeyboardControl, `
     REPLY(CARD16, `bell_pitch')
     REPLY(CARD16, `bell_duration')
     PAD(2)
-    ARRAYFIELD(CARD8, `auto_repeats', `32')
+    REPLY(CARD8, `auto_repeats[32]')
 ')
 
 VOIDREQUEST(Bell, `
