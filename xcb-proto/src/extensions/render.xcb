@@ -485,7 +485,7 @@ STRUCT(ANIMCURSORELT, `
     FIELD(CARD32, `delay')
 ')
 
-REQUEST(`CreateAnimCursor', `
+VOIDREQUEST(`CreateAnimCursor', `
     OPCODE(31)
     PARAM(CURSOR, `cid')
     LOCALPARAM(CARD16, `cursors_len')
