@@ -1,4 +1,4 @@
-#include "xcb_dpms.h"
+#include <client/xcb_dpms.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>

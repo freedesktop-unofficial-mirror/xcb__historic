@@ -3,29 +3,15 @@
  */
 
 XCBGEN(XCB_CONN)
-SOURCEONLY(`dnl
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/fcntl.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <assert.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-
+SOURCEONLY(`
+INCHEADERS(INCHERE(xcb_conn.h), sys/types.h, sys/socket.h, sys/fcntl.h,
+    sys/un.h, netinet/in.h, netdb.h, stdio.h, unistd.h, stdlib.h, errno.h)
 #undef USENONBLOCKING
 ')HEADERONLY(`dnl
-#include <sys/uio.h>
-#include <pthread.h>
-
 #define NEED_EVENTS
 #define NEED_REPLIES
 #define ANSICPP
-#include <X11/X.h>
-#include <X11/Xproto.h>
+INCHEADERS(X11/X.h, X11/Xproto.h, sys/uio.h, pthread.h)
 
 #define XCB_PAD(E) ((4-((E)%4))%4)
 #define X_TCP_PORT 6000	/* add display number */

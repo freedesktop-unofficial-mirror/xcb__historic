@@ -1,13 +1,7 @@
 XCBGEN(XP_CORE)
-SOURCEONLY(`dnl
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h> /* for perror */
-#include <string.h>
-dnl')
-HEADERONLY(`dnl
-#include "xcb_conn.h"
-
+_C`'INCHEADERS(INCHERE(xp_core.h), stdlib.h, stdio.h, string.h)
+HEADERONLY(`
+INCHEADERS(INCHERE(xcb_conn.h))
 typedef char CHAR2B[2];
 
 

@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 
-#include "xp_core.h"
+#include <client/xp_core.h>
 #include "reply_formats.h"
 
 void try_events(XCB_Connection *c);

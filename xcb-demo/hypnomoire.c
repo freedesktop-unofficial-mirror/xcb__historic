@@ -1,4 +1,4 @@
-#include "xp_core.h"
+#include <client/xp_core.h>
 #include "reply_formats.h"
 #include <math.h>
 #include <stdlib.h> /* for free(3) */

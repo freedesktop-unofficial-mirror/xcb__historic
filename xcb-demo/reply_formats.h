@@ -1,7 +1,7 @@
 #ifndef REPLY_FORMATS_H
 #define REPLY_FORMATS_H
 
-#include "xp_core.h"
+#include <client/xp_core.h>
 
 int formatGetWindowAttributesReply(Window wid, XCB_GetWindowAttributes_Rep *reply);
 int formatGetGeometryReply(Window wid, XCB_GetGeometry_Rep *reply);

@@ -1,6 +1,6 @@
 XCBGEN(XCB_DPMS)
-_C`'#include <assert.h>
-_H`'#include "xp_core.h"
+_H`'INCHEADERS(INCHERE(xp_core.h))
+_C`'INCHEADERS(INCHERE(xcb_dpms.h))
 
 BEGINEXTENSION(DPMS, DPMS)
 
@@ -57,6 +57,5 @@ REQUEST(DPMSInfo, `
     REPLY(CARD16, `power_level')
     REPLY(BOOL, `state')
 ')
-_H
 ENDEXTENSION
 ENDXCBGEN
