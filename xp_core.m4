@@ -506,28 +506,27 @@ REQUEST(ListInstalledColormaps, `PARAM(Window, `id')', `
 ')
 
 dnl **REQUEST(AllocColor, `
-    PARAM(Colormap, `cmap')
-    PARAM(CARD16, `red')
-    PARAM(CARD16, `green')
-    PARAM(CARD16, `blue')
-    
-')
+dnl     PARAM(Colormap, `cmap')
+dnl     PARAM(CARD16, `red')
+dnl     PARAM(CARD16, `green')
+dnl     PARAM(CARD16, `blue')
+dnl ')
 
 dnl **REQUEST(AllocNamedColor, `
-    PARAM(Colormap, `cmap)
-')
+dnl     PARAM(Colormap, `cmap)
+dnl ')
 
 dnl TODO: AllocColorCells
 dnl TODO: AllocColorPlanes
 
 dnl **VOIDREQUEST(FreeColors, `
-    PARAM(Colormap, `cmap')
-    PARAM(CARD32, `planeMask')
-')
+dnl     PARAM(Colormap, `cmap')
+dnl     PARAM(CARD32, `planeMask')
+dnl ')
     
 dnl **VOIDREQUEST(StoreColors, `
-    PARAM(Colormap, `cmap')
-')
+dnl     PARAM(Colormap, `cmap')
+dnl ')
 
 dnl TODO: StoreNamedColor
 dnl TODO: QueryColors
