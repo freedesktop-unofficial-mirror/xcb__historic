@@ -104,7 +104,6 @@ for licensing information.
     </request>
 
     <request name="Await" opcode="7">
-      <localfield type="CARD16" name="wait_list_len" />
       <list type="WAITCONDITION" name="wait_list">
         <fieldref>wait_list_len</fieldref>
       </list>

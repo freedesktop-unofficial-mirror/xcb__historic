@@ -357,6 +357,15 @@ See the file COPYING in this package for licensing information.
   </xsl:template>
 
   <xsl:template match="list" mode="param">
+    <!-- If the length expression references a field that was not explicitly
+         declared, create that field as a CARD32. -->
+    <xsl:for-each select=".//fieldref[not(current()/../*/@name=string(.))]">
+      <!-- Only do this for the first reference of each undeclared field. -->
+      <xsl:if test="count(. | ancestor::list//fieldref
+                              [string(.)=string(current())][1]) = 1">
+        <field type="CARD32" name="{string(.)}" />
+      </xsl:if>
+    </xsl:for-each>
     <field>
       <xsl:attribute name="type">
         <xsl:text>const </xsl:text>

@@ -290,7 +290,6 @@ for licensing information.
       <field type="PICTURE" name="picture" />
       <field type="INT16" name="clip_x_origin" />
       <field type="INT16" name="clip_y_origin" />
-      <localfield type="CARD16" name="rectangles_len" />
       <list type="RECTANGLE" name="rectangles">
         <fieldref>rectangles_len</fieldref>
       </list>
@@ -326,7 +325,6 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="traps_len" />
       <list type="TRAP" name="traps">
         <fieldref>traps_len</fieldref>
       </list>
@@ -340,7 +338,6 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="triangles_len" />
       <list type="TRIANGLE" name="triangles">
         <fieldref>triangles_len</fieldref>
       </list>
@@ -354,7 +351,6 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="points_len" />
       <list type="POINTFIX" name="points">
         <fieldref>points_len</fieldref>
       </list>
@@ -368,7 +364,6 @@ for licensing information.
       <field type="PICTFORMAT" name="mask_format" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="points_len" />
       <list type="POINTFIX" name="points">
         <fieldref>points_len</fieldref>
       </list>
@@ -397,7 +392,6 @@ for licensing information.
     <request name="AddGlyphs" opcode="20">
       <field type="GLYPHSET" name="glyphset" />
       <field type="CARD32" name="glyphs_len" />
-      <localfield type="CARD16" name="data_len" />
       <list type="CARD32" name="glyphids">
         <fieldref>glyphs_len</fieldref>
       </list>
@@ -413,7 +407,6 @@ for licensing information.
 
     <request name="FreeGlyphs" opcode="22">
       <field type="GLYPHSET" name="glyphset" />
-      <localfield type="CARD16" name="glyphs_len" />
       <list type="GLYPH" name="glyphs">
         <fieldref>glyphs_len</fieldref>
       </list>
@@ -453,7 +446,6 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="glyphcmds_len" />
       <list type="GLYPHITEM8" name="glyphcmds">
         <fieldref>glyphcmds_len</fieldref>
       </list>
@@ -485,7 +477,6 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="glyphcmds_len" />
       <list type="GLYPHITEM16" name="glyphcmds">
         <fieldref>glyphcmds_len</fieldref>
       </list>
@@ -517,7 +508,6 @@ for licensing information.
       <field type="GLYPHSET" name="glyphset" />
       <field type="INT16" name="src_x" />
       <field type="INT16" name="src_y" />
-      <localfield type="CARD16" name="glyphcmds_len" />
       <list type="GLYPHITEM32" name="glyphcmds">
         <fieldref>glyphcmds_len</fieldref>
       </list>
@@ -530,7 +520,6 @@ for licensing information.
       <pad bytes="3" />
       <field type="PICTURE" name="dst" />
       <field type="COLOR" name="color" />
-      <localfield type="CARD16" name="rects_len" />
       <list type="RECTANGLE" name="rects">
         <fieldref>rects_len</fieldref>
       </list>
@@ -583,7 +572,6 @@ for licensing information.
     <request name="SetPictureFilter" opcode="30">
       <field type="PICTURE" name="picture" />
       <field type="CARD16" name="filter_len" />
-      <localfield type="CARD16" name="values_len" />
       <list type="char" name="filter">
         <fieldref>filter_len</fieldref>
       </list>
@@ -601,7 +589,6 @@ for licensing information.
 
     <request name="CreateAnimCursor" opcode="31">
       <field type="CURSOR" name="cid" />
-      <localfield type="CARD16" name="cursors_len" />
       <list type="ANIMCURSORELT" name="cursors">
         <fieldref>cursors_len</fieldref>
       </list>

@@ -830,7 +830,6 @@ for licensing information.
       <op op="&amp;"><fieldref>string_len</fieldref><value>1</value></op>
     </exprfield>
     <field type="FONTABLE" name="font" />
-    <localfield type="CARD16" name="string_len" />
     <list type="CHAR2B" name="string">
       <fieldref>string_len</fieldref>
     </list>
@@ -873,7 +872,6 @@ for licensing information.
   <request name="SetFontPath" opcode="51">
     <pad bytes="1" />
     <field type="CARD16" name="font_qty" />
-    <localfield type="CARD16" name="path_len" />
     <list type="char" name="path">
       <fieldref>path_len</fieldref>
     </list>
@@ -942,7 +940,6 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="clip_x_origin" />
     <field type="INT16" name="clip_y_origin" />
-    <localfield type="CARD16" name="rectangles_len" />
     <list type="RECTANGLE" name="rectangles">
       <fieldref>rectangles_len</fieldref>
     </list>
@@ -993,7 +990,6 @@ for licensing information.
     <field type="BYTE" name="coordinate_mode" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="points_len" />
     <list type="POINT" name="points">
       <fieldref>points_len</fieldref>
     </list>
@@ -1003,7 +999,6 @@ for licensing information.
     <field type="BYTE" name="coordinate_mode" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="points_len" />
     <list type="POINT" name="points">
       <fieldref>points_len</fieldref>
     </list>
@@ -1020,7 +1015,6 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="segments_len" />
     <list type="SEGMENT" name="segments">
       <fieldref>segments_len</fieldref>
     </list>
@@ -1030,7 +1024,6 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="rectangles_len" />
     <list type="RECTANGLE" name="rectangles">
       <fieldref>rectangles_len</fieldref>
     </list>
@@ -1039,13 +1032,12 @@ for licensing information.
   <!--
     The semantics of PolyArc change after the first arc: the GC's
     join style may be applied to successive arcs under some circumstances.
-    So marshaling here is bad.
+    So using combine-adjacent here is bad.
   -->
   <request name="PolyArc" opcode="68">
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="arcs_len" />
     <list type="ARC" name="arcs">
       <fieldref>arcs_len</fieldref>
     </list>
@@ -1057,7 +1049,6 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="CARD8" name="shape" />
     <field type="CARD8" name="coordinate_mode" />
-    <localfield type="CARD16" name="points_len" />
     <list type="POINT" name="points">
       <fieldref>points_len</fieldref>
     </list>
@@ -1067,7 +1058,6 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="rectangles_len" />
     <list type="RECTANGLE" name="rectangles">
       <fieldref>rectangles_len</fieldref>
     </list>
@@ -1077,7 +1067,6 @@ for licensing information.
     <pad bytes="1" />
     <field type="DRAWABLE" name="drawable" />
     <field type="GCONTEXT" name="gc" />
-    <localfield type="CARD16" name="arcs_len" />
     <list type="ARC" name="arcs">
       <fieldref>arcs_len</fieldref>
     </list>
@@ -1093,7 +1082,6 @@ for licensing information.
     <field type="INT16" name="dst_y" />
     <field type="CARD8" name="left_pad" />
     <field type="CARD8" name="depth" />
-    <localfield type="CARD16" name="data_len" />
     <list type="BYTE" name="data">
       <fieldref>data_len</fieldref>
     </list>
@@ -1127,7 +1115,6 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="x" />
     <field type="INT16" name="y" />
-    <localfield type="CARD16" name="items_len" />
     <list type="BYTE" name="items">
       <fieldref>items_len</fieldref>
     </list>
@@ -1139,7 +1126,6 @@ for licensing information.
     <field type="GCONTEXT" name="gc" />
     <field type="INT16" name="x" />
     <field type="INT16" name="y" />
-    <localfield type="CARD16" name="items_len" />
     <list type="BYTE" name="items">
       <fieldref>items_len</fieldref>
     </list>
@@ -1287,7 +1273,6 @@ for licensing information.
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
     <field type="CARD32" name="plane_mask" />
-    <localfield type="CARD16" name="pixels_len" />
     <list type="CARD32" name="pixels">
       <fieldref>pixels_len</fieldref>
     </list>
@@ -1305,7 +1290,6 @@ for licensing information.
   <request name="StoreColors" opcode="89" combine-adjacent="true">
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
-    <localfield type="CARD16" name="items_len" />
     <list type="COLORITEM" name="items">
       <fieldref>items_len</fieldref>
     </list>
@@ -1331,7 +1315,6 @@ for licensing information.
   <request name="QueryColors" opcode="91">
     <pad bytes="1" />
     <field type="COLORMAP" name="cmap" />
-    <localfield type="CARD16" name="pixels_len" />
     <list type="CARD32" name="pixels">
       <fieldref>pixels_len</fieldref>
     </list>

@@ -37,7 +37,6 @@ for licensing information.
       <field type="WINDOW" name="destination_window" />
       <field type="INT16" name="x_offset" />
       <field type="INT16" name="y_offset" />
-      <localfield type="CARD32" name="rectangles_len" />
       <list type="RECTANGLE" name="rectangles">
         <fieldref>rectangles_len</fieldref>
       </list>
