@@ -1,0 +1,15 @@
+.deps
+.libs
+Makefile
+Makefile.in
+config.h
+config.h.in
+stamp-h1
+*.lo
+*.la
+xcb.c
+xcb.h
+xcb_types.c
+xcb_types.h
+extensions
+X11
