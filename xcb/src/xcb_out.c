@@ -165,7 +165,7 @@ int _xcb_out_write_block(XCBConnection *c, struct iovec *vector, size_t count)
         c->out.vec[c->out.vec_len++].iov_len = vector[i].iov_len;
         if(!XCB_PAD(vector[i].iov_len))
             continue;
-        c->out.vec[c->out.vec_len].iov_base = (caddr_t) pad;
+        c->out.vec[c->out.vec_len].iov_base = (void *) pad;
         c->out.vec[c->out.vec_len++].iov_len = XCB_PAD(vector[i].iov_len);
     }
     if(_xcb_out_flush(c) <= 0)

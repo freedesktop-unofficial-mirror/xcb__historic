@@ -4,6 +4,7 @@
 /* Utility functions implementable using only public APIs. */
 
 #include <assert.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/fcntl.h>
 #include <sys/un.h>
@@ -13,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "xcb.h"
 
@@ -31,9 +33,10 @@ int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
         name = getenv("DISPLAY");
     if(!name)
         return 0;
-    *host = strdup(name);
+    *host = malloc(strlen(name) + 1);
     if(!*host)
         return 0;
+    strcpy(*host, name);
     colon = strchr(*host, ':');
     if(!colon)
     {

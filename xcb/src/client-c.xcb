@@ -241,7 +241,7 @@ dnl any C expression and may reference any of the other fields of this
 dnl request.
 dnl LISTPARAM(element type, list name, length expression)
 define(`LISTPARAM', `PUSHDIV(PARMDIV), const `$1' *`$2'divert(LISTDIV)dnl
-TAB()parts[PARTQTY].iov_base = (caddr_t) `$2';
+TAB()parts[PARTQTY].iov_base = (void *) `$2';
 TAB()parts[PARTQTY].iov_len = (`$3')ifelse(`$1', void, , ` * sizeof(`$1')');
 POPDIV()define(`PARTQTY', eval(1+PARTQTY))')
 
@@ -383,7 +383,7 @@ undivert(VARDIV)`'dnl
 
 undivert(ASSNDIV)`'dnl
 
-    parts[0].iov_base = (caddr_t) &out;
+    parts[0].iov_base = &out;
     parts[0].iov_len = sizeof(out);
 undivert(LISTDIV)`'dnl
     XCBSendRequest(c, &ret.sequence, /* isvoid */ ifelse($1, Void, 1, 0), parts, /* partqty */ PARTQTY);

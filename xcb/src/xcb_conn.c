@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+#include <sys/select.h>
 
 #include "xcb.h"
 #include "xcbint.h"
@@ -31,7 +32,7 @@ static int write_setup(XCBConnection *c, XCBAuthInfo *auth_info)
     out.authorization_protocol_name_len = 0;
     out.authorization_protocol_data_len = 0;
     parts[count].iov_len = sizeof(XCBConnSetupReq);
-    parts[count++].iov_base = (caddr_t) &out;
+    parts[count++].iov_base = &out;
 
     if(auth_info)
     {
