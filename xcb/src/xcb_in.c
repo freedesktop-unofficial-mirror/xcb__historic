@@ -138,11 +138,10 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 #endif
 
     pthread_mutex_lock(&c->iolock);
-    while(_xcb_list_length(c->in.events) == 0)
+    /* _xcb_list_remove_head returns 0 on empty list. */
+    while(!(ret = _xcb_list_remove_head(c->in.events)))
         if(_xcb_conn_wait(c, /*should_write*/ 0, &c->in.event_cond) <= 0)
             break;
-    /* _xcb_list_remove_head returns 0 on empty list. */
-    ret = (XCBGenericEvent *) _xcb_list_remove_head(c->in.events);
 
     wake_up_next_reader(c);
     pthread_mutex_unlock(&c->iolock);
@@ -160,8 +159,9 @@ XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error)
     pthread_mutex_lock(&c->iolock);
     if(error)
         *error = 0;
-    if(_xcb_in_events_length(c) >= 0)
-        ret = (XCBGenericEvent *) _xcb_list_remove_head(c->in.events);
+    /* FIXME: follow X meets Z architecture changes. */
+    if(_xcb_in_read(c) >= 0)
+        ret = _xcb_list_remove_head(c->in.events);
     else if(error)
         *error = -1;
     else
@@ -203,14 +203,6 @@ void _xcb_in_destroy(_xcb_in *in)
     _xcb_list_delete(in->replies, (XCBListFreeFunc) free_reply_data);
     _xcb_list_delete(in->events, free);
     _xcb_list_delete(in->readers, 0);
-}
-
-int _xcb_in_events_length(XCBConnection *c)
-{
-    /* FIXME: follow X meets Z architecture changes. */
-    if(_xcb_in_read(c) <= 0)
-        return -1;
-    return _xcb_list_length(c->in.events);
 }
 
 int _xcb_in_expect_reply(XCBConnection *c, unsigned int request)

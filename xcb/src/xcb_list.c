@@ -38,7 +38,6 @@ typedef struct node {
 struct _xcb_list {
     node *head;
     node **tail;
-    int len;
 };
 
 /* Private interface */
@@ -51,11 +50,10 @@ _xcb_list *_xcb_list_new()
         return 0;
     list->head = 0;
     list->tail = &list->head;
-    list->len = 0;
     return list;
 }
 
-void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free)
+static void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free)
 {
     void *tmp;
     while((tmp = _xcb_list_remove_head(list)))
@@ -79,7 +77,6 @@ int _xcb_list_insert(_xcb_list *list, void *data)
 
     cur->next = list->head;
     list->head = cur;
-    ++list->len;
     return 1;
 }
 
@@ -94,7 +91,6 @@ int _xcb_list_append(_xcb_list *list, void *data)
 
     *list->tail = cur;
     list->tail = &cur->next;
-    ++list->len;
     return 1;
 }
 
@@ -116,7 +112,6 @@ void *_xcb_list_remove_head(_xcb_list *list)
     if(!list->head)
         list->tail = &list->head;
     free(tmp);
-    --list->len;
     return ret;
 }
 
@@ -133,7 +128,6 @@ void *_xcb_list_remove(_xcb_list *list, int (*cmp)(const void *, const void *), 
                 list->tail = cur;
 
             free(tmp);
-            --list->len;
             return ret;
         }
     return 0;
@@ -146,9 +140,4 @@ void *_xcb_list_find(_xcb_list *list, int (*cmp)(const void *, const void *), co
         if(cmp(data, cur->data))
             return cur->data;
     return 0;
-}
-
-int _xcb_list_length(_xcb_list *list)
-{
-    return list->len;
 }

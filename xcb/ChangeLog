@@ -1,5 +1,15 @@
 2005-03-25  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_in.c, src/xcb_list.c, src/xcbint.h:
+	Remove _xcb_list_length. (Two callers in xcb_in didn't actually
+	care about the returned value beyond "empty" or "non-empty",
+	which they can get other ways.) _xcb_in_events_length became
+	obsolete in the process, and I took _xcb_list_clear out of
+	xcbint.h while I was at it because only _xcb_list_delete calls
+	it these days.
+
+2005-03-25  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb.h, src/xcb_in.c:
 	Remove XCBEventQueueLength and XCBEventQueueClear: they're not
 	part of the new API, and they interfere with analysis of the

@@ -44,7 +44,6 @@ typedef struct _xcb_list _xcb_list;
 typedef void (*XCBListFreeFunc)(void *);
 
 _xcb_list *_xcb_list_new(void);
-void _xcb_list_clear(_xcb_list *list, XCBListFreeFunc do_free);
 void _xcb_list_delete(_xcb_list *list, XCBListFreeFunc do_free);
 int _xcb_list_insert(_xcb_list *list, void *data);
 int _xcb_list_append(_xcb_list *list, void *data);
@@ -52,7 +51,6 @@ void *_xcb_list_peek_head(_xcb_list *list);
 void *_xcb_list_remove_head(_xcb_list *list);
 void *_xcb_list_remove(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
 void *_xcb_list_find(_xcb_list *list, int (*cmp)(const void *, const void *), const void *data);
-int _xcb_list_length(_xcb_list *list);
 
 
 /* xcb_util.c */
@@ -117,8 +115,6 @@ typedef struct _xcb_in {
 
 int _xcb_in_init(_xcb_in *in);
 void _xcb_in_destroy(_xcb_in *in);
-
-int _xcb_in_events_length(XCBConnection *c);
 
 int _xcb_in_expect_reply(XCBConnection *c, unsigned int request);
 void _xcb_in_set_unexpected_reply_handler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
