@@ -37,13 +37,13 @@ dnl "should use the ISO Latin-1 encoding, and uppercase and lowercase matter."
 dnl The C name should be a valid C identifier which can be guessed easily
 dnl from the X name, as it will appear in programmer-visible names.
 dnl BEGINEXTENSION(X name, C name)
-define(`BEGINEXTENSION', `define(`EXTENSION', `XCB_`'$2`'_id')dnl
-_H`'REQUIRE(xp_core)
+define(`BEGINEXTENSION', `define(`EXTENSION', `XCB`'$2`'Id')dnl
+_H`'REQUIRE(xcb)
 
 _H`'extern const char EXTENSION[];
 _C`'const char EXTENSION[] = "`$1'";
-FUNCTION(`const XCB_QueryExtension_Rep *XCB_`'$2`'_Init', `XCB_Connection *c', `
-    return XCB_QueryExtension_Cached(c, EXTENSION, 0);
+FUNCTION(`const XCBQueryExtensionRep *XCB`'$2`'Init', `XCBConnection *c', `
+    return XCBQueryExtensionCached(c, EXTENSION, 0);
 ')')
 
 dnl ENDEXTENSION()
@@ -57,7 +57,7 @@ dnl function in the order the X server expects.
 dnl VALUEPARAM(bitmask type, bitmask name, value array name)
 define(`VALUEPARAM', `
 PARAM(`$1', `$2')
-LISTPARAM(CARD32, `$3', `XCB_Ones($2)')
+LISTPARAM(CARD32, `$3', `XCBOnes($2)')
 ')
 
 dnl Defines a LISTofFOO parameter. The length of the list may be given as
@@ -102,7 +102,7 @@ define(`OPCODE', `ifdef(`EXTENSION', `
     FIELD(CARD8, `major_opcode')
     FIELD(CARD8, `minor_opcode')
 PUSHDIV(VARDIV)dnl
-TAB()const XCB_QueryExtension_Rep *extension = XCB_QueryExtension_Cached(c, EXTENSION, 0);
+TAB()const XCBQueryExtensionRep *extension = XCBQueryExtensionCached(c, EXTENSION, 0);
 divert(OUTDIV)dnl
 dnl TODO: better error handling here, please!
 TAB()assert(extension && extension->present);
@@ -129,11 +129,11 @@ dnl fixed-length portion of the response which contains the number of
 dnl elements in this section.
 dnl ARRAYREPLY(field type, field name, list length expr)
 define(`ARRAYREPLY', `PUSHDIV(OUTDIV)
-INLINEFUNCTION(`$1 *XCB_'REQ`_$2', `XCB_'REQ`_Rep *R', `
+INLINEFUNCTION(`$1 *XCB'REQ`$2', `XCB'REQ`Rep *R', `
     return ($1 *) (NEXTFIELD);
 ')
 POPDIV()
-define(`NEXTFIELD', `XCB_'REQ`_$2'`(R) + ($3)')')
+define(`NEXTFIELD', `XCB'REQ`$2'`(R) + ($3)')')
 
 dnl Generates an iterator for the variable-length portion of a reply.
 dnl TODO: um, write this.
@@ -141,28 +141,28 @@ dnl LISTREPLY(field type, field name, list length expr, next field expr)
 define(`LISTREPLY', `')
 
 
-dnl Creates a function named XCB_<name> returning XCB_void_cookie and
+dnl Creates a function named XCB<name> returning XCBVoidCookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
 dnl and FIELDs to the X server.
 dnl VOIDREQUEST(name, 0 or more PARAMs/FIELDs)
-define(`VOIDREQUEST', `REQUESTFUNCTION(`void', `$1', `$2')')
+define(`VOIDREQUEST', `REQUESTFUNCTION(`Void', `$1', `$2')')
 
-dnl Creates a function named XCB_<name> returning XCB_<name>_cookie and
+dnl Creates a function named XCB<name> returning XCB<name>Cookie and
 dnl accepting whatever parameters are necessary to deliver the given PARAMs
-dnl and FIELDs to the X server. Declares the struct XCB_<name>_cookie.
-dnl Creates a function named XCB_<name>_Reply returning a pointer to
-dnl XCB_<name>_Rep which forces a cookie returned from XCB_<name>, waiting
+dnl and FIELDs to the X server. Declares the struct XCB<name>Cookie.
+dnl Creates a function named XCB<name>Reply returning a pointer to
+dnl XCB<name>Rep which forces a cookie returned from XCB<name>, waiting
 dnl for the response from the server if necessary. Declares the struct
-dnl XCB_<name>_Rep. The three parameters must be quoted.
+dnl XCB<name>Rep. The three parameters must be quoted.
 dnl REQUEST(name, 0 or more PARAMs, 0 or more REPLYs)
 define(`REQUEST',`REQUESTFUNCTION(`$1', `$1', `$2')
 _H
 pushdef(`NEXTFIELD', `R + 1')dnl
 PACKETSTRUCT(`$1', `Rep', `$3')
 undivert(OUTDIV)`'dnl
-INLINEFUNCTION(`XCB_'$1`_Rep *XCB_'$1`_Reply',
-`XCB_Connection *c, XCB_'$1`_cookie cookie, XCB_Event **e', `
-    return (XCB_'$1`_Rep *) XCB_Wait_Seqnum(c, cookie.seqnum, e);
+INLINEFUNCTION(`XCB'$1`Rep *XCB'$1`Reply',
+`XCBConnection *c, XCB'$1`Cookie cookie, XCBGenericEvent **e', `
+    return (XCB`'$1`'Rep *) XCBWaitSeqnum(c, cookie.seqnum, e);
 ')popdef(`NEXTFIELD')')
 
 
@@ -170,24 +170,24 @@ dnl Internal function shared by REQUEST and VOIDREQUEST, implementing the
 dnl common portions of those macros.
 dnl REQUESTFUNCTION(return type, request name, parameters)
 define(`REQUESTFUNCTION',`dnl
-ifelse($1, void, `dnl', `COOKIETYPE($1)
+ifelse($1, Void, `dnl', `COOKIETYPE($1)
 _H')
 pushdef(`PARTQTY', 0)pushdef(`PARAMQTY', 0)dnl
 PACKETSTRUCT(`$2', `Req', `$3')
-FUNCTION(`XCB_'$1`_cookie XCB_'$2, `XCB_Connection *c`'undivert(PARMDIV)', `
-    XCB_`$1'_cookie ret;
-    XCB_`$2'_Req *out;
+FUNCTION(`XCB'$1`Cookie XCB'$2, `XCBConnection *c`'undivert(PARMDIV)', `
+    XCB`$1'Cookie ret;
+    XCB`$2'Req *out;
 undivert(VARDIV)`'dnl
 ifelse(PARTQTY, 0, `dnl', `    struct iovec parts[PARTQTY];')
 
     pthread_mutex_lock(&c->locked);
-    out = (XCB_`$2'_Req *) XCB_Alloc_Out(c, XCB_CEIL(sizeof(*out)));
+    out = (XCB`$2'Req *) XCBAllocOut(c, XCB_CEIL(sizeof(*out)));
 
 undivert(OUTDIV)`'dnl
 
     ret.seqnum = ++c->seqnum;
-ifelse(PARTQTY, 0, `dnl', `    XCB_Write(c, parts, PARTQTY);')
-ifelse($1, void, `dnl', `    XCB_Add_Reply_Data(c, ret.seqnum);')
+ifelse(PARTQTY, 0, `dnl', `    XCBWrite(c, parts, PARTQTY);')
+ifelse($1, Void, `dnl', `    XCBAddReplyData(c, ret.seqnum);')
     pthread_mutex_unlock(&c->locked);
 
     return ret;
@@ -199,38 +199,38 @@ dnl instances of this struct.
 dnl XIDTYPE(name)
 define(`XIDTYPE', `STRUCT(`$1', `FIELD(`CARD32', `xid')')
 _H
-INLINEFUNCTION(`$1 XCB_$1_New', `struct XCB_Connection *c', `
-    `$1' ret = { XCB_Generate_ID(c) };
+INLINEFUNCTION(`$1 XCB'$1`New', `struct XCBConnection *c', `
+    `$1' ret = { XCBGenerateID(c) };
     return ret;
 ')')
 
 
-dnl Declares a struct named XCB_<name>_cookie with a single "int seqnum"
+dnl Declares a struct named XCB<name>Cookie with a single "int seqnum"
 dnl field.
 dnl COOKIETYPE(name)
-define(`COOKIETYPE', `STRUCT(XCB_$1_cookie, `FIELD(int, `seqnum')')')
+define(`COOKIETYPE', `STRUCT(XCB`$1'Cookie, `FIELD(int, `seqnum')')')
 
 
 dnl EVENT(name, number, 1 or more FIELDs)
 define(`EVENT', `dnl
-_H`'#define XCB_`$1' `$2'
+_H`'#define XCB`$1' `$2'
 PACKETSTRUCT(`$1', `Event', `$3')')
 
 dnl EVENTCOPY(new name, new number, old name)
 define(`EVENTCOPY', `HEADERONLY(
-#define XCB_`$1' `$2'
-typedef XCB_`$3'_Event XCB_`$1'_Event;
+#define XCB`$1' `$2'
+typedef XCB`$3'Event XCB`$1'Event;
 )')
 
 dnl ERROR(name, number, 1 or more FIELDs)
 define(`ERROR', `dnl
-_H`'#define XCB_`$1' `$2'
+_H`'#define XCB`$1' `$2'
 PACKETSTRUCT(`$1', `Error', `$3')')
 
 dnl ERRORCOPY(new name, new number, old name)
 define(`ERRORCOPY', `HEADERONLY(
-#define XCB_`$1' `$2'
-typedef XCB_`$3'_Error XCB_`$1'_Error;
+#define XCB`$1' `$2'
+typedef XCB`$3'Error XCB`$1'Error;
 )')
 
 
@@ -258,7 +258,7 @@ define(`PACKETSTRUCT', `dnl
 pushdef(`REQ', `$1')dnl
 pushdef(`LENGTHFIELD', `TOUPPER($2)MIDDLE')dnl
 INDENT()dnl
-STRUCT(XCB_`$1'_`$2', `
+STRUCT(XCB`$1'`$2', `
 dnl Everything except requests has a response type.
 ifelse(`$2', `Req', , `REPLY(BYTE, `response_type')')
 dnl Only errors have an error code.

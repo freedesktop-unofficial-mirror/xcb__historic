@@ -1,7 +1,6 @@
 o Bart's list:
 
-+ get xcb.h named correctly and in proper location.  clean
-  up other header stuff.
++ clean up header stuff.
 
 + split routines into one per obj file?
 
@@ -23,31 +22,20 @@ Split headers into "internal" versus "external" interfaces.
 
 De-"m4" xcb_conn.
 
-Rename xp_core to xcb (or at least xcb_core).
+Add synchronous mode support as in Xlib.
 
-Add Xlib "SyncHandle"-like functionality to all requests.
-Question: should all requests SyncHandle, or only void requests?
-
-Bugfix: GetProperty reply 'value' array length should be 'R->bytes_after'.
+Implement iterators for all relevant data structures.
 
 Add convenience functions for non-void requests which make the request and
 wait for the reply in one operation.
 
-Consider creating a structure for non-void requests containing both a cookie
-and a reply pointer, so only one "thing" has to be declared.
-
 Consider mechanism for requests and replies to declare enumerated and
 bitfield types, with hidden naming convention.
 
-Consider removing some or all references to strlen in xp_core. When what
-you really want is a counted string, there's no good way to produce a
-null-terminated string from it; but the other way around is easy.
-
-Consider: should XCB error-check data from the client? From the server?
-
-Consider allowing error handlers to be associated with void requests.
-
 Consider mechanism for VOIDREQUESTs to report internal errors (i.e., "write
 error", "extension not available") to the caller directly.
+Possibility: add additional fields to void_cookie.
+Possibility: separate errors from events and generalize error structures
+to allow for origins other than the server.
 
 Consider writing a real compiler for the protocol description language.

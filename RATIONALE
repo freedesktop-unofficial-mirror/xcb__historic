@@ -1,0 +1,27 @@
+Removed all references to strlen in xcb.m4.
+Reason: When what you really want is a counted string, there's no good
+way to produce a null-terminated string from it; but the other way
+around is easy.
+
+Should XCB error-check data from the client? From the server?
+Answer: no.
+Reason: That's the client application's job.
+
+Should error handlers be able to be associated with void requests?
+Answer: no.
+Reason: The sequence number is in the void_cookie. The client application
+can filter the error from that if it needs to.
+
+Should there be a structure for non-void requests containing both a cookie
+and a reply pointer, so only one "thing" has to be declared?
+Answer: no.
+Reason: The single-op request-and-wait function solves the problem.
+
+When in synchronous mode, should all requests sync, or only void requests?
+Answer: undecided.
+Reason: The goal of synchronous mode is to ensure that errors appear as
+soon as the requests that generated them are made. This should happen
+even if the client application is written to use latency hiding.
+Possibility: all requests could call XCBSync.
+Possibility: non-void requests could simply flush and block until
+their reply arrives, without removing the reply from the queue.

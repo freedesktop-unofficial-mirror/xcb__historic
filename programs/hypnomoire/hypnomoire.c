@@ -21,7 +21,7 @@
 
 #define PI 3.14159265
 
-static XCB_Connection *c;
+static XCBConnection *c;
 static GCONTEXT white, black;
 
 #define WINS 8
@@ -45,21 +45,21 @@ int main()
 	CARD32 values[2];
 	DRAWABLE root;
 
-	c = XCB_Connect_Basic();
+	c = XCBConnectBasic();
 
 	root.window = c->roots[0].data->root;
-	white = XCB_GCONTEXT_New(c);
-	black = XCB_GCONTEXT_New(c);
+	white = XCBGCONTEXTNew(c);
+	black = XCBGCONTEXTNew(c);
 
 	pthread_create(&thr, 0, event_thread, 0);
 
 	values[1] = 0; /* no graphics exposures */
 
 	values[0] = c->roots[0].data->white_pixel;
-	XCB_CreateGC(c, white, root, mask, values);
+	XCBCreateGC(c, white, root, mask, values);
 
 	values[0] = c->roots[0].data->black_pixel;
-	XCB_CreateGC(c, black, root, mask, values);
+	XCBCreateGC(c, black, root, mask, values);
 
 	for(i = 1; i < WINS; ++i)
 		pthread_create(&thr, 0, run, (void*)i);
@@ -71,9 +71,9 @@ int main()
 
 void paint(int idx)
 {
-	XCB_CopyArea(c, windows[idx].p, windows[idx].w, white, 0, 0, 0, 0,
+	XCBCopyArea(c, windows[idx].p, windows[idx].w, white, 0, 0, 0, 0,
 		windows[idx].width, windows[idx].height);
-	XCB_Sync(c, 0);
+	XCBSync(c, 0);
 }
 
 void *run(void *param)
@@ -85,8 +85,8 @@ void *run(void *param)
 
 	POINT line[2];
 
-	windows[idx].w.window = XCB_WINDOW_New(c);
-	windows[idx].p.pixmap = XCB_PIXMAP_New(c);
+	windows[idx].w.window = XCBWINDOWNew(c);
+	windows[idx].p.pixmap = XCBPIXMAPNew(c);
 	windows[idx].width = 300;
 	line[0].x = xo = windows[idx].width / 2;
 	windows[idx].height = 300;
@@ -106,7 +106,7 @@ void *run(void *param)
 		values[1] = ButtonReleaseMask | ExposureMask;
 		values[2] = ButtonPressMask;
 
-		XCB_CreateWindow(c, c->roots[0].depths[0].data->depth,
+		XCBCreateWindow(c, c->roots[0].depths[0].data->depth,
 			windows[idx].w.window, c->roots[0].data->root,
 			/* x */ 0, /* y */ 0,
 			windows[idx].width, windows[idx].height,
@@ -115,29 +115,29 @@ void *run(void *param)
 			mask, values);
 	}
 
-	XCB_MapWindow(c, windows[idx].w.window);
+	XCBMapWindow(c, windows[idx].w.window);
 
-	XCB_CreatePixmap(c, c->roots[0].depths[0].data->depth,
+	XCBCreatePixmap(c, c->roots[0].depths[0].data->depth,
 		windows[idx].p.pixmap, windows[idx].w,
 		windows[idx].width, windows[idx].height);
 
 	{
 		RECTANGLE rect = { 0, 0, windows[idx].width, windows[idx].height };
-		XCB_PolyFillRectangle(c, windows[idx].p, white, 1, &rect);
+		XCBPolyFillRectangle(c, windows[idx].p, white, 1, &rect);
 	}
 
-	XCB_Sync(c, 0);
+	XCBSync(c, 0);
 
 	while(1)
 	{
 		line[1].x = xo + r * cos(theta);
 		line[1].y = yo + r * sin(theta);
-		XCB_PolyLine(c, CoordModeOrigin, windows[idx].p, black,
+		XCBPolyLine(c, CoordModeOrigin, windows[idx].p, black,
 			2, line);
 
 		line[1].x = xo + r * cos(theta + LAG);
 		line[1].y = yo + r * sin(theta + LAG);
-		XCB_PolyLine(c, CoordModeOrigin, windows[idx].p, white,
+		XCBPolyLine(c, CoordModeOrigin, windows[idx].p, white,
 			2, line);
 
 		paint(idx);
@@ -162,32 +162,32 @@ int lookup_window(WINDOW w)
 
 void *event_thread(void *param)
 {
-	XCB_Event *e;
+	XCBGenericEvent *e;
 	int idx;
 
 	while(1)
 	{
-		e = XCB_Wait_Event(c);
+		e = XCBWaitEvent(c);
 		if(!formatEvent(e))
 			return 0;
-		if(e->response_type == XCB_Expose)
+		if(e->response_type == XCBExpose)
 		{
-			XCB_Expose_Event *ee = (XCB_Expose_Event *) e;
+			XCBExposeEvent *ee = (XCBExposeEvent *) e;
 			idx = lookup_window(ee->window);
 			if(idx == -1)
 				fprintf(stderr, "Expose on unknown window!\n");
 			else
 			{
-				XCB_CopyArea(c, windows[idx].p, windows[idx].w,
+				XCBCopyArea(c, windows[idx].p, windows[idx].w,
 					white, ee->x, ee->y, ee->x, ee->y,
 					ee->width, ee->height);
 				if(ee->count == 0)
-					XCB_Flush(c);
+					XCBFlush(c);
 			}
 		}
-		else if(e->response_type == XCB_ButtonRelease)
+		else if(e->response_type == XCBButtonRelease)
 		{
-			XCB_ButtonRelease_Event *bre = (XCB_ButtonRelease_Event *) e;
+			XCBButtonReleaseEvent *bre = (XCBButtonReleaseEvent *) e;
 			idx = lookup_window(bre->event);
 			if(idx == -1)
 				fprintf(stderr, "ButtonRelease on unknown window!\n");

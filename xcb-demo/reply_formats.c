@@ -9,7 +9,7 @@
 
 #define WINFMT "0x%08x"
 
-int formatGetWindowAttributesReply(WINDOW wid, XCB_GetWindowAttributes_Rep *reply)
+int formatGetWindowAttributesReply(WINDOW wid, XCBGetWindowAttributesRep *reply)
 {
     if(!reply)
     {
@@ -55,7 +55,7 @@ int formatGetWindowAttributesReply(WINDOW wid, XCB_GetWindowAttributes_Rep *repl
     return 1;
 }
 
-int formatGetGeometryReply(WINDOW wid, XCB_GetGeometry_Rep *reply)
+int formatGetGeometryReply(WINDOW wid, XCBGetGeometryRep *reply)
 {
     if(!reply)
     {
@@ -75,7 +75,7 @@ int formatGetGeometryReply(WINDOW wid, XCB_GetGeometry_Rep *reply)
     return 1;
 }
 
-int formatQueryTreeReply(WINDOW wid, XCB_QueryTree_Rep *reply)
+int formatQueryTreeReply(WINDOW wid, XCBQueryTreeRep *reply)
 {
     int i;
 
@@ -95,7 +95,7 @@ int formatQueryTreeReply(WINDOW wid, XCB_QueryTree_Rep *reply)
 
     for(i = 0; i < reply->children_len; ++i)
         printf("    window " WINFMT "\n",
-            (unsigned int) XCB_QueryTree_children(reply)[i].xid);
+            (unsigned int) XCBQueryTreechildren(reply)[i].xid);
 
     fflush(stdout);
     return 1;
@@ -296,7 +296,7 @@ static const char *labelSendEvent[] = {
     " (from SendEvent)",
 };
 
-int formatEvent(XCB_Event *e)
+int formatEvent(XCBGenericEvent *e)
 {
     BYTE sendEvent;
     CARD16 seqnum;
@@ -325,7 +325,7 @@ int formatEvent(XCB_Event *e)
             seqnum,
             labelSendEvent[sendEvent]);
         break;
-    case XCB_KeymapNotify:
+    case XCBKeymapNotify:
         printf("Event %s%s.\n",
             labelEvent[e->response_type],
             labelSendEvent[sendEvent]);

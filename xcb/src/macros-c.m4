@@ -9,6 +9,13 @@ dnl -- Implementations of macros specified in global macros.m4
 
 define(`REQUIRE', `#include <JOIN(`/', $@).h>')
 
+dnl ENUM(type name, name list)
+define(`ENUM', `pushdef(`ENUMNAME', `$1')TYPEDEF(`enum $1 {
+ENUMLOOP(shift($@))dnl
+}', `$1')popdef(`ENUMNAME')')
+define(`ENUMLOOP', `ifelse($1, , , `    ENUMNAME`$1',
+ENUMLOOP(shift($@))')')
+
 dnl PAD(bytes)
 define(`PAD', `ARRAYFIELD(`CARD8', `pad'PADQTY, `$1')
 define(`PADQTY', eval(1+PADQTY))

@@ -96,9 +96,18 @@ typedef CARD8           BOOL;
 
 /* Core protocol types */
 
+HEADERONLY(`dnl
+PACKETSTRUCT(Generic, `Rep', `')
+PACKETSTRUCT(Generic, `Event', `')
+PACKETSTRUCT(Generic, `Error', `')
+typedef XCBGenericEvent XCBEvent; /* deprecated name */
+
+COOKIETYPE(`Void')
+')dnl end HEADERONLY
+
 /* predeclare from xcb_conn */
-struct XCB_Connection;
-CARD32 XCB_Generate_ID(struct XCB_Connection *c);
+struct XCBConnection;
+CARD32 XCBGenerateID(struct XCBConnection *c);
 
 STRUCT(CHAR2B, `
     FIELD(CARD8, `byte1')
@@ -208,7 +217,7 @@ STRUCT(VISUALTYPE, `
     PAD(4)
 ')
 
-STRUCT(XCB_ConnSetup_Req, `
+STRUCT(XCBConnSetupReq, `
     FIELD(CARD8, `byte_order')
     PAD(1)
     FIELD(CARD16, `protocol_major_version')
@@ -219,13 +228,13 @@ STRUCT(XCB_ConnSetup_Req, `
     dnl LISTFIELD(char, `authorization_protocol_data', `R->authorization_protocol_data_len')
 ')
 
-STRUCT(XCB_ConnSetup_Generic_Rep, `
+STRUCT(XCBConnSetupGenericRep, `
     FIELD(CARD8, `status')
     PAD(5)
     FIELD(CARD16, `length')
 ')
 
-STRUCT(XCB_ConnSetup_Failed_Rep, `
+STRUCT(XCBConnSetupFailedRep, `
     FIELD(CARD8, `status') dnl always 0 -> Failed
     FIELD(CARD8, `reason_len')
     FIELD(CARD16, `protocol_major_version')
@@ -234,14 +243,14 @@ STRUCT(XCB_ConnSetup_Failed_Rep, `
     dnl LISTFIELD(char, `reason', `R->reason_length')
 ')
 
-STRUCT(XCB_ConnSetup_Authenticate_Rep, `
+STRUCT(XCBConnSetupAuthenticateRep, `
     FIELD(CARD8, `status') dnl always 2 -> Authenticate
     PAD(5)
     FIELD(CARD16, `length')
     dnl LISTFIELD(char, `reason', `R->length * 4')
 ')
 
-STRUCT(XCB_ConnSetup_Success_Rep, `
+STRUCT(XCBConnSetupSuccessRep, `
     FIELD(CARD8, `status') dnl always 1 -> Success
     PAD(1)
     FIELD(CARD16, `protocol_major_version')
@@ -278,21 +287,11 @@ CONSTANT(CARD16, `X_PROTOCOL', `11')
 COMMENT(current minor version)
 CONSTANT(CARD16, `X_PROTOCOL_REVISION', `0')
 
-dnl XXX: everything after here probably belongs in xp_core.m4. It came from
+dnl XXX: everything after here probably belongs in xcb.m4. It came from
 dnl X.h et al.
 
 CONSTANT(BOOL, `TRUE', `1')
 CONSTANT(BOOL, `FALSE', `0')
-
-COMMENT(universal null resource or null atom)
-CONSTANT(CARD32, `None', `0L')
-
-COMMENT(background pixmap in CreateWindow and ChangeWindowAttributes)
-CONSTANT(PIXMAP, `ParentRelative', `1L')
-
-COMMENT(border pixmap in CreateWindow and ChangeWindowAttributes
-special VisualID and special window class passed to CreateWindow)
-CONSTANT(PIXMAP, `CopyFromParent', `0L')
 
 COMMENT(destination window in SendEvent)
 CONSTANT(WINDOW, `PointerWindow', `0L')
@@ -356,7 +355,7 @@ COMMENT(Enter/Leave event)
 #define ELFlagFocus        (1<<0)
 #define ELFlagSameScreen   (1<<1)
 
-COMMENT(Event names are defined in xp_core.h.)
+COMMENT(Event names are defined in xcb.h.)
 
 COMMENT(Key masks. Used as modifiers to GrabButton and GrabKey, results of
 QueryPointer, state in various key-, mouse-, and button-related events.)
@@ -481,31 +480,7 @@ COMMENT(Used in SetInputFocus, GetInputFocus)
 #define RevertToPointerRoot     (int)PointerRoot
 #define RevertToParent          2
 
-COMMENT(Error codes are defined in xp_core.h.)
-
-COMMENT(Window classes used by CreateWindow.
-Note that CopyFromParent is already defined as 0 above.)
-
-#define InputOutput             1
-#define InputOnly               2
-
-COMMENT(Window attributes for CreateWindow and ChangeWindowAttributes.)
-
-#define CWBackPixmap            (1L<<0)
-#define CWBackPixel             (1L<<1)
-#define CWBorderPixmap          (1L<<2)
-#define CWBorderPixel           (1L<<3)
-#define CWBitGravity            (1L<<4)
-#define CWWinGravity            (1L<<5)
-#define CWBackingStore          (1L<<6)
-#define CWBackingPlanes         (1L<<7)
-#define CWBackingPixel          (1L<<8)
-#define CWOverrideRedirect      (1L<<9)
-#define CWSaveUnder             (1L<<10)
-#define CWEventMask             (1L<<11)
-#define CWDontPropagate         (1L<<12)
-#define CWColormap              (1L<<13)
-#define CWCursor                (1L<<14)
+COMMENT(Error codes are defined in xcb.h.)
 
 COMMENT(ConfigureWindow structure)
 

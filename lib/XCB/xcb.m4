@@ -1,13 +1,17 @@
-XCBGEN(xp_core, `
+XCBGEN(xcb, `
 Copyright (C) 2001-2002 Bart Massey and Jamey Sharp.
 All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 ')
-_C`'REQUIRE(stdlib)
-_C`'REQUIRE(stdio)
-_C`'REQUIRE(string)
-_H`'REQUIRE(xcb_conn)
-HEADERONLY(`
+SOURCEONLY(`
+REQUIRE(stdlib)
+REQUIRE(stdio)
+REQUIRE(string)
+')HEADERONLY(`
+REQUIRE(xcb_conn)
+
+COMMENT(universal null resource or null atom)
+CONSTANT(CARD32, `None', `0L')
 
 /* Core event and error types */
 
@@ -270,7 +274,40 @@ ERRORCOPY(Implementation, 17, Request)
 ')dnl end HEADERONLY
 
 /* The requests, in major number order. */
-/* It is the caller's responsibility to free returned XCB_*_Rep objects. */
+/* It is the caller's responsibility to free returned XCB*Rep objects. */
+
+COMMENT(background pixmap in CreateWindow and ChangeWindowAttributes)
+CONSTANT(PIXMAP, `ParentRelative', `1L')
+
+COMMENT(border pixmap in CreateWindow and ChangeWindowAttributes
+special VisualID and special window class passed to CreateWindow)
+CONSTANT(PIXMAP, `CopyFromParent', `0L')
+
+COMMENT(Window classes used by CreateWindow.
+Note that CopyFromParent is already defined as 0 above.)
+
+#define InputOutput             1
+#define InputOnly               2
+
+COMMENT(Window attributes for CreateWindow and ChangeWindowAttributes.)
+
+ENUM(CW,
+BackPixmap = 1L<<0,
+BackPixel = 1L<<1,
+BorderPixmap = 1L<<2,
+BorderPixel = 1L<<3,
+BitGravity = 1L<<4,
+WinGravity = 1L<<5,
+BackingStore = 1L<<6,
+BackingPlanes = 1L<<7,
+BackingPixel = 1L<<8,
+OverrideRedirect = 1L<<9,
+SaveUnder = 1L<<10,
+EventMask = 1L<<11,
+DontPropagate = 1L<<12,
+Colormap = 1L<<13,
+Cursor = 1L<<14,
+)
 
 VOIDREQUEST(CreateWindow, `
     OPCODE(1)
@@ -410,7 +447,7 @@ REQUEST(QueryTree, `
 REQUEST(InternAtom, `
     OPCODE(16)
     PARAM(BOOL, `only_if_exists')
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     PAD(2)
     LISTPARAM(char, `name', `name_len')
 ', `
@@ -462,7 +499,7 @@ REQUEST(GetProperty, `
     REPLY(CARD32, `bytes_after')
     REPLY(CARD32, `value_len')
     PAD(12)
-    ARRAYREPLY(void, `value', `R->value_len')
+    ARRAYREPLY(void, `value', `R->bytes_after')
 ')
 
 REQUEST(ListProperties, `
@@ -695,7 +732,7 @@ VOIDREQUEST(OpenFont, `
     OPCODE(45)
     PAD(1)
     PARAM(FONT, `fid')
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     LISTPARAM(char, `name', `name_len')
 ')
 
@@ -766,7 +803,7 @@ REQUEST(ListFonts, `
     OPCODE(49)
     PAD(1)
     PARAM(CARD16, `max_names')
-    EXPRFIELD(CARD16, `pattern_len', `strlen(pattern)')
+    PARAM(CARD16, `pattern_len')
     LISTPARAM(char, `pattern', `pattern_len')
 ', `
     PAD(1)
@@ -1034,7 +1071,7 @@ VOIDREQUEST(PolyText16, `
 
 VOIDREQUEST(ImageText8, `
     OPCODE(76)
-    EXPRFIELD(BYTE, `string_len', `strlen(string)')
+    PARAM(BYTE, `string_len')
     PARAM(DRAWABLE, `drawable')
     PARAM(GCONTEXT, `gc')
     PARAM(INT16, `x')
@@ -1116,7 +1153,7 @@ REQUEST(AllocNamedColor, `
     OPCODE(85)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     LISTPARAM(char, `name', `name_len')
 ', `
     PAD(1)
@@ -1192,7 +1229,7 @@ VOIDREQUEST(StoreNamedColor, `
     PARAM(CARD8, `flags')
     PARAM(COLORMAP, `cmap')
     PARAM(CARD32, `pixel')
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     LISTPARAM(char, `name', `name_len')
 ')
 
@@ -1220,7 +1257,7 @@ REQUEST(LookupColor, `
     OPCODE(92)
     PAD(1)
     PARAM(COLORMAP, `cmap')
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     LISTPARAM(char, `name', `name_len')
 ', `
     PAD(1)
@@ -1297,7 +1334,7 @@ REQUEST(QueryBestSize, `
 REQUEST(QueryExtension, `
     OPCODE(98)
     PAD(1)
-    EXPRFIELD(CARD16, `name_len', `strlen(name)')
+    PARAM(CARD16, `name_len')
     LISTPARAM(char, `name', `name_len')
 ', `
     PAD(1)
@@ -1402,13 +1439,18 @@ VOIDREQUEST(ChangeHosts, `
     PARAM(CARD8, `mode')
     PARAM(CARD8, `family')
     PAD(1)
-    EXPRFIELD(CARD16, `address_len', `strlen(address)')
+    PARAM(CARD16, `address_len')
     LISTPARAM(char, `address', `address_len')
 ')
 
-dnl XXX: examine the HOST structure to decide if I need an iterator here
+dnl FIXME: ListHosts needs an iterator for the reply - a pointer won't do.
 REQUEST(ListHosts, `
     OPCODE(110)
+', `
+    REPLY(BYTE, `mode')
+    REPLY(CARD16, `hosts_len')
+    PAD(22)
+    dnl LISTREPLY(HOST, hosts, ...)
 ')
 
 VOIDREQUEST(SetAccessControl, `
@@ -1484,48 +1526,44 @@ VOIDREQUEST(NoOperation, `
  * but depend on requests in the core protocol, so they're here. */
 
 /* Returns true iff the sync was sucessful. */
-FUNCTION(`int XCB_Sync', `XCB_Connection *c, XCB_Event **e', `
-    XCB_GetInputFocus_cookie cookie = XCB_GetInputFocus(c);
-    XCB_GetInputFocus_Rep *reply = XCB_GetInputFocus_Reply(c, cookie, e);
+FUNCTION(`int XCBSync', `XCBConnection *c, XCBGenericEvent **e', `
+    XCBGetInputFocusRep *reply = XCBGetInputFocusReply(c, XCBGetInputFocus(c), e);
     free(reply);
     return (reply != 0);
 ')
 
-STATICSTRUCT(XCB_ExtensionRecord, `
+STATICSTRUCT(XCBExtensionRecord, `
     POINTERFIELD(char, `name')
-    POINTERFIELD(XCB_QueryExtension_Rep, `info')
+    POINTERFIELD(XCBQueryExtensionRep, `info')
 ')
 _C
 STATICFUNCTION(`int match_extension_string', `const void *name, const void *data', `
-    return (((XCB_ExtensionRecord *) data)->name == name);
+    return (((XCBExtensionRecord *) data)->name == name);
 ')
 _C
-/* Do not free the returned XCB_QueryExtension_Rep - on return, it's aliased
+/* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
-FUNCTION(`const XCB_QueryExtension_Rep *XCB_QueryExtension_Cached',
-`XCB_Connection *c, const char *name, XCB_Event **e', `
-    XCB_ExtensionRecord *data = 0;
+FUNCTION(`const XCBQueryExtensionRep *XCBQueryExtensionCached',
+`XCBConnection *c, const char *name, XCBGenericEvent **e', `
+    XCBExtensionRecord *data = 0;
     if(e)
         *e = 0;
     pthread_mutex_lock(&c->locked);
 
-    data = (XCB_ExtensionRecord *) XCB_List_remove(&c->extension_cache, match_extension_string, name);
+    data = (XCBExtensionRecord *) XCBListRemove(&c->extension_cache, match_extension_string, name);
 
     if(data)
         goto done; /* cache hit: return from the cache */
 
     /* cache miss: query the server */
-ALLOC(XCB_ExtensionRecord, `data', 1)
-    data->name = (char *) name;
     pthread_mutex_unlock(&c->locked);
-    {
-        XCB_QueryExtension_cookie cookie = XCB_QueryExtension(c, name);
-        data->info = XCB_QueryExtension_Reply(c, cookie, e);
-    }
+ALLOC(XCBExtensionRecord, `data', 1)
+    data->name = (char *) name;
+    data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), e);
     pthread_mutex_lock(&c->locked);
 
 done:
-    XCB_List_insert(&c->extension_cache, data);
+    XCBListInsert(&c->extension_cache, data);
 
     pthread_mutex_unlock(&c->locked);
     return data->info;
