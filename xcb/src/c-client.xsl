@@ -60,11 +60,12 @@
   </xsl:template>
 
   <!--
-    Output the canonical name for a type.  If the type exists in the current
-    extension/top-level, then output XCB{current-extension}Type.  If this file
-    isn't xcb_types, search in xcb_types.  Otherwise, just output Type.  If
-    the type parameter is not specified, it defaults to the value of the type
-    attribute on the context node.
+    Output the canonical name for a type.  This will be
+    XCB{current-extension}Type if the type exists in the current extension or
+    the current top-level description if not in an extension, XCBType if the
+    type exists in xproto or xcb_types, and Type otherwise.  If the type
+    parameter is not specified, it defaults to the value of the type attribute
+    on the context node.
   -->
   <xsl:template name="canonical-type-name">
     <xsl:param name="type" select="@type" />
@@ -72,20 +73,36 @@
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
     <xsl:choose>
-      <xsl:when test="//*[(string($ext) and self::extension and @name=$ext)
-                          or (not(string($ext)) and self::xcb)]/*
-                         [((self::struct or self::union
-                            or self::xidtype or self::enum) and @name=$type)
+      <!-- First search the current extension/top-level. -->
+      <xsl:when test="(/xcb[not(string($ext))]
+                      |/xcb/extension[@name=$ext]
+                      )/*[((self::struct or self::union
+                            or self::xidtype or self::enum
+                            or self::event or self::eventcopy
+                            or self::error or self::errorcopy) and @name=$type)
                           or (self::typedef and @newname=$type)]">
-        <xsl:text>XCB</xsl:text><xsl:value-of select="concat($ext, $type)" />
+        <xsl:text>XCB</xsl:text>
+        <xsl:value-of select="concat($ext, $type)" />
       </xsl:when>
-      <xsl:when test="/xcb[not(@header='xcb_types')]">
+      <!-- If this is not xproto or xcb_types, search xproto next (which will
+           then search xcb_types if necessary). -->
+      <xsl:when test="/xcb[not(@header='xcb_types')
+                           and not(@header='xproto')]">
+        <xsl:for-each select="document('xproto.xml')/xcb">
+          <xsl:call-template name="canonical-type-name">
+            <xsl:with-param name="type" select="$type" />
+          </xsl:call-template>
+        </xsl:for-each>
+      </xsl:when>
+      <!-- If this is xproto, search xcb_types next. -->
+      <xsl:when test="/xcb[@header='xproto']">
         <xsl:for-each select="document('xcb_types.xml')/xcb">
           <xsl:call-template name="canonical-type-name">
             <xsl:with-param name="type" select="$type" />
           </xsl:call-template>
         </xsl:for-each>
       </xsl:when>
+      <!-- The type was not found; assume it is already defined somewhere. -->
       <xsl:otherwise>
         <xsl:value-of select="$type" />
       </xsl:otherwise>
@@ -204,27 +221,45 @@
     <xsl:call-template name="make-iterator" />
   </xsl:template>
 
-  <xsl:template match="event|error" mode="pass1">
+  <xsl:template match="event|eventcopy|error|errorcopy" mode="pass1">
     <xsl:variable name="ext"><!--
       --><xsl:call-template name="current-extension" /><!--
     --></xsl:variable>
     <xsl:variable name="suffix">
       <xsl:choose>
-        <xsl:when test="self::event"><xsl:text>Event</xsl:text></xsl:when>
-        <xsl:when test="self::error"><xsl:text>Error</xsl:text></xsl:when>
+        <xsl:when test="self::event|self::eventcopy">
+          <xsl:text>Event</xsl:text>
+        </xsl:when>
+        <xsl:when test="self::error|self::errorcopy">
+          <xsl:text>Error</xsl:text>
+        </xsl:when>
       </xsl:choose>
     </xsl:variable>
     <constant type="number" name="XCB{$ext}{@name}" value="{@number}" />
-    <struct name="XCB{$ext}{@name}{$suffix}">
-      <field type="BYTE" name="response_type" />
-      <xsl:if test="self::error">
-        <field type="BYTE" name="error_code" />
-      </xsl:if>
-      <xsl:apply-templates select="*" mode="field" />
-      <middle>
-        <field type="CARD16" name="sequence" />
-      </middle>
-    </struct>
+    <xsl:choose>
+      <xsl:when test="self::event|self::error">
+        <struct name="XCB{$ext}{@name}{$suffix}">
+          <field type="BYTE" name="response_type" />
+          <xsl:if test="self::error">
+            <field type="BYTE" name="error_code" />
+          </xsl:if>
+          <xsl:apply-templates select="*" mode="field" />
+          <middle>
+            <field type="CARD16" name="sequence" />
+          </middle>
+        </struct>
+      </xsl:when>
+      <xsl:when test="self::eventcopy|self::errorcopy">
+        <typedef newname="XCB{$ext}{@name}{$suffix}">
+          <xsl:attribute name="oldname">
+            <xsl:call-template name="canonical-type-name">
+              <xsl:with-param name="type" select="@ref" />
+            </xsl:call-template>
+            <xsl:value-of select="$suffix" />
+          </xsl:attribute>
+        </typedef>
+      </xsl:when>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="typedef" mode="pass1">
