@@ -1,6 +1,6 @@
 SUBDIRS = tests
 
-EXTRA_DIST = autogen.sh
+EXTRA_DIST = autogen.sh README
 
 INCLUDES = $(XCB_CFLAGS)
 LDADD = $(XCB_LIBS)
