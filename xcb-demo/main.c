@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 #endif
 
     c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRoots(c->setup).data;
+    root = XCBConnSetupSuccessRepRootsIter(c->setup).data;
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE

@@ -39,8 +39,8 @@ int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
     XCBRenderPICTFORMINFOIter forminfo_iter;
     XCBRenderPICTSCREENIter     screen_iter;
     
-    forminfo_iter = XCBRenderQueryPictFormatsFormats(reply);
-    screen_iter =  XCBRenderQueryPictFormatsScreens(reply);
+    forminfo_iter = XCBRenderQueryPictFormatsFormatsIter(reply);
+    screen_iter =  XCBRenderQueryPictFormatsScreensIter(reply);
 
     fprintf(stdout, "Number of PictFormInfo iterations: %d\n", forminfo_iter.rem);
 
@@ -76,7 +76,7 @@ int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
         fprintf(stdout, "Screen #%d\n", 1 + num_screens - screen_iter.rem);
         fprintf(stdout, "    Depths for this screen:    %ld\n", cscreen->num_depths);
         fprintf(stdout, "    Fallback PICTFORMAT:       %ld\n", cscreen->fallback.xid);
-        depth_iter = XCBRenderPICTSCREENDepths(cscreen);
+        depth_iter = XCBRenderPICTSCREENDepthsIter(cscreen);
 
         num_depths = cscreen->num_depths;
         while(depth_iter.rem)
@@ -87,7 +87,7 @@ int print_formats_info(XCBRenderQueryPictFormatsRep *reply)
             fprintf(stdout, "    Depth #%d\n", 1 + num_depths - depth_iter.rem);
             fprintf(stdout, "        Visuals for this depth:    %d\n", cdepth->num_visuals);
             fprintf(stdout, "        Depth:                     %d\n", cdepth->depth);
-            visual_iter = XCBRenderPICTDEPTHVisuals(cdepth);
+            visual_iter = XCBRenderPICTDEPTHVisualsIter(cdepth);
 
             num_visuals = cdepth->num_visuals;
             while(visual_iter.rem)
@@ -125,7 +125,7 @@ int draw_window(XCBConnection *conn, XCBRenderQueryPictFormatsRep *reply)
     XCBRenderPOINTFIX        trifans[9];
     int index;
 
-    root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
+    root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
     root_drawable.window = root->root;
    
     /* Setting query so that it will search for an 8 bit alpha surface. */
@@ -420,18 +420,18 @@ XCBRenderPICTFORMAT get_pictformat_from_visual(XCBRenderQueryPictFormatsRep *rep
     XCBRenderPICTVISUAL    *cvisual;
     XCBRenderPICTFORMAT  return_value;
     
-    screen_iter = XCBRenderQueryPictFormatsScreens(reply);
+    screen_iter = XCBRenderQueryPictFormatsScreensIter(reply);
 
     while(screen_iter.rem)
     {
         cscreen = screen_iter.data;
         
-        depth_iter = XCBRenderPICTSCREENDepths(cscreen);
+        depth_iter = XCBRenderPICTSCREENDepthsIter(cscreen);
         while(depth_iter.rem)
         {
             cdepth = depth_iter.data;
 
-            visual_iter = XCBRenderPICTDEPTHVisuals(cdepth);
+            visual_iter = XCBRenderPICTDEPTHVisualsIter(cdepth);
             while(visual_iter.rem)
             {
                 cvisual = visual_iter.data;
@@ -454,7 +454,7 @@ XCBRenderPICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, XCB
 {
     XCBRenderPICTFORMINFOIter forminfo_iter;
     
-    forminfo_iter = XCBRenderQueryPictFormatsFormats(reply);
+    forminfo_iter = XCBRenderQueryPictFormatsFormatsIter(reply);
 
     while(forminfo_iter.rem)
     {
@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
     XCBRenderPICTFORMINFO  forminfo_query, *forminfo_result;
     
     c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
+    root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
     
     version_cookie = XCBRenderQueryVersion(c, (CARD32)0, (CARD32)3);
     version_reply = XCBRenderQueryVersionReply(c, version_cookie, 0);

@@ -78,7 +78,7 @@ void list_extensions(void (*ext_printer)(int, char *))
 	return;
     }
 
-    i = XCBListExtensionsNames(r);
+    i = XCBListExtensionsNamesIter(r);
     printf("\n" "number of extensions:    %d", i.rem);
     for(; i.rem; XCBSTRNext(&i))
     {
@@ -132,7 +132,7 @@ void list_screens()
     XCBSCREENIter i;
     int cur;
 
-    i = XCBConnSetupSuccessRepRoots(XCBGetSetup(c));
+    i = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c));
     printf("\n" "number of screens:    %d" "\n", i.rem);
     for(cur = 1; i.rem; XCBSCREENNext(&i), ++cur)
     {

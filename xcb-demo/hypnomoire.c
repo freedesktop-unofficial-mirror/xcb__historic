@@ -64,7 +64,7 @@ int main()
 	XCBDRAWABLE rootwin;
 
 	c = XCBConnectBasic();
-	root = XCBConnSetupSuccessRepRoots(XCBGetSetup(c)).data;
+	root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
 	get_depth();
 
 	rootwin.window = root->root;
