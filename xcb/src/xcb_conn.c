@@ -94,6 +94,12 @@ static int match_reply_seqnum32(const void *seqnum, const void *data)
     return (((XCBReplyData *) data)->seqnum == *(int *) seqnum);
 }
 
+void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data)
+{
+    c->unexpected_reply_handler = handler;
+    c->unexpected_reply_data = data;
+}
+
 static /* PRE: called immediately after data has been read from the connection */
 /* INV: this function operates entirely out of the I/O layer buffers,
         and never causes a read or write. */
@@ -129,6 +135,8 @@ int XCBReadPacket(void *readerdata, XCBIOHandle *h)
 
     if(buf[0] == 1 && !rep) /* I see no reply record here, but I need one. */
     {
+        if(c->unexpected_reply_handler && c->unexpected_reply_handler(c->unexpected_reply_data, (XCBGenericRep *) buf))
+            return 1;
         fprintf(stderr, "No reply record found for reply %d.\n", ((XCBGenericRep *) buf)->seqnum);
         free(buf);
         return -1;
@@ -218,7 +226,7 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
     pthread_mutex_unlock(&c->locked);
 
 #if XCBTRACEEVENT
-    fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret->response_type);
+    fprintf(stderr, "Leaving XCBWaitEvent, event type %d\n", ret ? ret->response_type : -1);
 #endif
 
     return ret;
@@ -226,9 +234,24 @@ XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 
 XCBGenericEvent *XCBPollEvent(XCBConnection *c)
 {
-    XCBFillBufferLocked(c->handle);
+    XCBGenericEvent *ret;
+
+#if XCBTRACEEVENT
+    fprintf(stderr, "Entering XCBPollEvent\n");
+#endif
+
+    pthread_mutex_lock(&c->locked);
+    XCBFillBuffer(c->handle);
     /* XCBListRemoveHead returns 0 on empty list. */
-    return (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
+    ret = (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
+
+    pthread_mutex_unlock(&c->locked);
+
+#if XCBTRACEEVENT
+    fprintf(stderr, "Leaving XCBPollEvent, event type %d\n", ret ? ret->response_type : -1);
+#endif
+
+    return ret;
 }
 
 int XCBFlush(XCBConnection *c)
@@ -381,6 +404,9 @@ XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info)
     c->seqnum = 0;
     c->seqnum_written = 0;
     c->last_xid = 0;
+
+    c->unexpected_reply_handler = 0;
+    c->unexpected_reply_data = 0;
 
     /* Write the connection setup request. */
     {

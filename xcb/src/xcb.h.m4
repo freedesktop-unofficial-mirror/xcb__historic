@@ -68,6 +68,8 @@ undivert(TYPEDIV)dnl
 
 /* xcb_conn.c */
 
+typedef int (*XCBUnexpectedReplyFunc)(void *unexpected_reply_data, XCBGenericRep *buf);
+
 typedef struct XCBConnection {
     pthread_mutex_t locked;
     XCBIOHandle *handle;
@@ -78,12 +80,17 @@ typedef struct XCBConnection {
     unsigned int seqnum;
     unsigned int seqnum_written;
     CARD32 last_xid;
+
+    XCBUnexpectedReplyFunc unexpected_reply_handler;
+    void *unexpected_reply_data;
+
     XCBConnSetupSuccessRep *setup;
 } XCBConnection;
 
 int XCBOnes(unsigned long mask);
 CARD32 XCBGenerateID(XCBConnection *c);
 void XCBAddReplyData(XCBConnection *c, int seqnum);
+void XCBSetUnexpectedReplyHandler(XCBConnection *c, XCBUnexpectedReplyFunc handler, void *data);
 void *XCBWaitSeqnum(XCBConnection *c, unsigned int seqnum, XCBGenericEvent **e);
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollEvent(XCBConnection *c);
@@ -91,7 +98,7 @@ int XCBFlush(XCBConnection *c);
 XCBAuthInfo *XCBGetAuthInfo(int fd, int nonce, XCBAuthInfo *info);
 XCBConnection *XCBConnect(int fd, int screen, int nonce);
 XCBConnection *XCBConnectAuth(int fd, XCBAuthInfo *auth_info);
-XCBConnection *XCBConnectBasic();
+XCBConnection *XCBConnectBasic(void);
 
 
 /* xcb_event.c */

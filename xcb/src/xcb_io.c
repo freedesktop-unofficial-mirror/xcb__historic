@@ -24,8 +24,6 @@
 #define USEOUTVEC 0
 #define USENONBLOCKING
 
-#define XCB_PAD(i) ((4 - (i & 3)) & 3)
-
 struct XCBIOHandle {
     int fd;
     pthread_mutex_t *locked;
@@ -38,7 +36,8 @@ struct XCBIOHandle {
     int n_outqueue;
     struct iovec *outvec;
     int n_outvec;
-    int (*reader)(void *, XCBIOHandle *);
+
+    XCBIOCallback reader;
     void *readerdata;
 };
 
@@ -75,7 +74,7 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked)
     return h;
 }
 
-void XCBIOSetReader(XCBIOHandle *h, int (*reader)(void *, XCBIOHandle *), void *readerdata)
+void XCBIOSetReader(XCBIOHandle *h, XCBIOCallback reader, void *readerdata)
 {
     h->reader = reader;
     h->readerdata = readerdata;
@@ -127,7 +126,7 @@ static int XCBWriteBuffer(XCBIOHandle *c)
     return 1;
 }
 
-static int XCBFillBuffer(XCBIOHandle *h)
+int XCBFillBuffer(XCBIOHandle *h)
 {
     int ret;
     ret = read(h->fd, h->inqueue + h->n_inqueue, sizeof(h->inqueue) - h->n_inqueue);
@@ -186,15 +185,6 @@ done:
         --c->writing;
     --c->reading;
 
-    return ret;
-}
-
-int XCBFillBufferLocked(XCBIOHandle *h)
-{
-    int ret;
-    pthread_mutex_lock(h->locked);
-    ret = XCBFillBuffer(h);
-    pthread_mutex_unlock(h->locked);
     return ret;
 }
 

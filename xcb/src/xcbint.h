@@ -12,13 +12,17 @@
 /* Index of nearest 4-byte boundary following E. */
 #define XCB_CEIL(E) (((E)+3)&~3)
 
+#define XCB_PAD(i) ((4 - (i & 3)) & 3)
+
+typedef int (*XCBIOCallback)(void *data, XCBIOHandle *h);
+
 XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked);
-void XCBIOSetReader(XCBIOHandle *h, int (*reader)(void *, XCBIOHandle *), void *readerdata);
+void XCBIOSetReader(XCBIOHandle *h, XCBIOCallback reader, void *readerdata);
 
 void *XCBAllocOut(XCBIOHandle *c, int size);
 
+int XCBFillBuffer(XCBIOHandle *h);
 int XCBWait(XCBIOHandle *c, const int should_write);
-int XCBFillBufferLocked(XCBIOHandle *h);
 int XCBFlushLocked(XCBIOHandle *c);
 
 int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count);
@@ -28,7 +32,7 @@ int XCBIOReadable(XCBIOHandle *h);
 
 /* xcb_list.c */
 
-XCBList *XCBListNew();
+XCBList *XCBListNew(void);
 void XCBListInsert(XCBList *list, void *data);
 void XCBListAppend(XCBList *list, void *data);
 void *XCBListRemoveHead(XCBList *list);
