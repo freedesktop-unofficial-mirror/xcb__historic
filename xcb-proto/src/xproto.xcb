@@ -225,7 +225,7 @@ EVENT(`ColormapNotify', 32, `
     PAD(1)
     REPLY(WINDOW, `window')
     REPLY(COLORMAP, `colormap')
-    REPLY(BOOL, `_new')
+    REPLY(BOOL, `new')
     REPLY(BYTE, `state')
 ')
 EVENT(`ClientMessage', 33, `
@@ -321,7 +321,7 @@ REQUEST(GetWindowAttributes, `
 ', `
     REPLY(CARD8, `backing_store')
     REPLY(VISUALID, `visual')
-    REPLY(CARD16, `_class')
+    REPLY(CARD16, `class')
     REPLY(CARD8, `bit_gravity')
     REPLY(CARD8, `win_gravity')
     REPLY(CARD32, `backing_planes')
