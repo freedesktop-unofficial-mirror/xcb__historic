@@ -125,6 +125,7 @@ static int set_maximum_request_length(XCBConnection *c)
     {
         XCBBigRequestsEnableRep *r = XCBBigRequestsEnableReply(c, XCBBigRequestsEnable(c), 0);
         c->maximum_request_length = r->maximum_request_length;
+        free(r);
     }
     return 1;
 }

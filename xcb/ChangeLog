@@ -1,5 +1,12 @@
 2005-03-23  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_conn.c, src/xcb_in.c:
+	avn@daemon.hole.ru pointed out two memory leaks in XCB, which
+	this update fixes. I also introduced a third a couple of days
+	ago, which this fixes as well.
+
+2005-03-23  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_in.c:
 	Quit storing an "error" flag: it's redundant with the contents
 	of the packet that it was stored with.

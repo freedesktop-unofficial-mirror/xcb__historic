@@ -218,6 +218,7 @@ void _xcb_in_destroy(_xcb_in *in)
     pthread_cond_destroy(&in->event_cond);
     _xcb_list_delete(in->replies, (XCBListFreeFunc) free_reply_data);
     _xcb_list_delete(in->events, free);
+    _xcb_list_delete(in->readers, 0);
 }
 
 int _xcb_in_events_length(XCBConnection *c)
@@ -271,7 +272,10 @@ int _xcb_in_read_packet(XCBConnection *c)
     if(!buf)
         return 0;
     if(_xcb_in_read_block(c, buf, length) <= 0)
+    {
+        free(buf);
         return 0;
+    }
 
     /* Compute 32-bit sequence number of this packet. */
     /* XXX: do "sequence lost" check here */
