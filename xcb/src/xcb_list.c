@@ -16,7 +16,8 @@ typedef struct XCBListNode {
 
 struct XCBList {
     XCBListNode *head;
-    XCBListNode *tail;
+    XCBListNode **tail;
+    int len;
 };
 
 /* Linked list functions */
@@ -26,7 +27,9 @@ XCBList *XCBListNew()
     XCBList *list;
     list = (XCBList *) malloc(sizeof(XCBList));
     assert(list);
-    list->head = list->tail = 0;
+    list->head = 0;
+    list->tail = &list->head;
+    list->len = 0;
     return list;
 }
 
@@ -39,8 +42,7 @@ void XCBListInsert(XCBList *list, void *data)
 
     node->next = list->head;
     list->head = node;
-    if(!list->tail)
-        list->tail = node;
+    ++list->len;
 }
 
 void XCBListAppend(XCBList *list, void *data)
@@ -51,12 +53,9 @@ void XCBListAppend(XCBList *list, void *data)
     node->data = data;
     node->next = 0;
 
-    if(list->tail)
-        list->tail->next = node;
-    else
-        list->head = node;
-
-    list->tail = node;
+    *list->tail = node;
+    list->tail = &node->next;
+    ++list->len;
 }
 
 void *XCBListRemoveHead(XCBList *list)
@@ -68,57 +67,43 @@ void *XCBListRemoveHead(XCBList *list)
     ret = tmp->data;
     list->head = tmp->next;
     if(!list->head)
-        list->tail = 0;
+        list->tail = &list->head;
     free(tmp);
+    --list->len;
     return ret;
 }
 
 void *XCBListRemove(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
 {
-    XCBListNode *prev = 0, *cur = list->head;
-    void *tmp;
+    XCBListNode **cur;
+    for(cur = &list->head; *cur; cur = &(*cur)->next)
+        if(cmp(data, (*cur)->data))
+	{
+	    XCBListNode *tmp = *cur;
+	    void *ret = (*cur)->data;
+	    *cur = (*cur)->next;
+	    if(!*cur)
+		list->tail = cur;
 
-    while(cur)
-    {
-        if(cmp(data, cur->data))
-            break;
-        prev = cur;
-        cur = cur->next;
-    }
-    if(!cur)
-        return 0;
-
-    if(prev)
-        prev->next = cur->next;
-    else
-        list->head = cur->next;
-    if(!cur->next)
-        list->tail = prev;
-
-    tmp = cur->data;
-    free(cur);
-    return tmp;
+	    free(tmp);
+	    --list->len;
+	    return ret;
+	}
+    return 0;
 }
 
 void *XCBListFind(XCBList *list, int (*cmp)(const void *, const void *), const void *data)
 {
-    XCBListNode *cur = list->head;
-    while(cur)
-    {
+    XCBListNode *cur;
+    for(cur = list->head; cur; cur = cur->next)
         if(cmp(data, cur->data))
             return cur->data;
-        cur = cur->next;
-    }
     return 0;
 }
 
 int XCBListLength(XCBList *list)
 {
-    int ret = 0;
-    XCBListNode *cur;
-    for(cur = list->head; cur; cur = cur->next)
-        ++ret;
-    return ret;
+    return list->len;
 }
 
 int XCBListIsEmpty(XCBList *list)
