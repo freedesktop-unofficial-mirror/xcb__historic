@@ -4,9 +4,7 @@
 #include <stdio.h>
 
 #include <X11/XCB/xcb.h>
-#include <X11/XCB/xcbint.h>
 #include <X11/XCB/shm.h>
-#include <X11/Xlib.h>
 
 #include "xcb_image.h"
 
@@ -509,7 +507,7 @@ xcb_image_put (XCBConnection *conn,
       dest_bits_per_pixel = image->bits_per_pixel;
       dest_scanline_pad = image->bitmap_format_scanline_pad;
       left_pad = 0;
-      iter =  XCBConnSetupSuccessRepPixmapFormatsIter (conn->setup);
+      iter =  XCBConnSetupSuccessRepPixmapFormatsIter (XCBGetSetup (conn));
       for (cur = 0 ; cur < iter.rem ; cur++, XCBFORMATNext (&iter))
 	if (iter.data->depth == image->depth)
 	  {

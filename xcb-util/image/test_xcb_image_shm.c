@@ -7,7 +7,6 @@
 #include <sys/shm.h>
 
 #include <X11/XCB/xcb.h>
-#include <X11/XCB/xcbint.h>
 #include <X11/XCB/shm.h>
 #include <X11/Xlib.h>
 
@@ -58,7 +57,7 @@ main (int argc, char *argv[])
   
   /* Open the connexion to the X server and get the first screen */
   c = XCBConnectBasic ();
-  screen = XCBConnSetupSuccessRepRootsIter (c->setup).data;
+  screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
   depth = get_depth (c, screen);
 
   /* Create a black graphic context for drawing in the foreground */
