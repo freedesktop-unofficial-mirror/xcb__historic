@@ -1,3 +1,10 @@
+2005-04-02  Jamey Sharp  <jamey@minilop.net>
+
+	* src/c-client.xsl:
+	Workaround for XSLT processors that can't understand attribute
+	values of the form '{{ "{...}" }}'. (What? That looks completely
+	clear to me. *grin*)
+
 2005-04-01  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_list.c:

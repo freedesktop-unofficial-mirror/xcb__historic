@@ -90,8 +90,9 @@ authorization from the authors.
     <xcb>
       <xsl:copy-of select="@*" />
       <xsl:if test="$ext">
-        <constant type="XCBExtension" name="XCB{$ext}Id"
-                  value='{{ "{@extension-xname}" }}' />
+        <constant type="XCBExtension" name="XCB{$ext}Id">
+          <xsl:attribute name="value">{ "<xsl:value-of select="@extension-xname" />" }</xsl:attribute>
+        </constant>
         <function type="const XCBQueryExtensionRep *" name="XCB{$ext}Init">
           <field type="XCBConnection *" name="c" />
           <l>return XCBGetExtensionData(c, &amp;XCB<!--
