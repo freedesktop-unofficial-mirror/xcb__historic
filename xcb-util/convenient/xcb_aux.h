@@ -2,7 +2,7 @@
 #define __XCB_AUX_H__
 
 
-CARD8          XBAuxGetDepth       (XCBConnection *c,
+CARD8          XCBAuxGetDepth      (XCBConnection *c,
 				    XCBSCREEN     *screen);
 
 XCBSCREEN     *XCBAuxGetScreen     (XCBConnection *c,
