@@ -114,6 +114,23 @@ authorization from the authors.
     <xsl:value-of select="$name" />
   </xsl:template>
 
+  <!-- List of core types, for use in canonical-type-name. -->
+  <xsl:variable name="core-types-rtf">
+    <type name="BOOL" />
+    <type name="BYTE" />
+    <type name="CARD8" />
+    <type name="CARD16" />
+    <type name="CARD32" />
+    <type name="INT8" />
+    <type name="INT16" />
+    <type name="INT32" />
+
+    <type name="char" />
+    <type name="void" />
+    <type name="XID" />
+  </xsl:variable>
+  <xsl:variable name="core-types" select="e:node-set($core-types-rtf)" />
+
   <!--
     Output the canonical name for a type.  This will be
     XCB{extension-containing-Type-if-any}Type, wherever the type is found in
@@ -123,17 +140,44 @@ authorization from the authors.
   -->
   <xsl:template name="canonical-type-name">
     <xsl:param name="type" select="string(@type)" />
-    <xsl:for-each select="(/xcb|document($search-path)/xcb
-                          )/*[((self::struct or self::union
-                                or self::xidtype or self::enum
-                                or self::event or self::eventcopy
-                                or self::error or self::errorcopy)
-                               and @name=$type)
-                              or (self::typedef and @newname=$type)][1]">
-      <xsl:text>XCB</xsl:text>
-      <xsl:value-of select="/xcb/@extension-name" />
-    </xsl:for-each>
-    <xsl:value-of select="$type" />
+
+    <xsl:choose>
+      <xsl:when test="$core-types/type[@name=$type]">
+        <xsl:value-of select="$type" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="type-definitions"
+                      select="(/xcb|document($search-path)/xcb
+                              )/*[((self::struct or self::union
+                                    or self::xidtype or self::enum
+                                    or self::event or self::eventcopy
+                                    or self::error or self::errorcopy)
+                                   and @name=$type)
+                                  or (self::typedef and @newname=$type)]" />
+        <xsl:choose>
+          <xsl:when test="count($type-definitions) = 1">
+            <xsl:for-each select="$type-definitions">
+              <xsl:text>XCB</xsl:text>
+              <xsl:value-of select="concat(/xcb/@extension-name, $type)" />
+            </xsl:for-each>
+          </xsl:when>
+          <xsl:when test="count($type-definitions) > 1">
+            <xsl:message terminate="yes">
+              <xsl:text>Multiple definitions of type "</xsl:text>
+              <xsl:value-of select="$type" />
+              <xsl:text>" found.</xsl:text>
+            </xsl:message>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:message terminate="yes">
+              <xsl:text>No definitions of type "</xsl:text>
+              <xsl:value-of select="$type" />
+              <xsl:text>" found, and it is not a known core type.</xsl:text>
+            </xsl:message>
+          </xsl:otherwise>
+        </xsl:choose> 	
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   
   <!-- Helper template for requests, that outputs the cookie type.  The

@@ -1,3 +1,14 @@
+2004-11-26  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
+	  * Add a list of known core types, and don't search all the
+	    protocol descriptions for types in that list.  This
+	    significantly shortens the processing time.
+	  * Search for all definitions of a non-core type, not just the
+	    first, in order to check for duplicate definitions.
+	  * Add an error message for non-core types with no definitions
+	    found.
+
 2004-11-10  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
