@@ -1,33 +1,17 @@
-XCBGEN(xcb_render,`
-Copyright (C) 2001-2002 Bart Massey, Jamey Sharp, and Andy Howe.
-All Rights Reserved.  See the file COPYING in this directory for 
-licensing information.')
-BEGINEXTENSION(RENDER,Render)
+XCBGEN(xcb_render, `
+Copyright (C) 2002 Carl D. Worth
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.
+')
+BEGINEXTENSION(RENDER, Render)
 
-
-dnl NOT IMPLEMENTED:
-dnl RenderTrapezoids (no reply)
-dnl RenderQueryDither
-dnl RenderTrStrip (no reply)
-dnl RenderTriFan (no reply)
-dnl RenderColorTrapezoids (no reply)
-dnl RenderColorTriangles (no reply)
-dnl RenderTransform (no reply)
-dnl RenderAddGlyphsFromPicture (no reply)
-
-dnl The following are the structures used by render
+HEADERONLY(`
 XIDTYPE(PICTURE)
-
 XIDTYPE(PICTFORMAT)
-
 XIDTYPE(GLYPHSET)
 
-
-dnl FIXME:
-dnl I'm not sure how to handle the "Fixed" type.
-dnl Should I make a structure with a 24 bit part and an 8 bit part?
-dnl Should I just use a CARD32? Should I use something else?
-dnl typedef INT32                   FIXED
+typedef INT32 FIXED;
+typedef CARD32 GLYPH;
 
 COMMENT(PictType modes)
 #define PictTypeIndexed         0
@@ -48,108 +32,210 @@ COMMENT(PictOp modes)
 #define PictOpXor               11
 #define PictOpAdd               12
 #define PictOpSaturate          13
+') /* HEADERONLY */
 
-STRUCT(XCBRenderColor, `
+STRUCT(COLOR, `
     FIELD(CARD16, `red')
     FIELD(CARD16, `green')
     FIELD(CARD16, `blue')
     FIELD(CARD16, `alpha')
 ')
 
-COMMENT(There is no ChannelMask structure. Just use one CARD16
-for the shift, and one CARD16 for the mask where ever there
-is supposed to be a ChannelMask type.)
+/* XXX: CHANNELMASK */
 
-STRUCT(XCBRenderDirectFormat, `
-    FIELD(CARD16, `redShift')
-    FIELD(CARD16, `redMask')
-    FIELD(CARD16, `greenShift')
-    FIELD(CARD16, `greenMask')
-    FIELD(CARD16, `blueShift')
-    FIELD(CARD16, `blueMask')
-    FIELD(CARD16, `alphaShift')
-    FIELD(CARD16, `alphaMask')
+STRUCT(DIRECTFORMAT, `
+    FIELD(CARD16, `red_shift')
+    FIELD(CARD16, `red_mask')
+    FIELD(CARD16, `green_shift')
+    FIELD(CARD16, `green_mask')
+    FIELD(CARD16, `blue_shift')
+    FIELD(CARD16, `blue_mask')
+    FIELD(CARD16, `alpha_shift')
+    FIELD(CARD16, `alpha_mask')
 ')
 
-dnl STRUCT(XCBRenderPictFormInfo, `
-dnl     FIELD(PICTFORMAT, `id')
-dnl     FIELD(CARD8, `type')
-dnl     FIELD(CARD8, `depth')
-dnl     PAD(2)
-dnl    FIELD(XCBRenderDirectFormat, `direct')
-dnl    FIELD(COLORMAP, `colormap')
-dnl ')
+STRUCT(PICTFORMINFO, `
+    FIELD(PICTFORMAT, `id')
+    FIELD(CARD8, `type')
+    FIELD(CARD8, `depth')
+    PAD(2)
+    FIELD(DIRECTFORMAT, `direct')
+    FIELD(COLORMAP, `colormap')
+')
 
-dnl RenderQueryVersion, opcode 0
+/* XXX: INDEXVALUE */
+
+STRUCT(PICTVISUAL, `
+    FIELD(VISUALID, `visual')
+    FIELD(PICTFORMAT, `format')
+')
+
+STRUCT(PICTDEPTH, `
+    FIELD(CARD8, `depth')
+    PAD(1)
+    FIELD(CARD16, `num_visuals')
+    PAD(4)
+    LISTFIELD(PICTVISUAL, `visuals', `R->num_visuals')
+')
+
+STRUCT(PICTSCREEN, `
+    FIELD(CARD32, `num_depths')
+    FIELD(PICTFORMAT, `fallback')
+    LISTFIELD(PICTDEPTH, `depths', `R->num_depths')
+')
+
+
+/* XXX: DITHERINFO */
+
+
+STRUCT(POINTFIXED, `
+    FIELD(FIXED, `x')
+    FIELD(FIXED, `y')
+')
+
+/* XXX: POLYEDGE */
+/* XXX: POLYMODE */
+/* XXX: COLORPOINT */
+/* XXX: SPANFIX */
+/* XXX: COLORSPANFIX */
+/* XXX: QUAD */
+
+STRUCT(TRIANGLE, `
+    FIELD(POINTFIXED, `p1')
+    FIELD(POINTFIXED, `p2')
+    FIELD(POINTFIXED, `p3')
+')
+
+/* XXX: TRAP */
+/* XXX: COLORTRIANGLE */
+/* XXX: COLORTRAP */
+
+
+
+STRUCT(GLYPHINFO, `
+    FIELD(CARD16, `width')
+    FIELD(CARD16, `height')
+    FIELD(CARD16, `x')
+    FIELD(CARD16, `y')
+    FIELD(CARD16, `x_off')
+    FIELD(CARD16, `y_off')
+')
+
+/* XXX: PICTGLYPH */
+
+UNION(GLYPHABLE, `
+    FIELD(GLYPHSET, `glyphset')
+    FIELD(FONTABLE, `fontable')
+')
+
+STRUCT(GLYPHELT8, `
+    FIELD(INT16, `dx')
+    FIELD(INT16, `dy')
+    dnl LISTFIELD(CARD8, `glyphs', `R->glyphs_len')
+')
+
+UNION(GLYPHITEM8, `
+    FIELD(GLYPHELT8, `glyphelt8')
+    FIELD(GLYPHABLE, `glyphable')
+')
+
+STRUCT(GLYPHELT16, `
+    FIELD(INT16, `dx')
+    FIELD(INT16, `dy')
+    dnl LISTFIELD(CARD16, `glyphs', `R->glyphs_len')
+')
+
+UNION(GLYPHITEM16, `
+    FIELD(GLYPHELT16, `glyphelt8')
+    FIELD(GLYPHABLE, `glyphable')
+')
+
+STRUCT(GLYPHELT32, `
+    FIELD(INT16, `dx')
+    FIELD(INT16, `dy')
+    dnl LISTFIELD(CARD32, `glyphs', `R->glyphs_len')
+')
+
+UNION(GLYPHITEM32, `
+    FIELD(GLYPHELT32, `glyphelt8')
+    FIELD(GLYPHABLE, `glyphable')
+')
+
+
+dnl ---------------------------------------------
+dnl function definitions
+dnl ---------------------------------------------
+
 REQUEST(RenderQueryVersion, `
     OPCODE(0)
-    PARAM(CARD32, `majorVersion')
-    PARAM(CARD32, `minorVersion')
+    PARAM(CARD32, `client_major_version')
+    PARAM(CARD32, `client_minor_version')
 ', `
     PAD(1)
-    REPLY(CARD32, `majorVersion')
-    REPLY(CARD32, `minorVersion')
+    REPLY(CARD32, `major_version')
+    REPLY(CARD32, `minor_version')
     PAD(16)
 ')
 
-dnl RenderQueryPictFormats, opcode 1
 REQUEST(RenderQueryPictFormats, `
     OPCODE(1)
 ', `
     PAD(1)
-    REPLY(CARD32, `numFormats')
-    REPLY(CARD32, `numScreens')
-    REPLY(CARD32, `numDepths')
-    REPLY(CARD32, `numVisuals')
+    REPLY(CARD32, `num_formats')
+    REPLY(CARD32, `num_screens')
+    REPLY(CARD32, `num_depths')
+    REPLY(CARD32, `num_visuals')
     PAD(8)
-    dnl I know, this is bad, it should probably be changed.
-    dnl Specifically, the last argument should probably be
-    dnl other than zero
-    dnl ARRAYREPLY(CARD8, `formats', `0') 
-    dnl LISTREPLY(RenderPictFormInfo, `formats')
-    dnl LISTREPLY(RenderPictScreen, `screens')
+    LISTFIELD(PICTFORMINFO, `formats', `R->num_formats')
+    LISTFIELD(PICTSCREEN, `screens', `R->num_screens')
 ')
 
-dnl RenderQueryPictIndexValues, opcode 2
+dnl /* howea: this one needs work */
 dnl REQUEST(RenderQueryPictIndexValues, `
 dnl     OPCODE(2)
-dnl     PARAM(CARD32
+dnl     PARAM(PICTFORMAT, `format')
 dnl ', `
+dnl     PAD(1)
+dnl     LISTFIELD(INDEXVALUE, `values')
 dnl ')
 
-dnl RenderCreatePicture, opcode 4
+dnl /* howea: this one needs work */
+dnl REQUEST(RenderQueryDithers, `
+dnl     OPCODE(3)
+dnl     PARAM(DRAWABLE, `drawable')
+dnl ', `
+dnl     LISTFIELD(DITHERINFO, `dithers')
+dnl ')
+dnl */
+
 VOIDREQUEST(RenderCreatePicture, `
     OPCODE(4)
-    PARAM(PICTURE, `picture')
+    PARAM(PICTURE, `pid')
+    PARAM(DRAWABLE, `drawable')
+    PARAM(PICTFORMAT, `format')
     VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
-
-dnl RenderChangePicture (no reply), opcode 5
 VOIDREQUEST(RenderChangePicture, `
     OPCODE(5)
-    PARAM(PICTURE, `picture')
+    PARAM(PICTURE, `pid')
     VALUEPARAM(CARD32, `value_mask', `value_list')
 ')
 
-
-dnl RenderSetPictureClipRectangles (no reply), opcode 6
-dnl VOIDREQUEST(RenderSetClipRectangles, `
-dnl     OPCODE(6)
-dnl     PARAM(PICTURE, `picture')
-dnl     PARAM(CARD16, `xOrigin')
-dnl    PARAM(CARD16, `yOrigin')
-    
-
-
-dnl RenderFreePicture (no reply), opcode 7
-VOIDREQUEST(RenderFreePicture, `
-    OPCODE(7)
+VOIDREQUEST(RenderSetPictureClipRectangles, `
+    OPCODE(6)
     PARAM(PICTURE, `picture')
+    PARAM(INT16, `clip_x_origin')
+    PARAM(INT16, `clip_y_origin')
+    LOCALPARAM(CARD16, `rects_len')
+    LISTPARAM(RECTANGLE, `rects', `rects_len')
 ')
 
+VOIDREQUEST(RenderFreePicture, `
+    OPCODE(7)
+    PARAM(PICTURE, `pid')
+')
 
-dnl RenderComposite (no reply), opcode 8
 VOIDREQUEST(RenderComposite, `
     OPCODE(8)
     PARAM(CARD8, `op')
@@ -157,28 +243,215 @@ VOIDREQUEST(RenderComposite, `
     PARAM(PICTURE, `src')
     PARAM(PICTURE, `mask')
     PARAM(PICTURE, `dst')
-    PARAM(INT16, `xSrc')
-    PARAM(INT16, `ySrc')
-    PARAM(INT16, `xMask')
-    PARAM(INT16, `yMask')
-    PARAM(INT16, `xDst')
-    PARAM(INT16, `yDst')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `mask_x')
+    PARAM(INT16, `mask_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
     PARAM(CARD16, `width')
     PARAM(CARD16, `height')
 ')
 
+VOIDREQUEST(RenderScale, `
+    OPCODE(9)
+    PARAM(CARD32, `color_scale')
+    PARAM(CARD32, `alpha_scale')
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
+    PARAM(CARD16, `width')
+    PARAM(CARD16, `height')
+')
 
-dnl RenderScale (no reply), opcode 9
-dnl RenderTriangles (no reply), opcode 11
-dnl RenderCreateGlyphSet (no reply), opcode 17
-dnl RenderReferenceGlyphSet (no reply), opcode 18
-dnl RenderFreeGlyphSet (no reply), opcode 19
-dnl RenderAddGlyphs (no reply), opcode 20
-dnl RenderFreeGlyphs (no reply), opcode 22
-dnl RenderCompositeGlyphs8, opcode 23
-dnl RenderCompositeGlyphs16, opcode 24
-dnl RenderCompositeGlyphs32, opcode 25
-dnl RenderFillRectangles, opcode 26 
+/* XXX: Don't see RenderTrapezoids in renderproto.h
+VOIDREQUEST(RenderTrapezoids, `
+    OPCODE(10)
+    PARAM(CARD8, `op')
+    PARAM(CARD8, `op')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(PICTURE, 'dst')
+    LOCALPARAM(CARD16, `traps_len')
+    LISTPARAM(TRAP, `traps', `traps_len')
+')
+*/
+
+VOIDREQUEST(RenderTriangles, `
+    OPCODE(11)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `src')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(PICTURE, `dst')
+    LOCALPARAM(CARD16, `triangles_len')
+    LISTPARAM(TRIANGLE, `triangles', `triangles_len')
+')
+
+/* XXX: Don't see RenderTriStrip in renderproto.h
+VOIDREQUEST(RenderTriStrip, `
+    OPCODE(12)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `src')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(PICTURE, 'dst')
+    LOCALPARAM(CARD16, `points_len')
+    LISTPARAM(POINTFIX, `points', `points_len')
+')
+*/
+
+/* XXX: Don't see RenderTriFan in renderproto.h
+VOIDREQUEST(RenderTriFan, `
+    OPCODE(13)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `src')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(PICTURE, 'dst')
+    LOCALPARAM(CARD16, `points_len')
+    LISTPARAM(POINTFIX, `points', `points_len')
+')
+*/
+
+/* XXX: Don't see RenderColorTrapezoids in renderproto.h
+VOIDREQUEST(RenderColorTrapezoids, `
+    OPCODE(14)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `dst')
+    LOCALPARAM(CARD16, `traps_len')
+    LISTPARAM(COLORTRAP, `traps', `traps_len')
+')
+*/
+
+/* XXX: Don't see RenderColorTriangles in renderproto.h
+VOIDREQUEST(RenderColorTriangles, `
+    OPCODE(15)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `dst')
+    LOCALPARAM(CARD16, `triangles_len')
+    LISTPARAM(COLORTRIANGLE, `triangles', `triangles_len')
+')
+*/
+
+/* XXX: Don't see RenderTransform in renderproto.h
+VOIDREQUEST(RenderTransform, `
+    OPCODE(16)
+    PARAM(CARD8, `op')
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(QUAD, `src_quad')
+    PARAM(QUAD, `dst_quad')
+    PARAM(???, `filter')
+')
+*/
+
+VOIDREQUEST(RenderCreateGlyphSet, `
+    OPCODE(17)
+    PARAM(GLYPHSET, `gsid')
+    PARAM(PICTFORMAT, `format')
+')
+
+VOIDREQUEST(RenderReferenceGlyphSet, `
+    OPCODE(18)
+    PARAM(GLYPHSET, `gsid')
+    PARAM(GLYPHSET, `existing')
+')
+
+VOIDREQUEST(RenderFreeGlyphSet, `
+    OPCODE(19)
+    PARAM(GLYPHSET, `gsid')
+')
+
+VOIDREQUEST(RenderAddGlyphs, `
+    OPCODE(20)
+    PARAM(GLYPHSET, `glyphset')
+    PARAM(CARD32, `nglyphs')
+    LISTPARAM(CARD32, `glyphids', `nglyphs')
+    LISTPARAM(GLYPHINFO, `glyphs', `nglyphs')
+    LOCALPARAM(CARD16, `data_len')
+    LISTPARAM(BYTE, `data', `data_len')
+')
+
+/* XXX: I don't see RenderAddGlyphsFromPIcture in renderproto.h
+VOIDREQUEST(RenderAddGlyphsFromPicture, `
+    OPCODE(21)
+    PARAM(GLYPHSET, `glyphset')
+    PARAM(PICTURE, `src')
+    LISTPARAM(PICTGLYPH, `glyphs')
+')
+*/
+
+VOIDREQUEST(RenderFreeGlyphs, `
+    OPCODE(22)
+    PARAM(GLYPHSET, `glyphset')
+    LOCALPARAM(CARD16, `glyphs_len')
+    LISTPARAM(GLYPH, `glyphs', `glyphs_len')
+')
+
+VOIDREQUEST(RenderCompositeGlyphs8, `
+    OPCODE(23)
+    PARAM(CARD8, `op')
+    PAD(1)
+    PAD(2)
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
+    PARAM(GLYPHABLE, `glyphset')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
+    LOCALPARAM(CARD16, `glyphcmds_len')
+    LISTPARAM(GLYPHITEM8, `glyphcmds', `glyphcmds_len')
+')
+
+VOIDREQUEST(RenderCompositeGlyphs16, `
+    OPCODE(24)
+    PARAM(CARD8, `op')
+    PAD(1)
+    PAD(2)
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
+    PARAM(GLYPHABLE, `glyphset')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
+    LOCALPARAM(CARD16, `glyphcmds_len')
+    LISTPARAM(GLYPHITEM16, `glyphcmds', `glyphcmds_len')
+')
+
+VOIDREQUEST(RenderCompositeGlyphs32, `
+    OPCODE(25)
+    PARAM(CARD8, `op')
+    PAD(1)
+    PAD(2)
+    PARAM(PICTURE, `src')
+    PARAM(PICTURE, `dst')
+    PARAM(PICTFORMAT, `mask_format')
+    PARAM(GLYPHABLE, `glyphset')
+    PARAM(INT16, `src_x')
+    PARAM(INT16, `src_y')
+    PARAM(INT16, `dst_x')
+    PARAM(INT16, `dst_y')
+    LOCALPARAM(CARD16, `glyphcmds_len')
+    LISTPARAM(GLYPHITEM32, `glyphcmds', `glyphcmds_len')
+')
+
+VOIDREQUEST(RenderFillRectangles, `
+    OPCODE(26)
+    PARAM(CARD8, `op')
+    PAD(3)
+    PARAM(PICTURE, `dst')
+    PARAM(COLOR, `color')
+    LOCALPARAM(CARD16, `rects_len')
+    LISTPARAM(RECTANGLE, `rects', `rects_len')
+')
 
 ENDEXTENSION
 ENDXCBGEN
