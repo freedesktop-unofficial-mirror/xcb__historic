@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 #ifdef TEST_QUERY_TREE
 # ifdef SUPERVERBOSE /* this produces a lot of output :) */
     treerep[0] = XCBQueryTreeReply(c, tree[0], 0);
-    formatQueryTreeReply(root->windowId, treerep[0]);
+    formatQueryTreeReply(root->root, treerep[0]);
     free(treerep[0]);
 # endif
 #endif
