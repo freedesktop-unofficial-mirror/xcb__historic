@@ -27,7 +27,6 @@
 
 #ifdef VERBOSE
 #include <stdio.h>
-#include <X11/XCB/xcbint.h>
 #endif
 
 void try_events(XCBConnection *c);
@@ -63,7 +62,7 @@ int main(int argc, char **argv)
 #endif
 
     c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRootsIter(c->setup).data;
+    root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE
@@ -202,11 +201,6 @@ int main(int argc, char **argv)
     formatGetWindowAttributesReply(window, attrrep[0]);
     free(attrrep[0]);
 #endif
-#endif
-
-#ifdef VERBOSE
-    if(_xcb_list_length(c->in.replies) > 0)
-        printf("Unexpected additional replies waiting, dunno why...\n");
 #endif
 
 #ifdef TEST_THREADS
