@@ -238,8 +238,8 @@ FUNCTION(`XCBGenericEvent *XCBWaitEvent', `XCBConnection *c', `
     return ret;
 ')
 _C
-dnl FIXME: should first call something like XCBWait, but without blocking.
 FUNCTION(`XCBGenericEvent *XCBPollEvent', `XCBConnection *c', `
+    XCBFillBufferLocked(c->handle);
     /* XCBListRemoveHead returns 0 on empty list. */
     return (XCBGenericEvent *) XCBListRemoveHead(c->event_data);
 ')

@@ -181,6 +181,15 @@ done:
     return ret;
 }
 
+int XCBFillBufferLocked(XCBIOHandle *h)
+{
+    int ret;
+    pthread_mutex_lock(h->locked);
+    ret = XCBFillBuffer(h);
+    pthread_mutex_unlock(h->locked);
+    return ret;
+}
+
 int XCBFlushLocked(XCBIOHandle *c)
 {
     int ret = 1;

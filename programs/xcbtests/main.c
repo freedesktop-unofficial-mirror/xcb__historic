@@ -122,6 +122,7 @@ int main(int argc, char **argv)
     try_events(c);
 
     XCBMapWindow(c, window);
+    XCBFlush(c);
 
     /* Send off a collection of requests */
 #ifdef TEST_GET_WINDOW_ATTRIBUTES

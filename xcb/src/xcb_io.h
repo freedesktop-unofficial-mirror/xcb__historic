@@ -24,6 +24,7 @@ XCBIOHandle *XCBIOFdOpen(int fd, pthread_mutex_t *locked, int (*reader)(void *, 
 void *XCBAllocOut(XCBIOHandle *c, int size);
 
 int XCBWait(XCBIOHandle *c, const int should_write);
+int XCBFillBufferLocked(XCBIOHandle *h);
 int XCBFlushLocked(XCBIOHandle *c);
 
 int XCBWrite(XCBIOHandle *c, struct iovec *vector, size_t count);
