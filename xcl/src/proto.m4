@@ -83,3 +83,37 @@ XCLREQ(UnmapSubwindows, XCLPARAMS(Window window))
 XCLREQ(UnmapWindow, XCLPARAMS(Window window))
 
 XCLREQ(WarpPointer, XCLPARAMS(Window src_window, Window dst_window, int src_x, int src_y, unsigned int src_width, unsigned int src_height, int dst_x, int dst_y))
+
+XCLREQ(UnloadFont, XCLCALL(CloseFont), XCLPARAMS(Font font))
+
+XCLREQ(ResizeWindow, XCLCALL(ConfigureWindow), XCLPARAMS(Window window, unsigned int width, unsigned int height),
+XCLLOCAL(`CARD16 value_mask = CWWidth | CWHeight'), XCLLOCAL(`CARD32 value_list[] = { width, height }'))
+
+XCLREQ(MoveResizeWindow, XCLCALL(ConfigureWindow), XCLPARAMS(Window window, int x, int y, unsigned int width, unsigned int height),
+XCLLOCAL(`CARD16 value_mask = CWX | CWY | CWWidth | CWHeight'), XCLLOCAL(`CARD32 value_list[] = { x, y, width, height }'))
+
+XCLREQ(MoveWindow, XCLCALL(ConfigureWindow), XCLPARAMS(Window window, int x, int y),
+XCLLOCAL(`CARD16 value_mask = CWX | CWY'), XCLLOCAL(`CARD32 value_list[] = { x, y }'))
+
+XCLREQ(SetWindowBackground, XCLCALL(ChangeWindowAttributes), XCLPARAMS(Window window, unsigned long pixel),
+XCLLOCAL(`CARD16 value_mask = CWBackPixel'), XCLLOCAL(`CARD32 value_list[] = { pixel }'))
+
+XCLREQ(SetWindowBackgroundPixmap, XCLCALL(ChangeWindowAttributes), XCLPARAMS(Window window, Pixmap pixmap),
+XCLLOCAL(`CARD16 value_mask = CWBackPixmap'), XCLLOCAL(`CARD32 value_list[] = { pixmap }'))
+
+XCLREQ(DefineCursor, XCLCALL(ChangeWindowAttributes), XCLPARAMS(Window window, Cursor cursor),
+XCLLOCAL(`CARD16 value_mask = CWCursor'), XCLLOCAL(`CARD32 value_list[] = { cursor }'))
+
+XCLREQ(SelectInput, XCLCALL(ChangeWindowAttributes), XCLPARAMS(Window window, long mask),
+XCLLOCAL(`CARD16 value_mask = XCBCWEventMask'), XCLLOCAL(`CARD32 value_list[] = { mask }'))
+
+XCLREQ(ClearWindow, XCLCALL(ClearArea), XCLPARAMS(Window window),
+XCLLOCAL(`BOOL exposures = 0'), XCLLOCAL(`INT16 x = 0, y = 0'), XCLLOCAL(`CARD16 width = 0, height = 0'))
+
+XCLREQ(FillPolygon, XCLCALL(FillPoly), XCLGC(gc), XCLPARAMS(Drawable drawable, GC gc, XPoint *points, int points_len, int shape, int coordinate_mode))
+
+XCLREQ(DrawLine, XCLCALL(PolySegment), XCLGC(gc), XCLPARAMS(Drawable drawable, GC gc, int x1, int y1, int x2, int y2),
+XCLLOCAL(`CARD16 segments_len = 1'), XCLLOCAL(`SEGMENT segments[] = { { x1, y1, x2, y2 } }'))
+
+XCLREQ(DrawPoint, XCLCALL(PolyPoint), XCLGC(gc), XCLPARAMS(Drawable drawable, GC gc, int x, int y),
+XCLLOCAL(`BYTE coordinate_mode = CoordModeOrigin'), XCLLOCAL(`CARD16 points_len = 1'), XCLLOCAL(`POINT points[] = { { x, y } }'))

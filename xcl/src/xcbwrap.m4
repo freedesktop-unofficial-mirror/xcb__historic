@@ -9,46 +9,44 @@ dnl All Rights Reserved.  See the file COPYING for licensing information.
 divert(-1) dnl kill output until the next diversion
 
 dnl default values
-define(`DEFRETTYPE', `int')
-define(`DEFRETVAL', `1')
-define(`DEFPARAMS', `')
-define(`DEFFLUSHGC', `')
-define(`DEFALLOC', `')
-
-dnl init to defaults
-define(`RETTYPE', DEFRETTYPE)
-define(`RETVAL', DEFRETVAL)
-define(`PARAMS', DEFPARAMS)
-define(`FLUSHGC', DEFFLUSHGC)
-define(`ALLOC', DEFALLOC)
+define(`SETDEFAULTS', `
+	define(`CALL', `')
+	define(`RETTYPE', `int')
+	define(`RETVAL', `1')
+	define(`PARAMS', `')
+	define(`FLUSHGC', `')
+	define(`LOCALS', `')
+')
+SETDEFAULTS()
 
 dnl XCLREQ(name, specs ...)
 define(`XCLREQ', `
 dnl evaluate anything that the caller passed in
 shift($@)
+ifelse(CALL, , `define(`CALL', $1)')
 
 dnl save values into their per-request storage
+define(CALL`CALLERS', `$1, 'defn(CALL`CALLERS'))
 define(`$1'`RETTYPE', RETTYPE)
 define(`$1'`RETVAL', RETVAL)
 define(`$1'`PARAMS', defn(`PARAMS'))
 define(`$1'`FLUSHGC', FLUSHGC)
-define(`$1'`ALLOC', ALLOC)
+define(`$1'`LOCALS', LOCALS)
 
 dnl restore defaults for next round
-define(`RETTYPE', DEFRETTYPE)
-define(`RETVAL', DEFRETVAL)
-define(`PARAMS', DEFPARAMS)
-define(`FLUSHGC', DEFFLUSHGC)
-define(`ALLOC', DEFALLOC)
+SETDEFAULTS()
 ')
 
+define(`XCLCALL', `define(`CALL', `$1')')
 define(`XCLRETTYPE', `define(`RETTYPE', `$1')')
 define(`XCLRETVAL', `define(`RETVAL', `$1')')
 define(`XCLPARAMS', `define(`PARAMS', `,$@')')
 define(`XCLGC', `define(`FLUSHGC', `$1')')
+define(`XCLLOCAL', `define(`LOCALS', defn(`LOCALS')`
+	const `$1';')
+')
 
-define(`XCLALLOC', `define(`ALLOC', `
-	$1 $2 = XCB`'dnl
+define(`XCLALLOC', `XCLLOCAL(`$1 $2 = XCB`'dnl
 ifelse($1, `Window', `WINDOW',
 ifelse($1, `Pixmap', `PIXMAP',
 ifelse($1, `Cursor', `CURSOR',
@@ -56,32 +54,39 @@ ifelse($1, `Font', `FONT',
 ifelse($1, `GContext', `GCONTEXT',
 ifelse($1, `Colormap', `COLORMAP',
 ifelse($1, `Atom', `ATOM')))))))`'dnl
-New(c).xid;')
+New(c).xid')
 define(`RETTYPE', `$1')
 define(`RETVAL', `$2')
 ')
 
-
-dnl Implementations of XCB request description macros
-
-define(`VOIDREQUEST', `divert(0)ifdef(`$1'`RETTYPE', `
+dnl XCLFUNC(Xlib name, XCB name, XCB args)
+define(`XCLFUNC', `divert(0)
 $1RETTYPE X`'$1(Display *dpy`'$1PARAMS)
 {
 	register XCBConnection *c = XCBConnectionOfDisplay(dpy);dnl
-$1ALLOC
+$1LOCALS
 ifelse($1FLUSHGC, , , `dnl
 	LockDisplay(dpy);
 	FlushGC(dpy, $1FLUSHGC);
 ')dnl
-	XCB$1(c`'divert(-1)
-	$2
+	XCB$2(c`'divert(-1)
+	$3
 	divert(0));
 ifelse($1FLUSHGC, , , `dnl
 	UnlockDisplay(dpy);
 ')dnl
 	return $1RETVAL;
 }
-')divert(-1)')
+divert(-1)')
+
+define(`XCLFUNCS', `ifelse($2, , ,
+`XCLFUNC($2, $1) XCLFUNCS(`$1', shift(shift($@)))'
+)')
+
+
+dnl Implementations of XCB request description macros
+
+define(`VOIDREQUEST', `ifdef(`$1'`CALLERS', `XCLFUNCS(`$@', $1CALLERS)')')
 
 define(`PARAM', `divert(0), dnl
 ifelse($1, `WINDOW', `XCLWINDOW($2)',

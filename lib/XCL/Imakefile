@@ -22,42 +22,42 @@ INCLUDES = -I. -I../../exports/include
 
 DEFINES = -Wall
 
-	 SRCS = Backgnd.c ChGC.c ChKeyCon.c ChProp.c ChWindow.c ChkTypWEv.c \
-		ClDisplay.c Clear.c ConfWind.c CrGC.c CrWindow.c Cursor.c \
-		DefCursor.c DisName.c DrLine.c DrPoint.c DrRect.c ErrDes.c \
-		ErrHndlr.c EvToWire.c FetchName.c FillPoly.c FillRct.c \
+	 SRCS = ChGC.c ChKeyCon.c ChProp.c ChkTypWEv.c \
+		ClDisplay.c CrGC.c CrWindow.c Cursor.c \
+		DisName.c DrRect.c ErrDes.c \
+		ErrHndlr.c EvToWire.c FetchName.c FillRct.c \
 		Flush.c Font.c Free.c FreeGC.c GetAtomNm.c GetGeom.c \
 		GetHColor.c GetKCnt.c GetPntMap.c GetProp.c GetSOwner.c \
 		GetWAttrs.c GrKeybd.c GrPointer.c Iconify.c IfEvent.c \
 		ImText.c IntAtom.c KeyBind.c ListExt.c LoadFont.c Macros.c \
-		ModMap.c MoveWin.c NextEvent.c OpenDis.c ParseCol.c \
-		ParseGeom.c Pending.c PmapBgnd.c PutImage.c QuColor.c \
+		ModMap.c NextEvent.c OpenDis.c ParseCol.c \
+		ParseGeom.c Pending.c PutImage.c QuColor.c \
 		QuExt.c QuPntr.c QuTree.c Quarks.c RaiseLowerWin.c \
-		RecolorC.c SelInput.c SendEvent.c SetCRects.c SetFont.c \
+		RecolorC.c SendEvent.c SetCRects.c SetFont.c \
 		SetHints.c SetNrmHint.c SetTxtProp.c SetWMProto.c StName.c \
-		StrKeysym.c Sync.c Text.c TextList.c TrCoords.c UnldFont.c \
+		StrKeysym.c Sync.c Text.c TextList.c TrCoords.c \
 		VisUtil.c WMProps.c proto.c
 
-	 OBJS = Backgnd.o ChGC.o ChKeyCon.o ChProp.o ChWindow.o ChkTypWEv.o \
-		ClDisplay.o Clear.o ConfWind.o CrGC.o CrWindow.o Cursor.o \
-		DefCursor.o DisName.o DrLine.o DrPoint.o DrRect.o ErrDes.o \
-		ErrHndlr.o EvToWire.o FetchName.o FillPoly.o FillRct.o \
+	 OBJS = ChGC.o ChKeyCon.o ChProp.o ChkTypWEv.o \
+		ClDisplay.o CrGC.o CrWindow.o Cursor.o \
+		DisName.o DrRect.o ErrDes.o \
+		ErrHndlr.o EvToWire.o FetchName.o FillRct.o \
 		Flush.o Font.o Free.o FreeGC.o GetAtomNm.o GetGeom.o \
 		GetHColor.o GetKCnt.o GetPntMap.o GetProp.o GetSOwner.o \
 		GetWAttrs.o GrKeybd.o GrPointer.o Iconify.o IfEvent.o \
 		ImText.o IntAtom.o KeyBind.o ListExt.o LoadFont.o Macros.o \
-		ModMap.o MoveWin.o NextEvent.o OpenDis.o ParseCol.o \
-		ParseGeom.o Pending.o PmapBgnd.o PutImage.o QuColor.o \
+		ModMap.o NextEvent.o OpenDis.o ParseCol.o \
+		ParseGeom.o Pending.o PutImage.o QuColor.o \
 		QuExt.o QuPntr.o QuTree.o Quarks.o RaiseLowerWin.o \
-		RecolorC.o SelInput.o SendEvent.o SetCRects.o SetFont.o \
+		RecolorC.o SendEvent.o SetCRects.o SetFont.o \
 		SetHints.o SetNrmHint.o SetTxtProp.o SetWMProto.o StName.o \
-		StrKeysym.o Sync.o Text.o TextList.o TrCoords.o UnldFont.o \
+		StrKeysym.o Sync.o Text.o TextList.o TrCoords.o \
 		VisUtil.o WMProps.o proto.o
 
       HEADERS = xcl.h xclint.h
 
-proto.c: proto.m4
-	m4 xcbwrap.m4 proto.m4 ../XCB/xcb.m4 > proto.c
+proto.c: xcbwrap.m4 proto.m4 ../XCB/xcb.m4
+	m4 $+ > $@
 
 #include <Library.tmpl>
 
