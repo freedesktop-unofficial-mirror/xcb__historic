@@ -1,6 +1,14 @@
 2004-11-09  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
+	* src/xcb_out.c:
+	* src/xcbext.h:
+	More API changes: Put constant request-specific data into a static
+	const structure in each request function.
+
+2004-11-09  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
 	Add support for an <indent> tag in a function body, which indents
 	the <l>s it contains.
 

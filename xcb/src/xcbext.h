@@ -42,7 +42,14 @@ struct XCBExtension {
 
 /* xcb_out.c */
 
-int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct iovec *vector, size_t count);
+typedef struct {
+    size_t count;
+    XCBExtension *ext;
+    CARD8 opcode;
+    BOOL isvoid;
+} XCBProtocolRequest;
+
+int XCBSendRequest(XCBConnection *c, unsigned int *sequence, struct iovec *vector, const XCBProtocolRequest *request);
 
 
 /* xcb_in.c */

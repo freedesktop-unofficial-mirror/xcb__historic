@@ -36,7 +36,7 @@
 
 /* Public interface */
 
-int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct iovec *vector, size_t count)
+int XCBSendRequest(XCBConnection *c, unsigned int *request, struct iovec *vector, const XCBProtocolRequest *req)
 {
     int ret;
     int i;
@@ -47,10 +47,10 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
     assert(c != 0);
     assert(request != 0);
     assert(vector != 0);
-    assert(count > 0);
+    assert(req->count > 0);
 
     /* put together the length field, possibly using BIGREQUESTS */
-    for(i = 0; i < count; ++i)
+    for(i = 0; i < req->count; ++i)
         longlen += XCB_CEIL(vector[i].iov_len) >> 2;
     if(longlen > c->maximum_request_length)
         return 0; /* server can't take this; maybe need BIGREQUESTS? */
@@ -76,9 +76,21 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
         ++i;
     }
 
+    /* set the major opcode, and the minor opcode for extensions */
+    if(req->ext)
+    {
+        const XCBQueryExtensionRep *extension = XCBGetExtensionData(c, req->ext);
+        /* TODO: better error handling here, please! */
+        assert(extension && extension->present);
+        ((CARD8 *) prefix[0].iov_base)[0] = extension->major_opcode;
+        ((CARD8 *) prefix[0].iov_base)[1] = req->opcode;
+    }
+    else
+        ((CARD8 *) prefix[0].iov_base)[0] = req->opcode;
+
     /* get a sequence number and arrange for delivery. */
     pthread_mutex_lock(&c->iolock);
-    if(isvoid && !_xcb_out_force_sequence_wrap(c))
+    if(req->isvoid && !_xcb_out_force_sequence_wrap(c))
     {
         pthread_mutex_unlock(&c->iolock);
         return -1;
@@ -86,12 +98,12 @@ int XCBSendRequest(XCBConnection *c, unsigned int *request, int isvoid, struct i
 
     *request = ++c->out.request;
 
-    if(!isvoid)
+    if(!req->isvoid)
         _xcb_in_expect_reply(c, *request);
 
     ret = _xcb_out_write_block(c, prefix, i);
     if(ret > 0)
-        ret = _xcb_out_write_block(c, vector, count);
+        ret = _xcb_out_write_block(c, vector, req->count);
     pthread_mutex_unlock(&c->iolock);
 
     return ret;

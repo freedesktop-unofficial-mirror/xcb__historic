@@ -158,11 +158,13 @@ authorization from the authors.
       </struct>
     </xsl:if>
     <struct name="XCB{$ext}{@name}Req">
-      <field type="CARD8" name="major_opcode" />
-      <xsl:if test="$ext"><field type="CARD8" name="minor_opcode" /></xsl:if>
+      <field type="CARD8" name="major_opcode" no-assign="true" />
+      <xsl:if test="$ext">
+        <field type="CARD8" name="minor_opcode" no-assign="true" />
+      </xsl:if>
       <xsl:apply-templates select="*[not(self::reply)]" mode="field" />
       <middle>
-        <field type="CARD16" name="length" />
+        <field type="CARD16" name="length" no-assign="true" />
       </middle>
     </struct>
     <function name="XCB{$ext}{@name}">
@@ -173,7 +175,7 @@ authorization from the authors.
       <xsl:apply-templates select="*[not(self::reply)]" mode="param" />
       <do-request ref="XCB{$ext}{@name}Req" opcode="{@opcode}">
         <xsl:if test="reply">
-          <xsl:attribute name="has-reply">yes</xsl:attribute>
+          <xsl:attribute name="has-reply">true</xsl:attribute>
         </xsl:if>
       </do-request>
     </function>
@@ -488,34 +490,39 @@ authorization from the authors.
   <xsl:template match="do-request" mode="pass2">
     <xsl:variable name="struct"
                   select="$pass1/xcb/struct[@name=current()/@ref]" />
+
+    <xsl:variable name="num-parts" select="1+count($struct/list)" />
+
+    <l>static const XCBProtocolRequest xcb_req = {</l>
+    <indent>
+      <l>/* count */ <xsl:value-of select="$num-parts" />,</l>
+      <l>/* ext */ <xsl:choose>
+                     <xsl:when test="$ext">
+                       <xsl:text>&amp;XCB</xsl:text>
+                       <xsl:value-of select="$ext" />
+                       <xsl:text>Id</xsl:text>
+                     </xsl:when>
+                     <xsl:otherwise>0</xsl:otherwise>
+                   </xsl:choose>,</l>
+      <l>/* opcode */ <xsl:value-of select="@opcode" />,</l>
+      <l>/* isvoid */ <xsl:value-of select="1-boolean(@has-reply)" /></l>
+    </indent>
+    <l>};</l>
+
+    <l />
     <l>struct iovec xcb_parts[<!--
     --><xsl:value-of select="1+count($struct/list)" />];</l>
     <l><xsl:value-of select="../@type" /> ret;</l>
     <l><xsl:value-of select="@ref" /> out;</l>
-
-    <xsl:if test="$ext">
-      <l>const XCBQueryExtensionRep *extension = XCB<!--
-      --><xsl:value-of select="$ext" />Init(c);</l>
-      <l>const CARD8 major_opcode = extension->major_opcode;</l>
-      <l>const CARD8 minor_opcode = <xsl:value-of select="@opcode"/>;</l>
-    </xsl:if>
-
-    <xsl:if test="not($ext)">
-      <l>const CARD8 major_opcode = <xsl:value-of select="@opcode" />;</l>
-    </xsl:if>
 
     <xsl:for-each select="$struct/exprfield">
       <l><xsl:call-template name="type-and-name" /> = <!--
       --><xsl:apply-templates mode="output-expression" />;</l>
     </xsl:for-each>
 
-    <xsl:if test="$ext">
-      <l />
-      <l>assert(extension &amp;&amp; extension->present);</l>
-    </xsl:if>
-
     <l />
-    <xsl:for-each select="$struct/*[self::field|self::exprfield]">
+    <xsl:for-each select="$struct//*[(self::field or self::exprfield)
+                                     and not(boolean(@no-assign))]">
       <l>out.<xsl:value-of select="@name" /> = <!--
       --><xsl:value-of select="@name" />;</l>
     </xsl:for-each>
@@ -536,12 +543,7 @@ authorization from the authors.
       </xsl:if>;</l>
     </xsl:for-each>
 
-    <l>XCBSendRequest(c, &amp;ret.sequence, /* isvoid */ <!--
-    --><xsl:choose>
-      <xsl:when test="@has-reply = 'yes'">0</xsl:when>
-      <xsl:otherwise>1</xsl:otherwise>
-    </xsl:choose>, xcb_parts, /* partqty */ <!--
-    --><xsl:value-of select="1+count($struct/list)" />);</l>
+    <l>XCBSendRequest(c, &amp;ret.sequence, xcb_parts, &amp;xcb_req);</l>
     <l>return ret;</l>
   </xsl:template>
 
