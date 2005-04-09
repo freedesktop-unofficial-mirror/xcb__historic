@@ -156,7 +156,7 @@ void _xcb_xid_destroy(XCBConnection *c);
 
 typedef struct _xcb_ext {
     pthread_mutex_t lock;
-    _xcb_list *extensions;
+    _xcb_map *extensions;
 } _xcb_ext;
 
 int _xcb_ext_init(XCBConnection *c);

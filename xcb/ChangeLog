@@ -1,3 +1,10 @@
+2005-04-09  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_ext.c, src/xcbint.h:
+	Assign a display-independent unique integer to each XCBExtension
+	structure. Use a map instead of a list for the extension cache.
+	Key the map on the assigned integer.
+
 2005-04-06  Jeremy Kolb  <jkolb@brandeis.edu>
 
 	* src/c-client.xsl:

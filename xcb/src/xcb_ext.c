@@ -32,51 +32,33 @@
 #include "xcbext.h"
 #include "xcbint.h"
 
-typedef struct XCBExtensionRecord {
-    const char *name;
-    XCBQueryExtensionRep *info;
-} XCBExtensionRecord;
-
-static void free_extension_record(XCBExtensionRecord *data)
-{
-    free(data->info);
-    free(data);
-}
-
-static int match_extension_string(const void *name, const void *data)
-{
-    return (((XCBExtensionRecord *) data)->name == (const char *) name);
-}
-
 /* Public interface */
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
  * from the cache. */
 const XCBQueryExtensionRep *XCBGetExtensionData(XCBConnection *c, XCBExtension *ext)
 {
-    XCBExtensionRecord *data;
-    const char *name = ext->name;
+    static pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+    static int next_global_id;
+
+    XCBQueryExtensionRep *data;
+
+    pthread_mutex_lock(&global_lock);
+    if(!ext->global_id)
+        ext->global_id = ++next_global_id;
+    pthread_mutex_unlock(&global_lock);
 
     pthread_mutex_lock(&c->ext.lock);
-
-    data = _xcb_list_remove(c->ext.extensions, match_extension_string, name);
-
+    data = _xcb_map_get(c->ext.extensions, ext->global_id);
     if(!data)
     {
         /* cache miss: query the server */
-        pthread_mutex_unlock(&c->ext.lock);
-        data = malloc(sizeof(XCBExtensionRecord));
-        if(!data)
-            return 0;
-        data->name = name;
-        data->info = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(name), name), 0);
-        pthread_mutex_lock(&c->ext.lock);
+        data = XCBQueryExtensionReply(c, XCBQueryExtension(c, strlen(ext->name), ext->name), 0);
+        _xcb_map_put(c->ext.extensions, ext->global_id, data);
     }
-
-    _xcb_list_insert(c->ext.extensions, data);
-
     pthread_mutex_unlock(&c->ext.lock);
-    return data->info;
+
+    return data;
 }
 
 void XCBPrefetchExtensionData(XCBConnection *c, XCBExtension *ext)
@@ -91,7 +73,7 @@ int _xcb_ext_init(XCBConnection *c)
     if(pthread_mutex_init(&c->ext.lock, 0))
         return 0;
 
-    c->ext.extensions = _xcb_list_new();
+    c->ext.extensions = _xcb_map_new();
     if(!c->ext.extensions)
         return 0;
 
@@ -101,5 +83,5 @@ int _xcb_ext_init(XCBConnection *c)
 void _xcb_ext_destroy(XCBConnection *c)
 {
     pthread_mutex_destroy(&c->ext.lock);
-    _xcb_list_delete(c->ext.extensions, (XCBListFreeFunc) free_extension_record);
+    _xcb_map_delete(c->ext.extensions, free);
 }
