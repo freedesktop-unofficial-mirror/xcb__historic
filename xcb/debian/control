@@ -2,7 +2,7 @@ Source: libxcb0
 Priority: optional
 Maintainer: XCB Developers <xcb@lists.freedesktop.org>
 Uploaders: Jamey Sharp <sharpone@debian.org>, Josh Triplett <josh@freedesktop.org>
-Build-Depends: x-dev, libxau-dev, xcb-proto, cdbs, debhelper (>= 4.0.0), pkg-config, autoconf, automake1.9 | automaken, libtool, xsltproc, check
+Build-Depends: x-dev, libxau-dev, xcb-proto, cdbs, debhelper (>= 4.1.76), pkg-config, autoconf, automake1.9 | automaken, libtool, xsltproc, check, binutils (>= 2.12.90.0.9)
 Build-Conflicts: automake1.4, automake1.5, automake1.6
 Standards-Version: 3.6.1
 Bugs: mailto:xcb@lists.freedesktop.org
@@ -36,5 +36,21 @@ Description: X C Binding, development files
  .
  This package contains the header and library files needed to build software
  using XCB.
+ .
+ Homepage: http://xcb.freedesktop.org
+
+Package: libxcb0-dbg
+Section: libdevel
+Architecture: any
+Depends: libxcb0 (= ${Source-Version})
+Description: X C Binding, debugging symbols
+ Xlib has been the standard C binding for the X Window System protocol for
+ many years now. It is an excellent piece of work, but there are applications
+ for which it is not ideal. XCB builds on nearly two decades of experience
+ with X specifically and software engineering in general in an effort to
+ replace the aging Xlib code base.
+ .
+ This package contains the debugging symbols associated with libxcb0. gdb will
+ automatically use these symbols when debugging libxcb0.
  .
  Homepage: http://xcb.freedesktop.org
