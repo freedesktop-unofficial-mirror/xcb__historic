@@ -1,15 +1,20 @@
 #include "xcb_reply.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void fontinfo_handler(void *data, XCBConnection *c, XCBGenericRep *rg, XCBGenericError *eg)
 {
 	XCBListFontsWithInfoRep *rep = (XCBListFontsWithInfoRep *) rg;
 	if(rep)
 	{
-		if(rep->name_len)
-			printf("Font %*s (%u remain)\n", rep->name_len, XCBListFontsWithInfoName(rep), (unsigned int) rep->replies_hint);
+		int len = XCBListFontsWithInfoNameLength(rep);
+		if(len)
+			printf("(+%u) Font \"%.*s\"\n",
+					(unsigned int) rep->replies_hint,
+					len, XCBListFontsWithInfoName(rep));
 		else
 			printf("End of font list.\n");
 	}
@@ -17,13 +22,20 @@ void fontinfo_handler(void *data, XCBConnection *c, XCBGenericRep *rg, XCBGeneri
 		printf("Error from ListFontsWithInfo: %d\n", eg->error_code);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+	int count = 10;
+	char *pattern = "*";
 	XCBConnection *c = XCBConnectBasic();
 	ReplyHandlers *h = allocReplyHandlers(c);
 	pthread_t reply_thread;
+
+	if(argc > 1)
+		count = atoi(argv[1]);
+	if(argc > 2)
+		pattern = argv[2];
 	
-	AddReplyHandler(h, XCBListFontsWithInfo(c, 10, 1, "*").sequence, fontinfo_handler, 0);
+	AddReplyHandler(h, XCBListFontsWithInfo(c, count, strlen(pattern), pattern).sequence, fontinfo_handler, 0);
 	reply_thread = StartReplyThread(h);
 
 	XCBSync(c, 0);
