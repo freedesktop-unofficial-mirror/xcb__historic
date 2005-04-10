@@ -114,6 +114,7 @@ CARD32 XCBGetMaximumRequestLength(XCBConnection *c);
 
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error);
+unsigned int XCBGetRequestRead(XCBConnection *c);
 
 
 /* xcb_ext.c */

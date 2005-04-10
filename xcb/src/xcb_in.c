@@ -168,6 +168,17 @@ XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error)
     return ret;
 }
 
+unsigned int XCBGetRequestRead(XCBConnection *c)
+{
+    unsigned int ret;
+    pthread_mutex_lock(&c->iolock);
+    /* FIXME: follow X meets Z architecture changes. */
+    _xcb_in_read(c);
+    ret = c->in.request_read;
+    pthread_mutex_unlock(&c->iolock);
+    return ret;
+}
+
 /* Private interface */
 
 int _xcb_in_init(_xcb_in *in)

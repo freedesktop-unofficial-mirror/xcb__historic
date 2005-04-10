@@ -1,3 +1,11 @@
+2005-04-10  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb.h, src/xcb_in.c:
+	New public function XCBGetRequestRead: returns the last sequence
+	number that the server is known to have processed. This function
+	enables apps to determine whether forcing a cookie is going to
+	block.
+
 2005-04-09  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_ext.c:
