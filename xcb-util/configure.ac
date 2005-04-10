@@ -18,6 +18,7 @@ PKG_CHECK_MODULES(XCB, xcb)
 
 AC_OUTPUT([Makefile
 	convenient/Makefile convenient/xcb-aux.pc
+	reply/Makefile reply/xcb-reply.pc
 	image/Makefile image/xcb-image.pc
 	atom/Makefile atom/xcb-atom.pc
 	event/Makefile event/xcb-event.pc
