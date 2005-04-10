@@ -1,5 +1,12 @@
 2005-04-09  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_ext.c:
+	Implement XCBPrefetchExtensionData. An extension can now be in
+	one of three states in a particular connection's cache: not
+	queried; query cookie available; and query reply available.
+
+2005-04-09  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb_ext.c, src/xcbint.h:
 	Assign a display-independent unique integer to each XCBExtension
 	structure. Use a map instead of a list for the extension cache.
