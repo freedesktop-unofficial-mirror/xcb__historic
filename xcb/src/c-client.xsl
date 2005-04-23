@@ -144,24 +144,40 @@ authorization from the authors.
   <xsl:template name="canonical-type-name">
     <xsl:param name="type" select="string(@type)" />
 
+    <xsl:variable name="is-unqualified" select="not(contains($type, ':'))"/>
+    <xsl:variable name="namespace" select="substring-before($type, ':')" />
+    <xsl:variable name="unqualified-type">
+      <xsl:choose>
+        <xsl:when test="$is-unqualified">
+          <xsl:value-of select="$type" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="substring-after($type, ':')" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
     <xsl:choose>
-      <xsl:when test="$core-types/type[@name=$type]">
+      <xsl:when test="$is-unqualified and $core-types/type[@name=$type]">
         <xsl:value-of select="$type" />
       </xsl:when>
       <xsl:otherwise>
         <xsl:variable name="type-definitions"
                       select="(/xcb|document($search-path)/xcb
-                              )/*[((self::struct or self::union
+                              )[$is-unqualified or @header=$namespace]
+                               /*[((self::struct or self::union
                                     or self::xidtype or self::enum
                                     or self::event or self::eventcopy
                                     or self::error or self::errorcopy)
-                                   and @name=$type)
-                                  or (self::typedef and @newname=$type)]" />
+                                   and @name=$unqualified-type)
+                                  or (self::typedef
+                                      and @newname=$unqualified-type)]" />
         <xsl:choose>
           <xsl:when test="count($type-definitions) = 1">
             <xsl:for-each select="$type-definitions">
               <xsl:text>XCB</xsl:text>
-              <xsl:value-of select="concat(/xcb/@extension-name, $type)" />
+              <xsl:value-of select="concat(/xcb/@extension-name,
+                                           $unqualified-type)" />
             </xsl:for-each>
           </xsl:when>
           <xsl:when test="count($type-definitions) > 1">
@@ -169,13 +185,24 @@ authorization from the authors.
               <xsl:text>Multiple definitions of type "</xsl:text>
               <xsl:value-of select="$type" />
               <xsl:text>" found.</xsl:text>
+              <xsl:if test="$is-unqualified">
+                <xsl:for-each select="$type-definitions">
+                  <xsl:text>
+    </xsl:text>
+                  <xsl:value-of select="concat(/xcb/@header, ':', $type)" />
+                </xsl:for-each>
+              </xsl:if>
             </xsl:message>
           </xsl:when>
           <xsl:otherwise>
             <xsl:message terminate="yes">
               <xsl:text>No definitions of type "</xsl:text>
               <xsl:value-of select="$type" />
-              <xsl:text>" found, and it is not a known core type.</xsl:text>
+              <xsl:text>" found</xsl:text>
+              <xsl:if test="$is-unqualified">
+                <xsl:text>, and it is not a known core type</xsl:text>
+              </xsl:if>
+              <xsl:text>.</xsl:text>
             </xsl:message>
           </xsl:otherwise>
         </xsl:choose> 	
