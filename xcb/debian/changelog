@@ -1,4 +1,4 @@
-libxcb0 (0.9-1pre2v2) unstable; urgency=low
+libxcb0 (0.9-1pre2v3) unstable; urgency=low
 
   * Split into libxcb0 and libxcb0-dev.
     * Change control file for new packages.
