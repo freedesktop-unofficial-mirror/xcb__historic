@@ -1,3 +1,8 @@
+2005-04-23  Jeremy Kolb  <jkolb@brandeis.edu>
+	* src/c-client.xsl:
+	Added list support for typedefs.
+	GLX now compiles.
+
 2005-04-23  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
