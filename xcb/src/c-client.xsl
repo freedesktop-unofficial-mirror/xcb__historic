@@ -355,6 +355,8 @@ authorization from the authors.
         </xsl:call-template>
       </xsl:attribute>
     </typedef>
+    <iterator ref="XCB{$ext}{@newname}" />
+    <iterator-functions ref="XCB{$ext}{@newname}" />
   </xsl:template>
 
   <xsl:template match="enum" mode="pass1">
