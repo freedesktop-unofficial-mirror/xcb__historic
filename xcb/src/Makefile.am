@@ -8,6 +8,7 @@ EXTHEADERS = \
 		extensions/shm.h \
 		extensions/shape.h \
 		extensions/randr.h \
+		extensions/record.h \
 		extensions/render.h \
 		extensions/dpms.h \
 		extensions/sync.h \
@@ -23,6 +24,7 @@ EXTSOURCES = \
 		extensions/shm.c \
 		extensions/shape.c \
 		extensions/randr.c \
+		extensions/record.c \
 		extensions/render.c \
 		extensions/dpms.c \
 		extensions/sync.c \
