@@ -92,28 +92,10 @@ authorization from the authors.
 		</item>
 	</enum>
 
-	<!-- Struct for Render and RenderLarge -->
-	<struct name="RenderCommand">
-		<field type="CARD16" name="length" />
-		<field type="CARD16" name="opcode" />
-		<list  type="CARD32"   name="data">
-			<op op="-">
-				<fieldref>length</fieldref>
-				<value>4</value>
-			</op>
-		</list>
-	</struct>
-
-
 	<!-- Requests -->
-	<!--
-	FIXME:
-	Render doesn't quite work yet, xcb doesn't support
-	lists in requests
-	-->
 	<request name="Render" opcode="1" combine-adjacent="true">
 		<field type="CARD32" name="context_tag" />
-		<list type="RenderCommand" name="render_commands" />
+		<list type="BYTE" name="data" />
 	</request>
 
 	<request name="RenderLarge" opcode="2">
@@ -494,6 +476,23 @@ authorization from the authors.
 		<field type="INT32" name="param" />
 	</request>
 
+	<request name="ReadPixels" opcode="111">
+		<field type="CARD32" name="context_tag" />
+		<field type="INT32" name="x" />
+		<field type="INT32" name="y" />
+		<field type="INT32" name="width" />
+		<field type="INT32" name="height" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<field type="BOOL" name="lsb_first" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="24" />
+			<list type="BYTE" name="pixels" />
+		</reply>
+	</request>
+		
 	<!-- FIXME:
 	All the Get* functions can return different stuff for replies.
 	Hopefully xcb will support multiple reply structures at some point
@@ -735,6 +734,17 @@ authorization from the authors.
 		</reply>
 	</request>
 
+	<request name="GetPolygonStipple" opcode="128">
+		<field type="CARD32" name="context_tag" />
+		<field type="BOOL" name="lsb_first" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="24" />
+			<list type="BYTE" name="stipple" />
+		</reply>
+	</request>
+
+
 	<request name="GetString" opcode="129">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="name" />
@@ -828,6 +838,25 @@ authorization from the authors.
 			</list>
 		</reply>
 	</request>
+
+	<request name="GetTexImage" opcode="135">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="INT32" name="level" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="width" />
+			<field type="INT32" name="height" />
+			<field type="INT32" name="depth" />
+			<pad bytes="4" />
+			<list type="BYTE" name="teximage" />
+		</reply>
+	</request>
+	    
 
 	<request name="GetTexParameterfv" opcode="136">
 		<field type="CARD32" name="context_tag" />
@@ -949,6 +978,21 @@ authorization from the authors.
 		</reply>
 	</request>
 
+	<request name="GetColorTable" opcode="147">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="width" />
+			<pad bytes="12" />
+			<list type="BYTE" name="table" />
+		</reply>
+	</request>
+	
 	<request name="GetColorTableParameterfv" opcode="148">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="target" />
@@ -980,6 +1024,23 @@ authorization from the authors.
 			</list>
 		</reply>
 	</request>
+
+	<request name="GetConvolutionFilter" opcode="150">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="width" />
+			<field type="INT32" name="height" />
+			<pad bytes="8" />
+			<list type="BYTE" name="pixels" />
+		</reply>
+	</request>
+
 
 	<request name="GetConvolutionParameterfv" opcode="151">
 		<field type="CARD32" name="context_tag" />
@@ -1013,6 +1074,39 @@ authorization from the authors.
 		</reply>
 	</request>
 
+	<request name="GetSeparableFilter" opcode="153">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="row_w" />
+			<field type="INT32" name="col_h" />
+			<pad bytes="8" />
+			<list type="BYTE" name="rows_and_cols" />
+		</reply>
+	</request>
+
+	<request name="GetHistogram" opcode="154">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<field type="BOOL" name="reset" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="width" />
+			<pad bytes="12" />
+			<list type="BYTE" name="pixels" />
+		</reply>
+	</request>
+
+
 	<request name="GetHistogramParameterfv" opcode="155">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="target" />
@@ -1042,6 +1136,20 @@ authorization from the authors.
 			<list type="INT32" name="params">
 				<fieldref>n</fieldref>
 			</list>
+		</reply>
+	</request>
+
+	<request name="GetMinimax" opcode="157">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="format" />
+		<field type="CARD32" name="type" />
+		<field type="BOOL" name="swap_bytes" />
+		<field type="BOOL" name="reset" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="24" />
+			<list type="BYTE" name="pixels" />
 		</reply>
 	</request>
 
