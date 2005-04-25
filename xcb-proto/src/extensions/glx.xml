@@ -413,7 +413,7 @@ authorization from the authors.
 		<field type="INT32" name="range" />
 		<reply>
 			<pad bytes="1" />
-			<field type="CARD32" name="return_value" />
+			<field type="CARD32" name="ret_val" />
 		</reply>
 	</request>
 
@@ -467,13 +467,13 @@ authorization from the authors.
 	<request name="PixelStoref" opcode="109">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="pname" />
-		<field type="FLOAT32" name="param" />
+		<field type="FLOAT32" name="datum" />
 	</request>
 
 	<request name="PixelStorei" opcode="110">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="pname" />
-		<field type="INT32" name="param" />
+		<field type="INT32" name="datum" />
 	</request>
 
 	<request name="ReadPixels" opcode="111">
@@ -506,9 +506,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="BOOL" name="param" />
+			<field type="BOOL" name="datum" />
 			<pad bytes="15" />
-			<list type="BOOL" name="params">
+			<list type="BOOL" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -531,9 +531,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT64" name="param" />
+			<field type="FLOAT64" name="datum" />
 			<pad bytes="8" />
-			<list type="FLOAT64" name="params">
+			<list type="FLOAT64" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -554,9 +554,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -569,9 +569,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -585,9 +585,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -601,9 +601,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -617,9 +617,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT64" name="param" />
+			<field type="FLOAT64" name="datum" />
 			<pad bytes="8" />
-			<list type="FLOAT64" name="params">
+			<list type="FLOAT64" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -633,9 +633,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -649,9 +649,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -665,9 +665,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -681,9 +681,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -696,9 +696,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -711,9 +711,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="CARD32" name="param" />
+			<field type="CARD32" name="datum" />
 			<pad bytes="12" />
-			<list type="CARD32" name="params">
+			<list type="CARD32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -726,9 +726,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="CARD16" name="param" />
+			<field type="CARD16" name="datum" />
 			<pad bytes="16" />
-			<list type="CARD16" name="params">
+			<list type="CARD16" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -740,7 +740,7 @@ authorization from the authors.
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
-			<list type="BYTE" name="stipple" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 
@@ -767,9 +767,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -783,9 +783,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -799,9 +799,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT64" name="param" />
+			<field type="FLOAT64" name="datum" />
 			<pad bytes="8" />
-			<list type="FLOAT64" name="params">
+			<list type="FLOAT64" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -815,9 +815,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -831,9 +831,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -853,7 +853,7 @@ authorization from the authors.
 			<field type="INT32" name="height" />
 			<field type="INT32" name="depth" />
 			<pad bytes="4" />
-			<list type="BYTE" name="teximage" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 	    
@@ -866,9 +866,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -882,9 +882,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -899,9 +899,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -916,9 +916,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -941,13 +941,13 @@ authorization from the authors.
 		<field type="CARD32" name="context_tag" />
 		<field type="INT32" name="n" />
 		<list type="CARD32" name="textures">
-			<fieldref>n</fieldref>
+		    <fieldref>n</fieldref>
 		</list>
 		<reply>
 			<pad bytes="1" />
-			<field type="BOOL32" name="return_value" />
+			<field type="BOOL32" name="ret_val" />
 			<pad bytes="20" />
-			<list type="BOOL" name="residences" />
+			<list type="BOOL" name="data" />
 		</reply>
 	</request>
 
@@ -1001,9 +1001,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1017,9 +1017,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1037,7 +1037,7 @@ authorization from the authors.
 			<field type="INT32" name="width" />
 			<field type="INT32" name="height" />
 			<pad bytes="8" />
-			<list type="BYTE" name="pixels" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 
@@ -1050,9 +1050,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1066,9 +1066,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1102,7 +1102,7 @@ authorization from the authors.
 			<pad bytes="8" />
 			<field type="INT32" name="width" />
 			<pad bytes="12" />
-			<list type="BYTE" name="pixels" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 
@@ -1115,9 +1115,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1131,9 +1131,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1149,7 +1149,7 @@ authorization from the authors.
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
-			<list type="BYTE" name="pixels" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 
@@ -1161,9 +1161,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="FLOAT32" name="param" />
+			<field type="FLOAT32" name="datum" />
 			<pad bytes="12" />
-			<list type="FLOAT32" name="params">
+			<list type="FLOAT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
@@ -1177,9 +1177,9 @@ authorization from the authors.
 			<pad bytes="1" />
 			<pad bytes="4" />
 			<field type="CARD32" name="n" />
-			<field type="INT32" name="param" />
+			<field type="INT32" name="datum" />
 			<pad bytes="12" />
-			<list type="INT32" name="params">
+			<list type="INT32" name="data">
 				<fieldref>n</fieldref>
 			</list>
 		</reply>
