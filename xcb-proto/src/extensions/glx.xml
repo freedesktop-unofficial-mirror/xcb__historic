@@ -485,11 +485,11 @@ authorization from the authors.
 		<field type="CARD32" name="format" />
 		<field type="CARD32" name="type" />
 		<field type="BOOL" name="swap_bytes" />
-		<field type="BOOL" name="lsb_first" />
+		<!--<field type="BOOL" name="lsb_first" />-->
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
-			<list type="BYTE" name="pixels" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 		
@@ -965,7 +965,7 @@ authorization from the authors.
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
-			<list type="CARD32" name="textures" />
+			<list type="CARD32" name="data" />
 		</reply>
 	</request>
 
@@ -1139,7 +1139,7 @@ authorization from the authors.
 		</reply>
 	</request>
 
-	<request name="GetMinimax" opcode="157">
+	<request name="GetMinmax" opcode="157">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="target" />
 		<field type="CARD32" name="format" />
@@ -1153,7 +1153,7 @@ authorization from the authors.
 		</reply>
 	</request>
 
-	<request name="GetMinimaxParameterfv" opcode="158">
+	<request name="GetMinmaxParameterfv" opcode="158">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="target" />
 		<field type="CARD32" name="pname" />
@@ -1169,7 +1169,7 @@ authorization from the authors.
 		</reply>
 	</request>
 
-	<request name="GetMinimaxParameteriv" opcode="159">
+	<request name="GetMinmaxParameteriv" opcode="159">
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD32" name="target" />
 		<field type="CARD32" name="pname" />
