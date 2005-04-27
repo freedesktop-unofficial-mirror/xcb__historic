@@ -485,7 +485,7 @@ authorization from the authors.
 		<field type="CARD32" name="format" />
 		<field type="CARD32" name="type" />
 		<field type="BOOL" name="swap_bytes" />
-		<!--<field type="BOOL" name="lsb_first" />-->
+		<field type="BOOL" name="lsb_first" />
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
