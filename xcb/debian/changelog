@@ -1,21 +1,27 @@
 libxcb0 (0.9-1pre2v3) unstable; urgency=low
 
-  * Split into libxcb0 and libxcb0-dev.
-    * Change control file for new packages.
-    * Add install and dirs files for new packages.
-  * Add libxcb0-dbg package.
-  * Update Build-Depends for renaming of fd.o-xau, fd.o-xproto, and
-    fd.o-xcb-proto.
-  * Remove fd.o prefix from package name.
-  * Change Maintainer to xcb@lists.freedesktop.org, move myself to
-    Uploaders, and add Jamey Sharp to Uploaders.  Update copyright.debian
-    accordingly.
-  * Add Bugs field pointing to xcb@lists.freedesktop.org.
-  * Update homepage URL in description and copyright.debian to
-    http://xcb.freedesktop.org, and put it in a Homepage: field in the
-    description.
+  pre2v1:
+    * Split into libxcb0 and libxcb0-dev.
+      * Change control file for new packages.
+      * Add install and dirs files for new packages.
+    * Update Build-Depends for renaming of fd.o-xau, fd.o-xproto, and
+      fd.o-xcb-proto.
+    * Remove fd.o prefix from package name.
+    * Change Maintainer to xcb@lists.freedesktop.org, move myself to
+      Uploaders, and add Jamey Sharp to Uploaders.  Update copyright.debian
+      accordingly.
+    * Add Bugs field pointing to xcb@lists.freedesktop.org.
+    * Update homepage URL in description and copyright.debian to
+      http://xcb.freedesktop.org, and put it in a Homepage: field in the
+      description.
+
+  pre2v2:
+    * Add libxcb0-dbg package.
   
- -- Josh Triplett <josh@freedesktop.org>  Tue,  5 Apr 2005 16:39:08 -0700
+  pre2v3:
+    * New upstream snapshot.
+
+ -- Josh Triplett <josh@freedesktop.org>  Sat,  7 May 2005 02:11:13 -0700
 
 fd.o-xcb (0.9-1) unstable; urgency=low
 
