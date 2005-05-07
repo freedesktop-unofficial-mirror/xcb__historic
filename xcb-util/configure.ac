@@ -22,6 +22,7 @@ AC_OUTPUT([Makefile
 	image/Makefile image/xcb-image.pc
 	atom/Makefile atom/xcb-atom.pc
 	event/Makefile event/xcb-event.pc
+	keysyms/Makefile keysyms/xcb-keysyms.pc
 	property/Makefile property/xcb-property.pc
 	icccm/Makefile icccm/xcb-icccm.pc
 	wm/Makefile wm/xcb-wm.pc
