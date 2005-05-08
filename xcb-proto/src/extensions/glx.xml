@@ -31,6 +31,10 @@ authorization from the authors.
 
 	<xidtype name="PIXMAP" />
 	<xidtype name="CONTEXT" />
+	<xidtype name="PBUFFER" />
+	<xidtype name="WINDOW" />
+	<xidtype name="FBCONFIG" />
+	<xidtype name="DRAWABLE" />
 
 	<typedef oldname="float" newname="FLOAT32" />
 	<typedef oldname="double" newname="FLOAT64" />
@@ -62,7 +66,7 @@ authorization from the authors.
 	<event name="PbufferClobber" number="0">
 		<field type="CARD16" name="event_type" />
 		<field type="CARD16" name="draw_type" />
-		<field type="DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="drawable" />
 		<field type="CARD32" name="b_mask" />
 		<field type="CARD16" name="aux_buffer" />
 		<field type="CARD16" name="x" />
@@ -102,8 +106,10 @@ authorization from the authors.
 		<field type="CARD32" name="context_tag" />
 		<field type="CARD16" name="request_num" />
 		<field type="CARD16" name="request_total" />
-		<field type="CARD32" name="i" />
-		<list type="BYTE" name="data" />
+		<field type="CARD32" name="data_len" />
+		<list type="BYTE" name="data">
+		    <fieldref>data_len</fieldref>
+		</list>
 	</request>
 
 	<request name="CreateContext" opcode="3">
@@ -120,7 +126,7 @@ authorization from the authors.
 	</request>
 
 	<request name="MakeCurrent" opcode="5">
-		<field type="DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="drawable" />
 		<field type="glx:CONTEXT" name="context" />
 		<field type="CARD32" name="old_context_tag" />
 		<reply>
@@ -192,7 +198,7 @@ authorization from the authors.
 
 	<request name="SwapBuffers" opcode="11">
 		<field type="CARD32" name="context_tag" />
-		<field type="DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="drawable" />
 	</request>
 
 	<request name="UseXFont" opcode="12">
@@ -224,16 +230,23 @@ authorization from the authors.
 	</request>
 
 	<request name="DestroyGLXPixmap" opcode="15">
-		<field type="CARD32" name="glxpixmap" />
+		<field type="glx:PIXMAP" name="glxpixmap" />
 	</request>
 
+	<!--
+	Context tag is not in the proto, should be part of the list of bytes
+	but every VendorPrivate and VendorPrivateWithReply request uses them
+	so it is safe to put them in.  That's how Mesa does it.
+	-->
 	<request name="VendorPrivate" opcode="16">
 		<field type="CARD32" name="vendor_code" />
+		<field type="CARD32" name="context_tag" />
 		<list type="BYTE" name="data" />
 	</request>
 
 	<request name="VendorPrivateWithReply" opcode="17">
 		<field type="CARD32" name="vendor_code" />
+		<field type="CARD32" name="context_tag" />
 		<list type="BYTE" name="data" />
 		<reply>
 			<pad bytes="1" />
@@ -330,20 +343,20 @@ authorization from the authors.
 
 	<request name="MakeContextCurrent" opcode="26">
 		<field type="CARD32" name="old_context_tag" />
-		<field type="DRAWABLE" name="drawable" />
-		<field type="DRAWABLE" name="read_drawable" />
-		<field type="CARD32" name="context" />
+		<field type="glx:DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="read_drawable" />
+		<field type="glx:CONTEXT" name="context" />
 		<reply>
 			<pad bytes="1" />
-			<field type="CARD32" name="contextTag" />
+			<field type="CARD32" name="context_tag" />
 			<pad byes="20" />
 		</reply>
 	</request>
 
 	<request name="CreatePbuffer" opcode="27">
 		<field type="SCREEN" name="screen" />
-		<field type="CARD32" name="fbconfig" />
-		<field type="CARD32" name="pbuffer" />
+		<field type="FBCONFIG" name="fbconfig" />
+		<field type="PBUFFER" name="pbuffer" />
 		<field type="CARD32" name="num_attribs" />
 		<valueparam value-mask-type="CARD32"
 			value-mask-name="value_mask"
@@ -351,11 +364,11 @@ authorization from the authors.
 	</request>
 
 	<request name="DestroyPbuffer" opcode="28">
-		<field type="CARD32" name="pbuffer" />
+		<field type="PBUFFER" name="pbuffer" />
 	</request>
 
 	<request name="GetDrawableAttributes" opcode="29">
-		<field type="DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="drawable" />
 		<reply>
 			<pad bytes="1" />
 			<field type="CARD32" name="num_attribs" />
@@ -367,7 +380,7 @@ authorization from the authors.
 	</request>
 
 	<request name="ChangeDrawableAttributes" opcode="30">
-		<field type="DRAWABLE" name="drawable" />
+		<field type="glx:DRAWABLE" name="drawable" />
 		<field type="CARD32" name="num_attribs" />
 		<valueparam value-mask-type="CARD32"
 			value-mask-name="value_mask"
@@ -376,8 +389,9 @@ authorization from the authors.
 
 	<request name="CreateWindow" opcode="31">
 		<field type="SCREEN" name="screen" />
-		<field type="CARD32" name="fbconfig" />
-		<field type="WINDOW" name="window" />
+		<field type="FBCONFIG" name="fbconfig" />
+		<field type="xcb_types:WINDOW" name="window" />
+		<field type="glx:WINDOW" name="glx_window" />
 		<field type="CARD32" name="num_attribs" />
 		<valueparam value-mask-type="CARD32"
 			value-mask-name="value_mask"
@@ -385,8 +399,7 @@ authorization from the authors.
 	</request>
 
 	<request name="DeleteWindow" opcode="32">
-		<field type="CARD32" name="glxwindow" />
-		<!-- not sure if a glxwindow is the same as an XCB WINDOW -->
+		<field type="glx:WINDOW" name="glxwindow" />
 	</request>
 
 	<!-- Requests for GL Non-rendering Commands -->
@@ -520,7 +533,7 @@ authorization from the authors.
 		<reply>
 			<pad bytes="1" />
 			<pad bytes="24" />
-			<list type="FLOAT64" name="equation" />
+			<list type="FLOAT64" name="data" />
 		</reply>
 	</request>
 
@@ -643,7 +656,7 @@ authorization from the authors.
 
 	<request name="GetMapiv" opcode="122">
 		<field type="CARD32" name="context_tag" />
-		<field type="CARD32" name="targer" />
+		<field type="CARD32" name="target" />
 		<field type="CARD32" name="query" />
 		<reply>
 			<pad bytes="1" />
@@ -989,7 +1002,7 @@ authorization from the authors.
 			<pad bytes="8" />
 			<field type="INT32" name="width" />
 			<pad bytes="12" />
-			<list type="BYTE" name="table" />
+			<list type="BYTE" name="data" />
 		</reply>
 	</request>
 	
