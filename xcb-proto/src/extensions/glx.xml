@@ -402,8 +402,7 @@ authorization from the authors.
 		<field type="glx:WINDOW" name="glxwindow" />
 	</request>
 
-	<!-- Requests for GL Non-rendering Commands -->
-	<!-- Single Op -->
+	<!-- Requests for GL Non-rendering Commands (single ops) -->
 
 	<request name="NewList" opcode="101">
 		<field type="CARD32" name="context_tag" />
@@ -1198,5 +1197,241 @@ authorization from the authors.
 		</reply>
 	</request>
 
+	<!--
+	GLX Extensions
+	
+	* XXX: So far only define non-rendering commands.
+	* Only those extensions that affect the GLX wire protocol are listed.
+	-->
 
+	<!--
+	GL_ARB_texture_compression
+	http://oss.sgi.com/projects/ogl-sample/registry/ARB/texture_compression.txt
+	-->
+	<request name="GetCompressedTexImageARB" opcode="160">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="INT32" name="level" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="8" />
+			<field type="INT32" name="size" />
+			<pad bytes="12" />
+			<list type="BYTE" name="data" />
+		</reply>
+	</request>
+
+	
+	<!--
+	GL_ARB_occlusion_query
+	http://oss.sgi.com/projects/ogl-sample/registry/ARB/occlusion_query.txt
+	-->
+
+	<request name="DeleteQueriesARB" opcode="161">
+		<field type="CARD32" name="context_tag" />
+		<field type="INT32" name="n" />
+		<list type="CARD32" name="ids">
+			<fieldref>n</fieldref>
+		</list>
+	</request>
+
+	<request name="GenQueriesARB" opcode="162">
+		<field type="CARD32" name="context_tag" />
+		<field type="INT32" name="n" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="24" />
+			<list type="CARD32" name="data" />
+		</reply>
+	</request>
+	
+	<request name="IsQueryARB" opcode="163">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="id" />
+		<reply>
+			<pad bytes="1" />
+			<field type="BOOL32" name="ret_val" />
+		</reply>
+	</request>
+	
+	<request name="GetQueryivARB" opcode="164">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="target" />
+		<field type="CARD32" name="pname" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="4" />
+			<field type="CARD32" name="n" />
+			<field type="INT32" name="datum" />
+			<pad bytes="12" />
+			<list type="INT32" name="data">
+				<fieldref>n</fieldref>
+			</list>
+		</reply>
+	</request>
+	
+	<request name="GetQueryObjectivARB" opcode="165">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="id" />
+		<field type="CARD32" name="pname" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="4" />
+			<field type="CARD32" name="n" />
+			<field type="INT32" name="datum" />
+			<pad bytes="12" />
+			<list type="INT32" name="data">
+				<fieldref>n</fieldref>
+			</list>
+		</reply>
+	</request>
+	
+	<request name="GetQueryObjectuivARB" opcode="166">
+		<field type="CARD32" name="context_tag" />
+		<field type="CARD32" name="id" />
+		<field type="CARD32" name="pname" />
+		<reply>
+			<pad bytes="1" />
+			<pad bytes="4" />
+			<field type="CARD32" name="n" />
+			<field type="CARD32" name="datum" />
+			<pad bytes="12" />
+			<list type="CARD32" name="data">
+				<fieldref>n</fieldref>
+			</list>
+		</reply>
+	</request>
+	
+	<!--
+	GL_ARB_vertex_program
+	http://oss.sgi.com/projects/ogl-sample/registry/ARB/vertex_program.txt
+	XXX: Need to write up vops
+	--> 
+
+	<!--
+	GL_ARB_fragment_program
+	http://oss.sgi.com/projects/ogl-sample/registry/ARB/fragment_program.txt
+	XXX: Need to write up vops
+	-->
+	
+	<!--
+	GL_SGIS_texture_filter4
+	http://oss.sgi.com/projects/ogl-sample/registry/SGIS/texture_filter4.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_EXT_histogram
+	http://oss.sgi.com/projects/ogl-sample/registry/EXT/histogram.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_EXT_convolution
+	http://oss.sgi.com/projects/ogl-sample/registry/EXT/convolution.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGI_color_table
+	http://oss.sgi.com/projects/ogl-sample/registry/SGI/color_table.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_EXT_texture_object
+	http://oss.sgi.com/projects/ogl-sample/registry/EXT/texture_object.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGIS_detail_texture
+	http://oss.sgi.com/projects/ogl-sample/registry/SGIS/detail_texture.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGIS_sharpen_texture
+	http://oss.sgi.com/projects/ogl-sample/registry/SGIS/sharpen_texture.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGI_make_current_read
+	http://oss.sgi.com/projects/ogl-sample/registry/SGI/make_current_read.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_EXT_import_context
+	http://oss.sgi.com/projects/ogl-sample/registry/EXT/import_context.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGIX_fbconfig
+	http://oss.sgi.com/projects/ogl-sample/registry/SGIX/fbconfig.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_SGIX_pbuffer
+	http://oss.sgi.com/projects/ogl-sample/registry/SGIX/pbuffer.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_EXT_pixel_transform
+	http://oss.sgi.com/projects/ogl-sample/registry/EXT/pixel_transform.txt
+	XXX: Need to write up vops
+	-->
+	
+	<!--
+	GL_NV_register_combiners
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/register_combiners.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_fence
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/fence.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_register_combiners2
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/register_combiners2.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_vertex_program
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/vertex_program.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_vertex_program
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/vertex_program.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_occlusion_query
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/occlusion_query.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_NV_fragment_program
+	http://oss.sgi.com/projects/ogl-sample/registry/NV/fragment_program.txt
+	XXX: Need to write up vops
+	-->
+
+	<!--
+	GL_OES_single_precision
+	http://oss.sgi.com/projects/ogl-sample/registry/OES/single_precision.txt
+	XXX: Need to write up vops
+	-->
+	
 </xcb>
