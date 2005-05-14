@@ -158,11 +158,73 @@ void SetWMSizeHints(XCBConnection *c, XCBWINDOW window, XCBATOM property, SizeHi
 	XCBChangeProperty(c, PropModeReplace, window, property, WM_SIZE_HINTS, 32, sizeof(*hints) / 4, hints);
 }
 
+int
+GetWMSizeHints (XCBConnection *c, XCBWINDOW window, XCBATOM property,
+		SizeHints *hints, long *supplied)
+{
+  XCBGetPropertyCookie cookie;
+  XCBGetPropertyRep *rep;
+  
+  cookie = XCBGetProperty (c, 0, window,
+			   property, WM_SIZE_HINTS,
+			   0L, 18); /* NumPropSizeElements = 18 (ICCCM version 1) */
+  rep = XCBGetPropertyReply (c, cookie, 0);
+  if (!rep)
+    return 0;
+
+  if ((rep->type.xid == WM_SIZE_HINTS.xid) &&
+      ((rep->format == 8)  ||
+       (rep->format == 16) ||
+       (rep->format == 32)) &&
+      (rep->value_len >= 15)) /* OldNumPropSizeElements = 15 (pre-ICCCM) */
+{
+      long length;
+      unsigned char *prop;
+      
+      length = XCBGetPropertyValueLength (rep);
+      /* FIXME: in GetProp.c of xcl, one move the memory.
+       * Should we do that too ? */
+      prop = (unsigned char *) XCBGetPropertyValue (rep);
+      prop[length] = '\0';
+      hints = (SizeHints *)strdup (prop);
+
+      *supplied = (USPosition | USSize   | 
+		   PPosition  | PSize    |
+		   PMinSize   | PMaxSize |
+		   PResizeInc | PAspect);
+      if (rep->value_len >= 18) /* NumPropSizeElements = 18 (ICCCM version 1) */
+	*supplied |= (PBaseSize | PWinGravity);
+      else
+	{
+	  hints->base_width  = 0;
+	  hints->base_height = 0;
+	  hints->win_gravity = 0;
+	}
+      hints->flags &= (*supplied);	/* get rid of unwanted bits */
+
+      free (rep);
+
+      return 1;
+    }
+  
+  hints = NULL;
+  free (rep);
+  
+  return 0;
+}
+
 /* WM_NORMAL_HINTS */
 
 void SetWMNormalHints(XCBConnection *c, XCBWINDOW window, SizeHints *hints)
 {
 	SetWMSizeHints(c, window, WM_NORMAL_HINTS, hints);
+}
+
+int
+GetWMNormalHints (XCBConnection *c, XCBWINDOW window,
+		  SizeHints *hints, long *supplied)
+{
+  return (GetWMSizeHints (c, window, WM_NORMAL_HINTS, hints, supplied));
 }
 
 /* WM_PROTOCOLS */

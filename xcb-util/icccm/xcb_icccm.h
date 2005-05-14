@@ -31,10 +31,14 @@ void SizeHintsSetBaseSize(SizeHints *hints, INT32 base_width, INT32 base_height)
 void SizeHintsSetWinGravity(SizeHints *hints, CARD8 win_gravity);
 
 void SetWMSizeHints(XCBConnection *c, XCBWINDOW window, XCBATOM property, SizeHints *hints);
+int GetWMSizeHints (XCBConnection *c, XCBWINDOW window, XCBATOM property,
+		    SizeHints *hints, long *supplied);
 
 /* WM_NORMAL_HINTS */
 
 void SetWMNormalHints(XCBConnection *c, XCBWINDOW window, SizeHints *hints);
+int  GetWMNormalHints (XCBConnection *c, XCBWINDOW window,
+		       SizeHints *hints, long *supplied);
 
 /* WM_PROTOCOLS */
 
