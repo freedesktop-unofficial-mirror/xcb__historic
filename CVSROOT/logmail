@@ -26,13 +26,13 @@ done
 
 cat > "$LOGBUFFER";
 
-cat "$LOGBUFFER"  | \
-$CVSROOT/CVSROOT/log_accum.pl -s -r -S xcb-commit -F cvs.freedesktop.org \
- -m ${MAIL_LOGACCUM} -f ${LOGFILE} "${COMMANDLINE_LOGACCUM}" -d 2>&1 \
- | tee -a ${LOGLIST}
+#cat "$LOGBUFFER"  | \
+#$CVSROOT/CVSROOT/log_accum.pl -s -r -S xcb-commit -F cvs.freedesktop.org \
+# -m ${MAIL_LOGACCUM} -f ${LOGFILE} "${COMMANDLINE_LOGACCUM}" -d 2>&1 \
+# | tee -a ${LOGLIST}
 
-#cat "$LOGBUFFER" | \
-#$CVSROOT/CVSROOT/syncmail -u "${COMMANDLINE_SYNCMAIL}" ${MAIL_SYNCMAIL}
+cat "$LOGBUFFER" | \
+$CVSROOT/CVSROOT/syncmail -u "${COMMANDLINE_SYNCMAIL}" ${MAIL_SYNCMAIL}
 
 rm -f "$LOGBUFFER";
 
