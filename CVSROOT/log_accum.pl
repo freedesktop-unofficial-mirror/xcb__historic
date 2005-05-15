@@ -406,6 +406,7 @@ while (@ARGV) {
     } elsif ($arg eq '-h') {
 	$longmailheader = 1;
     } else {
+        $donefiles = 0;
 	($donefiles) && die("Too many arguments!  Check usage.\n");
 	$donefiles = 1;
 	@files = split(/ /, $arg);
