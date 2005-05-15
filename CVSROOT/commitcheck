@@ -1,0 +1,22 @@
+#! /bin/sh
+#
+# $Id$
+# Acls disabled for now.
+ 
+
+#if $CVSROOT/CVSROOT/cvs_acls.pl ${1+"$@"}; then
+#	: # OK
+#else
+#	echo "Access control checks failed" 1>&2
+#	exit 1
+#fi
+
+if $CVSROOT/CVSROOT/commit_prep.pl -r ${1+"$@"}; then
+	: #OK
+else
+	echo "commit_prep.pl failed" 1>&2
+fi
+	
+# All checks are OK
+
+exit 0
