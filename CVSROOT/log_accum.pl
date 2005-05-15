@@ -6,7 +6,7 @@
 # a directory.  This script will group the lists of files by log
 # message, and mail a single consolidated log message at the end of
 # the commit.
-# 
+#
 # This file assumes a pre-commit checking program that leaves the
 # names of the first and last commit directories in a temporary file.
 #
@@ -276,6 +276,8 @@ sub change_summary {
 	}
 
 	&append_line($out, sprintf("%-13s%-12s%s", $rev, $delta, $rcsfile));
+        &append_line($out, sprintf("%s%s", "http://cvs.freedesktop.org/xcb/",
+                                   $rcsfile));
     }
 }
 
@@ -284,9 +286,10 @@ sub build_header {
     local($header);
     delete $ENV{'TZ'};
     local($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-    $header = sprintf("CVSROOT:\t%s\nModule name:\t%s\nChanges by:\t%s@%s\t%02d/%02d/%02d %02d:%02d:%02d",
+    $header = sprintf("CVSROOT:\t%s\nModule name:\t%s\nRepository:\t%s\nChanges by:\t%s@%s\t%02d/%02d/%02d %02d:%02d:%02d",
 		      $cvsroot,
 		      $modulename,
+		      $dir,
 		      $login, $hostdomain,
 		      $year%100, $mon+1, $mday,
 		      $hour, $min, $sec);
@@ -300,15 +303,9 @@ sub mail_notification {
 
     $tagprinted = 0;
     $fromrealname = (getpwuid($<))[6];
-    $fromrealname =~ s/[,<>]/ /g;
-    if ($sender ne "") {
-	$fromline = "$fromrealname <$sender\@$fromdomain>";
-    } else {
-	$fromline = "$fromrealname <$login\@$fromdomain>";
-    }
     open(MAIL, "| $MAILER $mailto");
+    print MAIL "From: $fromrealname <$login\@$fromdomain>\n";
     print MAIL "To: " . $mailto . "\n";
-    print MAIL "From: " . $fromline . "\n";
     if ($replyto ne '') {
 	print MAIL "Reply-To: " . $replyto . "\n";
     }
@@ -353,19 +350,15 @@ $debug = 0;
 $id = getpgrp();		# note, you *must* use a shell which does setpgrp()
 $state = $STATE_NONE;
 $login = getlogin || (getpwuid($<))[0] || "nobody";
-# this works good enough for us on Linux systems (i.e. fd.o) -daniels
-chop($hostname = `hostname --fqdn`);
-#chop($domainname = `domainname`);
-#if ($domainname !~ '^\..*') {
-#    $domainname = '.' . $domainname;
-#}
+chop($hostname = `hostname`);
+chop($domainname = `domainname`);
+if ($domainname !~ '^\..*') {
+    $domainname = '.' . $domainname;
+}
 
-#$hostdomain = $hostname . $domainname;
+$hostdomain = $hostname . $domainname;
 
-#$fromdomain = "$hostdomain";
-$fromdomain = "$hostname";
-$hostdomain = "$hostname";
-$sender = "";
+$fromdomain = "$hostdomain";
 
 chop($osname = `uname -sr`);
 chop($cvsvers = `cvs -v | fgrep client`);
@@ -401,8 +394,6 @@ while (@ARGV) {
 	$modulename = shift @ARGV;
     } elsif ($arg eq '-F') {
 	$fromdomain = shift @ARGV;
-    } elsif ($arg eq '-S') {
-	$sender = shift @ARGV;
     } elsif ($arg eq '-s') {
 	$do_status = 0;
     } elsif ($arg eq '-w') {
