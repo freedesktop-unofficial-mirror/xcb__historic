@@ -29,7 +29,6 @@ authorization from the authors.
 <xcb header="record" extension-xname="RECORD" extension-name="Record">
 
     <!-- Types -->
-
     <xidtype name="CONTEXT" />
     
     <struct name="Range8">
