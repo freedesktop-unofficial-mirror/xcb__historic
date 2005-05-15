@@ -253,6 +253,8 @@ XCBImageGet (XCBConnection *conn,
   if (!image)
     free (data);
 
+  free (rep);
+
   return image;
 }
 
