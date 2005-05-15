@@ -30,7 +30,7 @@ authorization from the authors.
 
     <!-- Types -->
 
-    <xidtype name="Context" />
+    <xidtype name="CONTEXT" />
     
     <struct name="Range8">
 	<field type="CARD8" name="first" />
@@ -98,7 +98,7 @@ authorization from the authors.
     </request>
 
     <request name="CreateContext" opcode="1">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
 	<field type="ElementHeader" name="element_header" />
 	<pad bytes="3" />
 	<field type="CARD32" name="num_client_specs" />
@@ -112,7 +112,7 @@ authorization from the authors.
     </request>
 
     <request name="RegisterClients" opcode="2">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
 	<field type="ElementHeader" name="element_header" />
 	<pad bytes="3" />
 	<field type="CARD32" name="num_client_specs" />
@@ -126,7 +126,7 @@ authorization from the authors.
     </request>
 
     <request name="UnregisterClients" opcode="3">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
 	<field type="CARD32" name="num_client_specs" />
 	<list type="ClientSpec" name="client_specs">
 	    <fieldref>num_client_specs</fieldref>
@@ -134,7 +134,7 @@ authorization from the authors.
     </request>
 
     <request name="GetContext" opcode="4">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
 	<reply>
 	    <field type="BOOL" name="enabled" />
 	    <field type="ElementHeader" name="element_header" />
@@ -148,7 +148,7 @@ authorization from the authors.
     </request>
 
     <request name="EnableContext" opcode="5">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
 	<reply>
 	    <field type="CARD8" name="category" />
 	    <field type="ElementHeader" name="element_header" />
@@ -163,11 +163,11 @@ authorization from the authors.
     </request>
 	    
     <request name="DisableContext" opcode="6">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
     </request>
 
     <request name="FreeContext" opcode="7">
-	<field type="Context" name="context" />
+	<field type="record:CONTEXT" name="context" />
     </request>
     
 </xcb>
