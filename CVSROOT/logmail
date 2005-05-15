@@ -27,7 +27,7 @@ done
 cat > "$LOGBUFFER";
 
 cat "$LOGBUFFER"  | \
-$CVSROOT/CVSROOT/log_accum.pl -s -r -S xcb-commit -F cvs.freedesktop.org \
+$CVSROOT/CVSROOT/log_accum.pl -d -s -r -S xcb-commit -F cvs.freedesktop.org \
  -m ${MAIL_LOGACCUM} -f ${LOGFILE} "${COMMANDLINE_LOGACCUM}" 2>&1 \
  | tee -a ${LOGLIST}
 
