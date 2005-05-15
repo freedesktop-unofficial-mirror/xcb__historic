@@ -1,0 +1,41 @@
+#! /bin/sh
+
+LOGFILE=$CVSROOT/CVSROOT/logs/commitlog
+LOGLIST=$CVSROOT/CVSROOT/logs/loglist
+
+COMMANDLINE_LOGACCUM=
+
+MAIL_LOGACCUM=${1};
+shift;
+MAIL_SYNCMAIL=${1};
+shift;
+
+COMMANDLINE_SYNCMAIL=$@
+
+LOGBUFFER="`tempfile --prefix=logmail`"
+
+echo "$USER committing on "`date` >> ${LOGLIST}
+echo "<LogMsg>" >> ${LOGFILE}
+
+for i in `echo $@`; do
+	test -z "$i" && break;
+	test -z "${COMMANDLINE_LOGACCUM}" \
+	    && { COMMANDLINE_LOGACCUM=`echo $i | cut -f 1 -d,`; continue; };
+	COMMANDLINE_LOGACCUM="${COMMANDLINE_LOGACCUM} `echo $i | cut -f 1 -d,`";
+done
+
+cat > "$LOGBUFFER";
+
+cat "$LOGBUFFER"  | \
+$CVSROOT/CVSROOT/log_accum.pl -s -r -S xcb-commit -F cvs.freedesktop.org \
+ -m ${MAIL_LOGACCUM} -f ${LOGFILE} "${COMMANDLINE_LOGACCUM}" 2>&1 \
+ | tee -a ${LOGLIST}
+
+#cat "$LOGBUFFER" | \
+#$CVSROOT/CVSROOT/syncmail -u "${COMMANDLINE_SYNCMAIL}" ${MAIL_SYNCMAIL}
+
+rm -f "$LOGBUFFER";
+
+echo "Done" >> ${LOGLIST}
+echo "</LogMsg>" >> ${LOGFILE}
+
