@@ -1,6 +1,15 @@
 2005-05-17  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
+	Make header files self-sufficient, by including xcb.h in the
+	generated headers rather than the generated sources.
+
+	* src/xcbext.h:
+	Make xcbext.h self-sufficient, by including xcb.h.
+
+2005-05-17  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
 	Line up function parameters with opening parenthesis.
 
 2005-05-17  Jamey Sharp  <jamey@minilop.net>

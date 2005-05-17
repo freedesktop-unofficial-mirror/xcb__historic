@@ -1,4 +1,4 @@
-libxcb0 (0.9-1pre2v3) unstable; urgency=low
+libxcb0 (0.9-1pre2v4) unstable; urgency=low
 
   pre2v1:
     * Split into libxcb0 and libxcb0-dev.
@@ -21,7 +21,10 @@ libxcb0 (0.9-1pre2v3) unstable; urgency=low
   pre2v3:
     * New upstream snapshot.
 
- -- Josh Triplett <josh@freedesktop.org>  Sat,  7 May 2005 02:11:13 -0700
+  pre2v4:
+    * New upstream snapshot.
+
+ -- Josh Triplett <josh@freedesktop.org>  Tue, 17 May 2005 12:53:53 -0700
 
 fd.o-xcb (0.9-1) unstable; urgency=low
 

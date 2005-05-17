@@ -28,6 +28,8 @@
 #ifndef __XCBEXT_H
 #define __XCBEXT_H
 
+#include "xcb.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

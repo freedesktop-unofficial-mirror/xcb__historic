@@ -861,6 +861,7 @@ authorization from the authors.
 #ifndef </xsl:text><xsl:value-of select="$guard" /><xsl:text>
 #define </xsl:text><xsl:value-of select="$guard" /><xsl:text>
 </xsl:text>
+#include "xcb.h"
 <xsl:for-each select="$root/xcb/import">
 <xsl:text>#include "</xsl:text><xsl:value-of select="." /><xsl:text>.h"
 </xsl:text>
@@ -871,7 +872,6 @@ authorization from the authors.
 
 <xsl:if test="$c"><xsl:text>
 #include &lt;assert.h&gt;
-#include "xcb.h"
 #include "xcbext.h"
 #include "</xsl:text><xsl:value-of select="$header" /><xsl:text>.h"
 
