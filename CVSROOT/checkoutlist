@@ -11,7 +11,7 @@
 #	[<whitespace>]<filename><whitespace><error message><end-of-line>
 #
 # comment lines begin with '#'
-commitcheck
+#commitcheck
 commit_prep.pl
 commitinfo
 log_accum.pl
