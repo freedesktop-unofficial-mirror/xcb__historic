@@ -990,10 +990,20 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="function" mode="output">
-    <xsl:call-template name="type-and-name" />
-    <xsl:text>(</xsl:text>
+    <xsl:variable name="decl-open">
+      <xsl:call-template name="type-and-name" />
+      <xsl:text>(</xsl:text>
+    </xsl:variable>
+    <xsl:value-of select="$decl-open" />
     <xsl:call-template name="list">
-      <xsl:with-param name="separator" select="',&#10;&#9;'" />
+      <xsl:with-param name="separator">
+        <xsl:text>,
+</xsl:text>
+        <xsl:call-template name="repeat">
+          <xsl:with-param name="str" select="' '" />
+          <xsl:with-param name="count" select="string-length($decl-open)" />
+        </xsl:call-template>
+      </xsl:with-param>
       <xsl:with-param name="items">
         <xsl:for-each select="field">
           <item><xsl:apply-templates select="." /></item>
@@ -1125,5 +1135,19 @@ authorization from the authors.
         <xsl:value-of select="$separator" />
       </xsl:if>
     </xsl:for-each>
+  </xsl:template>
+
+  <!-- Repeat a string (space by default) a given number of times. -->
+  <xsl:template name="repeat">
+    <xsl:param name="str" select="' '" />
+    <xsl:param name="count" />
+
+    <xsl:if test="$count &gt; 0">
+      <xsl:value-of select="$str" />
+      <xsl:call-template name="repeat">
+        <xsl:with-param name="str"   select="$str" />
+        <xsl:with-param name="count" select="$count - 1" />
+      </xsl:call-template>
+    </xsl:if>
   </xsl:template>
 </xsl:transform>

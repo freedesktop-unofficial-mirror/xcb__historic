@@ -1,3 +1,8 @@
+2005-05-17  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
+	Line up function parameters with opening parenthesis.
+
 2005-05-17  Jamey Sharp  <jamey@minilop.net>
 
 	* src/c-client.xsl:
