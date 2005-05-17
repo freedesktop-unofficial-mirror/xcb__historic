@@ -274,7 +274,7 @@ def blast_mail(subject, people, filestodiff, contextlines, fromhost, replyto):
                     'user' : user,
                     }
             print '''\
-From: %(name)s <xcb-commit@pdx.freedesktop.org>
+From: %(name)s <xcb-commit@lists.freedesktop.org>
 To: %(people)s''' % vars
             if replyto:
                 print 'Reply-To: %s' % replyto
