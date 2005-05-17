@@ -1,11 +1,11 @@
 #! /usr/bin/python
 
-# Copyright (c) 2002, Barry Warsaw, Fred Drake, and contributors
+# Copyright (c) 2002, 2003, 2004 Barry Warsaw, Fred Drake, and contributors
 # All rights reserved.
 # See the accompanying LICENSE file for details.
 
-# NOTE: Until SourceForge installs a modern version of Python on the cvs
-# servers, this script MUST be compatible with Python 1.5.2.
+# NOTE: SourceForge currently runs Python 2.2.3, so we need to remain
+# compatible with the Python 2.2 line.
 
 """Complicated notification for CVS checkins.
 
@@ -88,37 +88,19 @@ The rest of the command line arguments are:
     email-addrs
         At least one email address.
 """
-__version__ = '1.2'
+__version__ = '$Revision$'
 
 import os
-import sys
 import re
-import time
-import string
-import getopt
-import smtplib
 import pwd
+import sys
+import time
+import getopt
 import socket
-
-try:
-    from socket import getfqdn
-except ImportError:
-    def getfqdn():
-        # Python 1.5.2 :(
-        hostname = socket.gethostname()
-        byaddr = socket.gethostbyaddr(socket.gethostbyname(hostname))
-        aliases = byaddr[1]
-        aliases.insert(0, byaddr[0])
-        aliases.insert(0, hostname)
-        for fqdn in aliases:
-            if '.' in fqdn:
-                break
-        else:
-            fqdn = 'localhost.localdomain'
-        return fqdn
-
+import smtplib
 
 from cStringIO import StringIO
+from email.Utils import formataddr
 
 # Which SMTP server to do we connect to?
 MAILHOST = 'localhost'
@@ -129,9 +111,6 @@ DIFF_HEAD_LINES = 20
 DIFF_TAIL_LINES = 20
 DIFF_TRUNCATE_IF_LARGER = 1000
 
-EMPTYSTRING = ''
-SPACE = ' '
-DOT = '.'
 COMMASPACE = ', '
 
 PROGRAM = sys.argv[0]
@@ -140,8 +119,7 @@ BINARY_EXPLANATION_LINES = [
     "(This appears to be a binary file; contents omitted.)\n"
     ]
 
-REVCRE = re.compile("^(NONE|[0-9.]+)$")
-NOVERSION = "Couldn't generate diff; no version number found in filespec: %s"
+NOVERSION = "Couldn't generate diff; no version number found for file: %s"
 BACKSLASH = "Couldn't generate diff: backslash in filespec's filename: %s"
 
 
@@ -154,43 +132,28 @@ def usage(code, msg=''):
 
 
 
-def calculate_diff(filespec, contextlines):
-    spec = string.split(filespec, ',')
-    if len(spec) < 3:
-        # Too few parts; command line probable used a replacement
-        # other than "%{sVv}"; don't fail, but don't produce a diff
-        # since we can't be sure what diff to generate.
-        return ''
-    # This allows filenames that contain commas:
-    file = string.join(spec[:-2], ",")
-    oldrev = spec[-2]
-    newrev = spec[-1]
+def calculate_diff(entry, contextlines):
+    file = entry.name
+    oldrev = entry.revision
+    newrev = entry.new_revision
 
     # Make sure we can find a CVS version number
-    if not REVCRE.match(oldrev):
-        return NOVERSION % filespec
-    if not REVCRE.match(newrev):
-        return NOVERSION % filespec
+    if oldrev is None and newrev is None:
+        return NOVERSION % file
 
-    if string.find(file, '\\') <> -1:
-        # I'm sorry, a file name that contains a backslash is just too much.
-        # XXX if someone wants to figure out how to escape the backslashes in
-        # a safe way to allow filenames containing backslashes, this is the
-        # place to do it.  --Zooko 2002-03-17
-        return BACKSLASH % filespec
-
-    if string.find(file, "'") <> -1:
+    if file.find("'") <> -1:
         # Those crazy users put single-quotes in their file names!  Now we
         # have to escape everything that is meaningful inside double-quotes.
-        filestr = string.replace(file, '`', '\`')
-        filestr = string.replace(filestr, '"', '\"')
-        filestr = string.replace(filestr, '$', '\$')
+        filestr = filestr.replace('\\', '\\\\')
+        filestr = filestr.replace('`', '\`')
+        filestr = filestr.replace('"', '\"')
+        filestr = filestr.replace('$', '\$')
         # and quote it with double-quotes.
         filestr = '"' + filestr + '"'
     else:
         # quote it with single-quotes.
         filestr = "'" + file + "'"
-    if oldrev == 'NONE':
+    if oldrev is None:
         # File is being added.
         try:
             if os.path.exists(file):
@@ -203,8 +166,8 @@ def calculate_diff(filespec, contextlines):
             # Is this a binary file?  Let's look at the first few
             # lines to figure it out:
             for line in lines[:5]:
-                for c in string.rstrip(line):
-                    if c in string.whitespace:
+                for c in line.rstrip():
+                    if c.isspace():
                         continue
                     if c < ' ' or c > chr(127):
                         lines = BINARY_EXPLANATION_LINES[:]
@@ -213,7 +176,7 @@ def calculate_diff(filespec, contextlines):
         except IOError, e:
             lines = ['***** Error reading new file: ',
                      str(e), '\n***** file: ', file, ' cwd: ', os.getcwd()]
-    elif newrev == 'NONE':
+    elif newrev is None:
         lines = ['--- %s DELETED ---\n' % file]
     else:
         # File has been changed.
@@ -227,16 +190,14 @@ def calculate_diff(filespec, contextlines):
                   % (difftype, oldrev, newrev, filestr)
         fp = os.popen(diffcmd)
         lines = fp.readlines()
-        sts = fp.close()
         # ignore the error code, it always seems to be 1 :(
-##        if sts:
-##            return 'Error code %d occurred during diff\n' % (sts >> 8)
+        fp.close()
     if len(lines) > DIFF_TRUNCATE_IF_LARGER:
         removedlines = len(lines) - DIFF_HEAD_LINES - DIFF_TAIL_LINES
         del lines[DIFF_HEAD_LINES:-DIFF_TAIL_LINES]
         lines.insert(DIFF_HEAD_LINES,
                      '[...%d lines suppressed...]\n' % removedlines)
-    return string.join(lines, '')
+    return ''.join(lines)
 
 
 
@@ -244,13 +205,13 @@ rfc822_specials_re = re.compile(r'[\(\)\<\>\@\,\;\:\\\"\.\[\]]')
 
 def quotename(name):
     if name and rfc822_specials_re.search(name):
-        return '"%s"' % string.replace(name, '"', '\\"')
+        return '"%s"' % name.replace('"', '\\"')
     else:
         return name
 
 
 
-def blast_mail(subject, people, filestodiff, contextlines, fromhost, replyto):
+def blast_mail(subject, people, entries, contextlines, fromhost, replyto):
     # cannot wait for child process or that will cause parent to retain cvs
     # lock for too long.  Urg!
     if not os.fork():
@@ -260,43 +221,137 @@ def blast_mail(subject, people, filestodiff, contextlines, fromhost, replyto):
         # Create the smtp connection to the localhost
         conn = smtplib.SMTP()
         conn.connect(MAILHOST, MAILPORT)
-        user = pwd.getpwuid(os.getuid())[0]
-        name = string.split(pwd.getpwuid(os.getuid())[4], ',')[0]
-        domain = fromhost or getfqdn()
+        pwinfo = pwd.getpwuid(os.getuid())
+        user = pwinfo[0]
+        name = pwinfo[4]
+        domain = fromhost or socket.getfqdn()
         address = '%s@%s' % (user, domain)
         s = StringIO()
-        sys.stdout = s
-        try:
-            vars = {'name'    : quotename(name),
-                    'people'  : string.join(people, COMMASPACE),
-                    'subject' : subject,
-                    'version' : __version__,
-                    'user' : user,
-                    }
-            print '''\
-From: %(name)s <xcb-commit@lists.freedesktop.org>
+        datestamp = time.strftime('%a, %d %b %Y %H:%M:%S +0000',
+                                  time.gmtime(time.time()))
+        vars = {'author'  : formataddr((name, address)),
+                'people'  : COMMASPACE.join(people),
+                'subject' : subject,
+                'version' : __version__,
+                'date'    : datestamp,
+                }
+        print >> s, '''\
+From: %(author)s
 To: %(people)s''' % vars
-            if replyto:
-                print 'Reply-To: %s' % replyto
-            print '''\
+        if replyto:
+            print >> s, 'Reply-To: %s' % replyto
+        print >>s, '''\
 Subject: %(subject)s
+Date: %(date)s
 X-Mailer: Python syncmail %(version)s <http://sf.net/projects/cvs-syncmail>
-
-Committed by: %(user)s
 ''' % vars
-            s.write(sys.stdin.read())
-            # append the diffs if available
-            print
-            for file in filestodiff:
-                print calculate_diff(file, contextlines)
-        finally:
-            sys.stdout = sys.__stdout__
+        s.write(sys.stdin.read())
+        # append the diffs if available
+        print >> s
+        for entry in entries:
+            print >> s, calculate_diff(entry, contextlines)
         resp = conn.sendmail(address, people, s.getvalue())
         conn.close()
         os._exit(0)
 
 
 
+class CVSEntry:
+    def __init__(self, name, revision, timestamp, conflict, options, tagdate):
+        self.name = name
+        self.revision = revision
+        self.timestamp = timestamp
+        self.conflict = conflict
+        self.options = options
+        self.tagdate = tagdate
+
+def get_entry(prefix, mapping, line, filename):
+    line = line.strip()
+    parts = line.split("/")
+    _, name, revision, timestamp, options, tagdate = parts
+    key = namekey(prefix, name)
+    try:
+        entry = mapping[key]
+    except KeyError:
+        if revision == "0":
+            revision = None
+        if timestamp.find("+") != -1:
+            timestamp, conflict = tuple(timestamp.split("+"))
+        else:
+            conflict = None
+        entry = CVSEntry(key, revision, timestamp, conflict,
+                         options, tagdate)
+        mapping[key] = entry
+    return entry
+
+def namekey(prefix, name):
+    if prefix:
+        return os.path.join(prefix, name)
+    else:
+        return name
+
+def load_change_info(prefix=None):
+    if prefix is not None:
+        entries_fn = os.path.join(prefix, "CVS", "Entries")
+    else:
+        entries_fn = os.path.join("CVS", "Entries")
+    entries_log_fn = entries_fn + ".Log"
+    mapping = {}
+    f = open(entries_fn)
+    while 1:
+        line = f.readline()
+        if not line:
+            break
+##        if line.strip() == "D":
+##            continue
+        # we could recurse down subdirs, except the Entries.Log files
+        # we need haven't been written to the subdirs yet, so it
+        # doesn't do us any good
+##        if line[0] == "D":
+##            name = line.split("/")[1]
+##            dirname = namekey(prefix, name)
+##            if os.path.isdir(dirname):
+##                m = load_change_info(dirname)
+##                mapping.update(m)
+        if line[0] == "/":
+            # normal file
+            get_entry(prefix, mapping, line, entries_fn)
+        # else: bogus Entries line
+    f.close()
+    if os.path.isfile(entries_log_fn):
+        f = open(entries_log_fn)
+        while 1:
+            line = f.readline()
+            if not line:
+                break
+            if line[1:2] != ' ':
+                # really old version of CVS
+                break
+            entry = get_entry(prefix, mapping, line[2:], entries_log_fn)
+            parts = line.split("/")[1:]
+            if line[0] == "A":
+                # adding a file
+                entry.new_revision = parts[1]
+            elif line[0] == "R":
+                # removing a file
+                entry.new_revision = None
+        f.close()
+    for entry in mapping.values():
+        if not hasattr(entry, "new_revision"):
+            print 'confused about file', entry.name, '-- ignoring'
+            del mapping[entry.name]
+    return mapping
+
+def load_branch_name():
+    tag_fn = os.path.join("CVS", "Tag")
+    if os.path.isfile(tag_fn):
+        f = open(tag_fn)
+        line = f.readline().strip()
+        f.close()
+        if line[:1] == "T":
+            return line[1:]
+    return None
+
 # scan args for options
 def main():
     # XXX Should really move all the options to an object, just to
@@ -347,7 +402,7 @@ def main():
     if not args:
         usage(1, 'No CVS module specified')
     subject = subject_prefix + args[0]
-    specs = string.split(args[0])
+    specs = args[0].split()
     del args[0]
 
     # The remaining args should be the email addresses
@@ -357,26 +412,18 @@ def main():
     # Now do the mail command
     people = args
 
-    if verbose:
-        print 'Mailing %s...' % string.join(people, COMMASPACE)
-
     if specs[-3:] == ['-', 'Imported', 'sources']:
-        del specs[-3:]
-    elif specs[-3:] == ['-', 'New', 'directory']:
-        del specs[-3:]
-    elif len(specs) > 2:
-        L = specs[:2]
-        for s in specs[2:]:
-            prev = L[-1]
-            if string.count(prev, ',') < 2:
-                L[-1] = "%s %s" % (prev, s)
-            else:
-                L.append(s)
-        specs = L
+        print 'Not sending email for imported sources.'
+        return
+
+    branch = load_branch_name()
+    changes = load_change_info()
 
     if verbose:
+        print 'Mailing %s...' % COMMASPACE.join(people)
         print 'Generating notification message...'
-    blast_mail(subject, people, specs[1:], contextlines, fromhost, replyto)
+    blast_mail(subject, people, changes.values(),
+               contextlines, fromhost, replyto)
     if verbose:
         print 'Generating notification message... done.'
 
