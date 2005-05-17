@@ -993,7 +993,7 @@ authorization from the authors.
     <xsl:call-template name="type-and-name" />
     <xsl:text>(</xsl:text>
     <xsl:call-template name="list">
-      <xsl:with-param name="separator" select="', '" />
+      <xsl:with-param name="separator" select="',&#10;&#9;'" />
       <xsl:with-param name="items">
         <xsl:for-each select="field">
           <item><xsl:apply-templates select="." /></item>
@@ -1003,6 +1003,7 @@ authorization from the authors.
     <xsl:text>)</xsl:text>
 
     <xsl:if test="$h"><xsl:text>;
+
 </xsl:text></xsl:if>
 
     <xsl:if test="$c">
