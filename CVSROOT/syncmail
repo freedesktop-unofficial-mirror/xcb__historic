@@ -223,13 +223,13 @@ def blast_mail(subject, people, entries, contextlines, fromhost, replyto):
         conn.connect(MAILHOST, MAILPORT)
         pwinfo = pwd.getpwuid(os.getuid())
         user = pwinfo[0]
-        name = pwinfo[4]
+        name = pwinfo[4].split(",")[0]
         domain = fromhost or socket.getfqdn()
         address = '%s@%s' % (user, domain)
         s = StringIO()
         datestamp = time.strftime('%a, %d %b %Y %H:%M:%S +0000',
                                   time.gmtime(time.time()))
-        vars = {'author'  : formataddr((user, address)),
+        vars = {'author'  : formataddr((name, address)),
                 'people'  : COMMASPACE.join(people),
                 'subject' : subject,
                 'version' : __version__,
