@@ -25,4 +25,4 @@
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
 ALL /usr/local/bin/ciabot_cvs.pl %p %{s} %n $USER xcb
-DEFAULT $CVSROOT/CVSROOT/syncmail -u %l{sVv} xcb-commit@lists.freedesktop.org
+DEFAULT $CVSROOT/CVSROOT/syncmail -u %1{sVv} xcb-commit@lists.freedesktop.org
