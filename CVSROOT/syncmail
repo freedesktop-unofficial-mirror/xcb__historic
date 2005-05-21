@@ -229,14 +229,14 @@ def blast_mail(subject, people, entries, contextlines, fromhost, replyto):
         s = StringIO()
         datestamp = time.strftime('%a, %d %b %Y %H:%M:%S +0000',
                                   time.gmtime(time.time()))
-        vars = {'author'  : formataddr((name, address)),
+        vars = {'author'  : quotename(name), #formataddr((name, address)),
                 'people'  : COMMASPACE.join(people),
                 'subject' : subject,
                 'version' : __version__,
                 'date'    : datestamp,
                 }
         print >> s, '''\
-From: %(author)s
+From: %(author)s <xcb-commit@lists.freedesktop.org>
 To: %(people)s''' % vars
         if replyto:
             print >> s, 'Reply-To: %s' % replyto
