@@ -945,13 +945,20 @@ authorization from the authors.
 
   <xsl:template match="struct" mode="output">
     <xsl:if test="$h">
+      <xsl:variable name="type-lengths">
+        <xsl:call-template name="type-lengths">
+          <xsl:with-param name="items" select="field/@type" />
+        </xsl:call-template>
+      </xsl:variable>
       <xsl:text>typedef </xsl:text>
       <xsl:if test="not(@kind)">struct</xsl:if><xsl:value-of select="@kind" />
       <xsl:text> {
 </xsl:text>
       <xsl:for-each select="exprfield|field|list[@fixed]|pad">
         <xsl:text>    </xsl:text>
-        <xsl:apply-templates select="." />
+        <xsl:apply-templates select=".">
+          <xsl:with-param name="type-lengths" select="$type-lengths" />
+        </xsl:apply-templates>
         <xsl:text>;
 </xsl:text>
       </xsl:for-each>
@@ -990,23 +997,31 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="function" mode="output">
-    <xsl:variable name="decl-open">
-      <xsl:call-template name="type-and-name" />
-      <xsl:text>(</xsl:text>
+    <xsl:variable name="decl-open" select="concat(@name, ' (')" />
+    <xsl:variable name="type-lengths">
+      <xsl:call-template name="type-lengths">
+        <xsl:with-param name="items" select="field/@type" />
+      </xsl:call-template>
     </xsl:variable>
+    <xsl:value-of select="@type" />
+    <xsl:text>
+</xsl:text>
     <xsl:value-of select="$decl-open" />
     <xsl:call-template name="list">
       <xsl:with-param name="separator">
         <xsl:text>,
 </xsl:text>
         <xsl:call-template name="repeat">
-          <xsl:with-param name="str" select="' '" />
           <xsl:with-param name="count" select="string-length($decl-open)" />
         </xsl:call-template>
       </xsl:with-param>
       <xsl:with-param name="items">
         <xsl:for-each select="field">
-          <item><xsl:apply-templates select="." /></item>
+          <item>
+            <xsl:apply-templates select=".">
+              <xsl:with-param name="type-lengths" select="$type-lengths" />
+            </xsl:apply-templates>
+          </item>
         </xsl:for-each>
       </xsl:with-param>
     </xsl:call-template>
@@ -1092,21 +1107,35 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="field|exprfield">
-    <xsl:call-template name="type-and-name" />
+    <xsl:param name="type-lengths" select="0" />
+    <xsl:call-template name="type-and-name">
+      <xsl:with-param name="type-lengths" select="$type-lengths" />
+    </xsl:call-template>
   </xsl:template>
 
   <xsl:template match="list[@fixed]">
-    <xsl:call-template name="type-and-name" />
+    <xsl:param name="type-lengths" select="0" />
+    <xsl:call-template name="type-and-name">
+      <xsl:with-param name="type-lengths" select="$type-lengths" />
+    </xsl:call-template>
     <xsl:text>[</xsl:text>
     <xsl:apply-templates mode="output-expression" />
     <xsl:text>]</xsl:text>
   </xsl:template>
 
   <xsl:template match="pad">
+    <xsl:param name="type-lengths" select="0" />
+
     <xsl:variable name="padnum"><xsl:number /></xsl:variable>
 
-    <xsl:text>CARD8 pad</xsl:text>
-    <xsl:value-of select="$padnum - 1" />
+    <xsl:call-template name="type-and-name">
+      <xsl:with-param name="type" select="'CARD8'" />
+      <xsl:with-param name="name">
+        <xsl:text>pad</xsl:text>
+        <xsl:value-of select="$padnum - 1" />
+      </xsl:with-param>
+      <xsl:with-param name="type-lengths" select="$type-lengths" />
+    </xsl:call-template>
     <xsl:if test="@bytes > 1">
       <xsl:text>[</xsl:text>
       <xsl:value-of select="@bytes" />
@@ -1114,14 +1143,59 @@ authorization from the authors.
     </xsl:if>
   </xsl:template>
 
-  <!-- Output the type and name attributes of the context node, with the
-       appropriate spacing. -->
+  <!-- Output the given type and name (defaulting to the corresponding
+       attributes of the context node), with the appropriate spacing.  The
+       type must consist of a base type (which may contain spaces), then
+       optionally a single space and a suffix of one or more '*' characters.
+       If the type-lengths parameter is provided, use it to line up the base
+       types and suffixs of the type declarations. -->
   <xsl:template name="type-and-name">
-    <xsl:value-of select="@type" />
-    <xsl:if test="not(substring(@type, string-length(@type)) = '*')">
-      <xsl:text> </xsl:text>
+    <xsl:param name="type" select="@type" />
+    <xsl:param name="name" select="@name" />
+    <xsl:param name="type-lengths">
+      <max-type-length>0</max-type-length>
+      <max-suffix-length>0</max-suffix-length>
+    </xsl:param>
+    
+    <xsl:variable name="type-lengths-ns" select="e:node-set($type-lengths)" />
+    <xsl:variable name="min-type-length"
+                  select="$type-lengths-ns/max-type-length" />
+    <xsl:variable name="min-suffix-length"
+                  select="$type-lengths-ns/max-suffix-length" />
+
+    <xsl:variable name="base-type">
+      <xsl:choose>
+        <xsl:when test="contains($type, ' *')">
+          <xsl:value-of select="substring-before($type, ' *')" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$type" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="suffix">
+      <xsl:if test="contains($type, ' *')">
+        <xsl:text>*</xsl:text>
+        <xsl:value-of select="substring-after($type, ' *')" />
+      </xsl:if>
+    </xsl:variable>
+
+    <xsl:value-of select="$base-type" />
+    <xsl:if test="string-length($base-type) &lt; $min-type-length">
+      <xsl:call-template name="repeat">
+        <xsl:with-param name="count" select="$min-type-length
+                                             - string-length($base-type)" />
+      </xsl:call-template>
     </xsl:if>
-    <xsl:value-of select="@name" />
+    <xsl:text> </xsl:text>
+    <xsl:if test="string-length($suffix) &lt; $min-suffix-length">
+      <xsl:call-template name="repeat">
+        <xsl:with-param name="count" select="$min-suffix-length
+                                             - string-length($suffix)" />
+      </xsl:call-template>
+    </xsl:if>
+    <xsl:value-of select="$suffix" />
+    <xsl:value-of select="$name" />
   </xsl:template>
 
   <!-- Output a list with a given separator.  Empty items are skipped. -->
@@ -1149,5 +1223,79 @@ authorization from the authors.
         <xsl:with-param name="count" select="$count - 1" />
       </xsl:call-template>
     </xsl:if>
+  </xsl:template>
+
+  <!-- Record the maximum type lengths of a set of types for use as the
+       max-type-lengths parameter of type-and-name. -->
+  <xsl:template name="type-lengths">
+    <xsl:param name="items" />
+    <xsl:variable name="type-lengths-rtf">
+      <xsl:for-each select="$items">
+        <item>
+          <xsl:choose>
+            <xsl:when test="contains(., ' *')">
+              <xsl:value-of select="string-length(
+                                    substring-before(., ' *'))" />
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="string-length(.)" />
+            </xsl:otherwise>
+          </xsl:choose>
+        </item>
+      </xsl:for-each>
+    </xsl:variable>
+    <xsl:variable name="suffix-lengths-rtf">
+      <xsl:for-each select="$items">
+        <item>
+          <xsl:choose>
+            <xsl:when test="contains(., ' *')">
+              <xsl:value-of select="string-length(substring-after(., ' *'))
+                                    + 1" />
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>0</xsl:text>
+            </xsl:otherwise>
+          </xsl:choose>
+        </item>
+      </xsl:for-each>
+    </xsl:variable>
+    <max-type-length>
+      <xsl:call-template name="max">
+        <xsl:with-param name="items"
+                        select="e:node-set($type-lengths-rtf)/*" />
+      </xsl:call-template>
+    </max-type-length>
+    <max-suffix-length>
+      <xsl:call-template name="max">
+        <xsl:with-param name="items"
+                        select="e:node-set($suffix-lengths-rtf)/*" />
+      </xsl:call-template>
+    </max-suffix-length>
+  </xsl:template>
+
+  <!-- Return the maximum number in a set of numbers. -->
+  <xsl:template name="max">
+    <xsl:param name="items" />
+    <xsl:choose>
+      <xsl:when test="count($items) = 0">
+        <xsl:text>0</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="head" select="number($items[1])" />
+        <xsl:variable name="tail-max">
+          <xsl:call-template name="max">
+            <xsl:with-param name="items" select="$items[position() > 1]" />
+          </xsl:call-template>
+        </xsl:variable>
+        <xsl:choose>
+          <xsl:when test="$head > number($tail-max)">
+            <xsl:value-of select="$head" />
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$tail-max" />
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 </xsl:transform>
