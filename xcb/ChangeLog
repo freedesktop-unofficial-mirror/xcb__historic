@@ -1,3 +1,8 @@
+2005-05-22  Josh Triplett  <josh@freedesktop.org>
+
+	* src/c-client.xsl:
+	Permit unions to have fixed-length list fields.
+
 2005-05-21  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:

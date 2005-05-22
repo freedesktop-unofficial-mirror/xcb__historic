@@ -543,7 +543,7 @@ authorization from the authors.
   </xsl:template>
 
   <xsl:template match="struct" mode="pass2">
-    <xsl:if test="@kind='union' and list">
+    <xsl:if test="@kind='union' and list[not(@fixed)]">
       <xsl:message terminate="yes">Unions must be fixed length.</xsl:message>
     </xsl:if>
     <struct name="{@name}">
