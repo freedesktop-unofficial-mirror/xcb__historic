@@ -111,10 +111,10 @@ WMHints *GetWMHints (XCBConnection *c,
 
 /* WM_PROTOCOLS */
 
-void SetWMProtocols(XCBConnection *c,
-		    XCBWINDOW      window,
-		    CARD32         list_len,
-		    XCBATOM       *list);
+void SetWMProtocols (XCBConnection *c,
+		     XCBWINDOW      window,
+		     CARD32         list_len,
+		     XCBATOM       *list);
 
 #define HAS_DISCRIMINATED_NAME 0
 #if HAS_DISCRIMINATED_NAME
