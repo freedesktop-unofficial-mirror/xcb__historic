@@ -1,4 +1,4 @@
-2005-05-19  Josh Triplett  <josh@freedesktop.org>
+2005-05-21  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
 	In function parameters and structure fields, line up field names in
