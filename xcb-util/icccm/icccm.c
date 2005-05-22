@@ -5,12 +5,23 @@
 
 /* WM_NAME */
 
-void SetWMName(XCBConnection *c, XCBWINDOW window, XCBATOM encoding, CARD32 name_len, const char *name)
+void
+SetWMName (XCBConnection *c,
+	   XCBWINDOW      window,
+	   XCBATOM        encoding,
+	   CARD32         name_len,
+	   const char    *name)
 {
 	XCBChangeProperty(c, PropModeReplace, window, WM_NAME, encoding, 8, name_len, name);
 }
 
-int GetWMName(XCBConnection *c, XCBWINDOW window, CARD8 *format, XCBATOM *encoding, CARD32 *name_len, char **name)
+int
+GetWMName (XCBConnection *c,
+	   XCBWINDOW      window,
+	   CARD8         *format,
+	   XCBATOM       *encoding,
+	   CARD32        *name_len,
+	   char         **name)
 {
 	XCBGetPropertyCookie cookie;
 	XCBGetPropertyRep *reply;
@@ -34,19 +45,32 @@ int GetWMName(XCBConnection *c, XCBWINDOW window, CARD8 *format, XCBATOM *encodi
 	return 1;
 }
 
-void WatchWMName(PropertyHandlers *prophs, CARD32 long_len, GenericPropertyHandler handler, void *data)
+void
+WatchWMName (PropertyHandlers      *prophs,
+	     CARD32                 long_len,
+	     GenericPropertyHandler handler,
+	     void                  *data)
 {
 	SetPropertyHandler(prophs, WM_NAME, long_len, handler, data);
 }
 
 /* WM_ICON_NAME */
 
-void SetWMIconName(XCBConnection *c, XCBWINDOW window, XCBATOM encoding, CARD32 name_len, const char *name)
+void
+SetWMIconName (XCBConnection *c,
+	       XCBWINDOW      window,
+	       XCBATOM        encoding,
+	       CARD32         name_len,
+	       const char    *name)
 {
 	XCBChangeProperty(c, PropModeReplace, window, WM_ICON_NAME, encoding, 8, name_len, name);
 }
 
-void WatchWMIconName(PropertyHandlers *prophs, CARD32 long_len, GenericPropertyHandler handler, void *data)
+void
+WatchWMIconName (PropertyHandlers      *prophs,
+		 CARD32                 long_len,
+		 GenericPropertyHandler handler,
+		 void                  *data)
 {
 	SetPropertyHandler(prophs, WM_ICON_NAME, long_len, handler, data);
 }
@@ -78,17 +102,23 @@ struct SizeHints {
 	CARD32 win_gravity;
 };
 
-SizeHints *AllocSizeHints()
+SizeHints *
+AllocSizeHints()
 {
 	return calloc(1, sizeof(SizeHints));
 }
 
-void FreeSizeHints(SizeHints *hints)
+void
+FreeSizeHints(SizeHints *hints)
 {
 	free(hints);
 }
 
-void SizeHintsSetPosition(SizeHints *hints, int user_specified, INT32 x, INT32 y)
+void
+SizeHintsSetPosition (SizeHints *hints,
+		      int        user_specified,
+		      INT32      x,
+		      INT32      y)
 {
 	hints->flags &= ~(USPosition | PPosition);
 	if(user_specified)
@@ -99,7 +129,11 @@ void SizeHintsSetPosition(SizeHints *hints, int user_specified, INT32 x, INT32 y
 	hints->y = y;
 }
 
-void SizeHintsSetSize(SizeHints *hints, int user_specified, INT32 width, INT32 height)
+void
+SizeHintsSetSize (SizeHints *hints,
+		  int        user_specified,
+		  INT32      width,
+		  INT32      height)
 {
 	hints->flags &= ~(USSize | PSize);
 	if(user_specified)
@@ -110,28 +144,42 @@ void SizeHintsSetSize(SizeHints *hints, int user_specified, INT32 width, INT32 h
 	hints->height = height;
 }
 
-void SizeHintsSetMinSize(SizeHints *hints, INT32 min_width, INT32 min_height)
+void
+SizeHintsSetMinSize (SizeHints *hints,
+		     INT32      min_width,
+		     INT32      min_height)
 {
 	hints->flags |= PMinSize;
 	hints->min_width = min_width;
 	hints->min_height = min_height;
 }
 
-void SizeHintsSetMaxSize(SizeHints *hints, INT32 max_width, INT32 max_height)
+void
+SizeHintsSetMaxSize (SizeHints *hints,
+		     INT32      max_width,
+		     INT32      max_height)
 {
 	hints->flags |= PMaxSize;
 	hints->max_width = max_width;
 	hints->max_height = max_height;
 }
 
-void SizeHintsSetResizeInc(SizeHints *hints, INT32 width_inc, INT32 height_inc)
+void
+SizeHintsSetResizeInc (SizeHints *hints,
+		       INT32      width_inc,
+		       INT32      height_inc)
 {
 	hints->flags |= PResizeInc;
 	hints->width_inc = width_inc;
 	hints->height_inc = height_inc;
 }
 
-void SizeHintsSetAspect(SizeHints *hints, INT32 min_aspect_num, INT32 min_aspect_den, INT32 max_aspect_num, INT32 max_aspect_den)
+void
+SizeHintsSetAspect (SizeHints *hints,
+		    INT32      min_aspect_num,
+		    INT32      min_aspect_den,
+		    INT32      max_aspect_num,
+		    INT32      max_aspect_den)
 {
 	hints->flags |= PAspect;
 	hints->min_aspect_num = min_aspect_num;
@@ -140,30 +188,42 @@ void SizeHintsSetAspect(SizeHints *hints, INT32 min_aspect_num, INT32 min_aspect
 	hints->max_aspect_den = max_aspect_den;
 }
 
-void SizeHintsSetBaseSize(SizeHints *hints, INT32 base_width, INT32 base_height)
+void
+SizeHintsSetBaseSize (SizeHints *hints,
+		      INT32      base_width,
+		      INT32      base_height)
 {
 	hints->flags |= PBaseSize;
 	hints->base_width = base_width;
 	hints->base_height = base_height;
 }
 
-void SizeHintsSetWinGravity(SizeHints *hints, CARD8 win_gravity)
+void
+SizeHintsSetWinGravity (SizeHints *hints,
+			CARD8      win_gravity)
 {
 	hints->flags |= PWinGravity;
 	hints->win_gravity = win_gravity;
 }
 
-void SetWMSizeHints(XCBConnection *c, XCBWINDOW window, XCBATOM property, SizeHints *hints)
+void
+SetWMSizeHints (XCBConnection *c,
+		XCBWINDOW       window,
+		XCBATOM         property,
+		SizeHints      *hints)
 {
 	XCBChangeProperty(c, PropModeReplace, window, property, WM_SIZE_HINTS, 32, sizeof(*hints) / 4, hints);
 }
 
 int
-GetWMSizeHints (XCBConnection *c, XCBWINDOW window, XCBATOM property,
-		SizeHints *hints, long *supplied)
+GetWMSizeHints (XCBConnection *c,
+		XCBWINDOW      window,
+		XCBATOM        property,
+		SizeHints     *hints,
+		long          *supplied)
 {
   XCBGetPropertyCookie cookie;
-  XCBGetPropertyRep *rep;
+  XCBGetPropertyRep   *rep;
   
   cookie = XCBGetProperty (c, 0, window,
 			   property, WM_SIZE_HINTS,
@@ -215,21 +275,88 @@ GetWMSizeHints (XCBConnection *c, XCBWINDOW window, XCBATOM property,
 
 /* WM_NORMAL_HINTS */
 
-void SetWMNormalHints(XCBConnection *c, XCBWINDOW window, SizeHints *hints)
+void
+SetWMNormalHints (XCBConnection *c,
+		  XCBWINDOW      window,
+		  SizeHints     *hints)
 {
 	SetWMSizeHints(c, window, WM_NORMAL_HINTS, hints);
 }
 
 int
-GetWMNormalHints (XCBConnection *c, XCBWINDOW window,
-		  SizeHints *hints, long *supplied)
+GetWMNormalHints (XCBConnection *c,
+		  XCBWINDOW      window,
+		  SizeHints     *hints,
+		  long          *supplied)
 {
   return (GetWMSizeHints (c, window, WM_NORMAL_HINTS, hints, supplied));
 }
 
+/* WM_HINTS */
+
+struct WMHints {
+  INT32     flags;	     /* marks which fields in this structure are defined */
+  BOOL      input;           /* does this application rely on the window manager
+			        to get keyboard input? */
+  INT32     initial_state;   /* see below */
+  XCBPIXMAP icon_pixmap;     /* pixmap to be used as icon */
+  XCBWINDOW icon_window;     /* window to be used as icon */
+  INT32     icon_x;          /* initial position of icon */
+  INT32     icon_y;
+  XCBPIXMAP icon_mask;       /* icon mask bitmap */
+  XCBWINDOW window_group;    /* id of related window group */
+  /* this structure may be extended in the future */
+};
+#define NumWMHintsElements 9 /* number of elements in this structure */
+
+WMHints *
+GetWMHints (XCBConnection *c,
+	    XCBWINDOW      window)
+{
+  XCBGetPropertyCookie cookie;
+  XCBGetPropertyRep   *rep;
+  WMHints             *hints;
+  long                 length;
+  unsigned char       *prop;
+  
+  cookie = XCBGetProperty (c, 0, window,
+			   WM_HINTS, WM_HINTS,
+			   0L, NumWMHintsElements);
+  rep = XCBGetPropertyReply (c, cookie, 0);
+  if (!rep)
+    return NULL;
+  
+  if ((rep->type.xid != WM_HINTS.xid) ||
+      (rep->value_len < (NumWMHintsElements - 1)) ||
+      (rep->format != 32))
+    {
+      free (rep);
+      return NULL;
+    }
+  hints = (WMHints *)calloc (1, (unsigned)sizeof (WMHints));
+  if (!hints)
+    {
+      free (rep);
+      return NULL;
+    }
+  
+  length = XCBGetPropertyValueLength (rep);
+  prop = (unsigned char *) XCBGetPropertyValue (rep);
+  prop[length] = '\0';
+  hints = (WMHints *)strdup (prop);
+  if (rep->value_len < NumWMHintsElements)
+    hints->window_group.xid = 0;
+  
+  return hints;
+}
+
 /* WM_PROTOCOLS */
 
-void SetWMProtocols(XCBConnection *c, XCBWINDOW window, CARD32 list_len, XCBATOM *list)
+void
+SetWMProtocols (XCBConnection *c,
+		XCBWINDOW      window,
+		CARD32         list_len,
+		XCBATOM       *list)
 {
 	InternAtomFastCookie proto;
 	XCBATOM WM_PROTOCOLS;
