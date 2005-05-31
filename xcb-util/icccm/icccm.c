@@ -222,55 +222,55 @@ GetWMSizeHints (XCBConnection *c,
 		SizeHints     *hints,
 		long          *supplied)
 {
-  XCBGetPropertyCookie cookie;
-  XCBGetPropertyRep   *rep;
-  
-  cookie = XCBGetProperty (c, 0, window,
-			   property, WM_SIZE_HINTS,
-			   0L, 18); /* NumPropSizeElements = 18 (ICCCM version 1) */
-  rep = XCBGetPropertyReply (c, cookie, 0);
-  if (!rep)
-    return 0;
+	XCBGetPropertyCookie cookie;
+	XCBGetPropertyRep   *rep;
 
-  if ((rep->type.xid == WM_SIZE_HINTS.xid) &&
-      ((rep->format == 8)  ||
-       (rep->format == 16) ||
-       (rep->format == 32)) &&
-      (rep->value_len >= 15)) /* OldNumPropSizeElements = 15 (pre-ICCCM) */
-{
-      long length;
-      unsigned char *prop;
-      
-      length = XCBGetPropertyValueLength (rep);
-      /* FIXME: in GetProp.c of xcl, one move the memory.
-       * Should we do that too ? */
-      prop = (unsigned char *) XCBGetPropertyValue (rep);
-      prop[length] = '\0';
-      hints = (SizeHints *)strdup (prop);
+	cookie = XCBGetProperty (c, 0, window,
+			property, WM_SIZE_HINTS,
+			0L, 18); /* NumPropSizeElements = 18 (ICCCM version 1) */
+	rep = XCBGetPropertyReply (c, cookie, 0);
+	if (!rep)
+		return 0;
 
-      *supplied = (USPosition | USSize   | 
-		   PPosition  | PSize    |
-		   PMinSize   | PMaxSize |
-		   PResizeInc | PAspect);
-      if (rep->value_len >= 18) /* NumPropSizeElements = 18 (ICCCM version 1) */
-	*supplied |= (PBaseSize | PWinGravity);
-      else
+	if ((rep->type.xid == WM_SIZE_HINTS.xid) &&
+			((rep->format == 8)  ||
+			 (rep->format == 16) ||
+			 (rep->format == 32)) &&
+			(rep->value_len >= 15)) /* OldNumPropSizeElements = 15 (pre-ICCCM) */
 	{
-	  hints->base_width  = 0;
-	  hints->base_height = 0;
-	  hints->win_gravity = 0;
+		long length;
+		unsigned char *prop;
+
+		length = XCBGetPropertyValueLength (rep);
+		/* FIXME: in GetProp.c of xcl, one move the memory.
+		 * Should we do that too ? */
+		prop = (unsigned char *) XCBGetPropertyValue (rep);
+		prop[length] = '\0';
+		hints = (SizeHints *)strdup (prop);
+
+		*supplied = (USPosition | USSize   | 
+				PPosition  | PSize    |
+				PMinSize   | PMaxSize |
+				PResizeInc | PAspect);
+		if (rep->value_len >= 18) /* NumPropSizeElements = 18 (ICCCM version 1) */
+			*supplied |= (PBaseSize | PWinGravity);
+		else
+		{
+			hints->base_width  = 0;
+			hints->base_height = 0;
+			hints->win_gravity = 0;
+		}
+		hints->flags &= (*supplied);	/* get rid of unwanted bits */
+
+		free (rep);
+
+		return 1;
 	}
-      hints->flags &= (*supplied);	/* get rid of unwanted bits */
 
-      free (rep);
+	hints = NULL;
+	free (rep);
 
-      return 1;
-    }
-  
-  hints = NULL;
-  free (rep);
-  
-  return 0;
+	return 0;
 }
 
 /* WM_NORMAL_HINTS */
@@ -289,23 +289,23 @@ GetWMNormalHints (XCBConnection *c,
 		  SizeHints     *hints,
 		  long          *supplied)
 {
-  return (GetWMSizeHints (c, window, WM_NORMAL_HINTS, hints, supplied));
+	return (GetWMSizeHints (c, window, WM_NORMAL_HINTS, hints, supplied));
 }
 
 /* WM_HINTS */
 
 struct WMHints {
-  INT32     flags;	     /* marks which fields in this structure are defined */
-  BOOL      input;           /* does this application rely on the window manager
-			        to get keyboard input? */
-  INT32     initial_state;   /* see below */
-  XCBPIXMAP icon_pixmap;     /* pixmap to be used as icon */
-  XCBWINDOW icon_window;     /* window to be used as icon */
-  INT32     icon_x;          /* initial position of icon */
-  INT32     icon_y;
-  XCBPIXMAP icon_mask;       /* icon mask bitmap */
-  XCBWINDOW window_group;    /* id of related window group */
-  /* this structure may be extended in the future */
+	INT32     flags;           /* marks which fields in this structure are defined */
+	BOOL      input;           /* does this application rely on the window manager
+				      to get keyboard input? */
+	INT32     initial_state;   /* see below */
+	XCBPIXMAP icon_pixmap;     /* pixmap to be used as icon */
+	XCBWINDOW icon_window;     /* window to be used as icon */
+	INT32     icon_x;          /* initial position of icon */
+	INT32     icon_y;
+	XCBPIXMAP icon_mask;       /* icon mask bitmap */
+	XCBWINDOW window_group;    /* id of related window group */
+	/* this structure may be extended in the future */
 };
 #define NumWMHintsElements 9 /* number of elements in this structure */
 
@@ -313,41 +313,41 @@ WMHints *
 GetWMHints (XCBConnection *c,
 	    XCBWINDOW      window)
 {
-  XCBGetPropertyCookie cookie;
-  XCBGetPropertyRep   *rep;
-  WMHints             *hints;
-  long                 length;
-  unsigned char       *prop;
-  
-  cookie = XCBGetProperty (c, 0, window,
-			   WM_HINTS, WM_HINTS,
-			   0L, NumWMHintsElements);
-  rep = XCBGetPropertyReply (c, cookie, 0);
-  if (!rep)
-    return NULL;
-  
-  if ((rep->type.xid != WM_HINTS.xid) ||
-      (rep->value_len < (NumWMHintsElements - 1)) ||
-      (rep->format != 32))
-    {
-      free (rep);
-      return NULL;
-    }
-  hints = (WMHints *)calloc (1, (unsigned)sizeof (WMHints));
-  if (!hints)
-    {
-      free (rep);
-      return NULL;
-    }
-  
-  length = XCBGetPropertyValueLength (rep);
-  prop = (unsigned char *) XCBGetPropertyValue (rep);
-  prop[length] = '\0';
-  hints = (WMHints *)strdup (prop);
-  if (rep->value_len < NumWMHintsElements)
-    hints->window_group.xid = 0;
-  
-  return hints;
+	XCBGetPropertyCookie cookie;
+	XCBGetPropertyRep   *rep;
+	WMHints             *hints;
+	long                 length;
+	unsigned char       *prop;
+
+	cookie = XCBGetProperty (c, 0, window,
+			WM_HINTS, WM_HINTS,
+			0L, NumWMHintsElements);
+	rep = XCBGetPropertyReply (c, cookie, 0);
+	if (!rep)
+		return NULL;
+
+	if ((rep->type.xid != WM_HINTS.xid) ||
+			(rep->value_len < (NumWMHintsElements - 1)) ||
+			(rep->format != 32))
+	{
+		free (rep);
+		return NULL;
+	}
+	hints = (WMHints *)calloc (1, (unsigned)sizeof (WMHints));
+	if (!hints)
+	{
+		free (rep);
+		return NULL;
+	}
+
+	length = XCBGetPropertyValueLength (rep);
+	prop = (unsigned char *) XCBGetPropertyValue (rep);
+	prop[length] = '\0';
+	hints = (WMHints *)strdup (prop);
+	if (rep->value_len < NumWMHintsElements)
+		hints->window_group.xid = 0;
+
+	return hints;
 }
 
 /* WM_PROTOCOLS */
