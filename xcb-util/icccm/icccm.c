@@ -115,13 +115,217 @@ FreeSizeHints(SizeHints *hints)
 }
 
 void
+SizeHintsGetPosition (SizeHints *hints,
+		      INT32     *x,
+		      INT32     *y)
+{
+        *x = hints->x;
+        *y = hints->y;
+}
+
+void
+SizeHintsGetSize (SizeHints *hints,
+		  INT32     *width,
+		  INT32     *height)
+{
+        *width = hints->width;
+        *height = hints->height;
+}
+
+void
+SizeHintsGetMinSize (SizeHints *hints,
+		     INT32     *min_width,
+		     INT32     *min_height)
+{
+        *min_width = hints->min_width;
+        *min_height = hints->min_height;
+}
+
+void
+SizeHintsGetMaxSize (SizeHints *hints,
+		     INT32     *max_width,
+		     INT32     *max_height)
+{
+        *max_width = hints->max_width;
+        *max_height = hints->max_height;
+}
+
+void
+SizeHintsGetIncrease (SizeHints *hints,
+		     INT32     *width_inc,
+		     INT32     *height_inc)
+{
+        *width_inc = hints->width_inc;
+        *height_inc = hints->height_inc;
+}
+
+void
+SizeHintsGetMinAspect (SizeHints *hints,
+		       INT32     *min_aspect_num, 
+		       INT32     *min_aspect_den)
+{
+        *min_aspect_num = hints->min_aspect_num;
+        *min_aspect_den = hints->min_aspect_den;
+}
+
+void
+SizeHintsGetMaxAspect (SizeHints *hints,
+		       INT32     *max_aspect_num, 
+		       INT32     *max_aspect_den)
+{
+        *max_aspect_num = hints->max_aspect_num;
+        *max_aspect_den = hints->max_aspect_den;
+}
+
+void
+SizeHintsGetBaseSize (SizeHints *hints,
+		      INT32     *base_width,
+		      INT32     *base_height)
+{
+        *base_width = hints->base_width;
+        *base_height = hints->base_height;
+}
+
+CARD32
+SizeHintsGetWinGravity (SizeHints *hints)
+{
+        return hints->win_gravity;
+}
+
+BOOL
+SizeHintsIsUSPosition (SizeHints *hints)
+{
+        return (hints->flags & USPosition);
+}
+
+BOOL
+SizeHintsIsUSSize (SizeHints *hints)
+{
+        return (hints->flags & USSize);
+}
+
+BOOL
+SizeHintsIsPPosition (SizeHints *hints)
+{
+        return (hints->flags & PPosition);
+}
+
+BOOL
+SizeHintsIsPSize (SizeHints *hints)
+{
+        return (hints->flags & PSize);
+}
+
+BOOL
+SizeHintsIsPMinSize (SizeHints *hints)
+{
+        return (hints->flags & PMinSize);
+}
+
+BOOL
+SizeHintsIsPMaxSize (SizeHints *hints)
+{
+        return (hints->flags & PMaxSize);
+}
+
+BOOL
+SizeHintsIsPResizeInc (SizeHints *hints)
+{
+        return (hints->flags & PResizeInc);
+}
+
+BOOL
+SizeHintsIsPAspect (SizeHints *hints)
+{
+        return (hints->flags & PAspect);
+}
+
+BOOL
+SizeHintsIsPBaseSize (SizeHints *hints)
+{
+        return (hints->flags & PBaseSize);
+}
+
+BOOL
+SizeHintsIsPWinGravity (SizeHints *hints)
+{
+        return (hints->flags & PWinGravity);
+}
+
+void
+SizeHintsSetFlagNone (SizeHints *hints)
+{
+        hints->flags = 0;
+}
+
+void
+SizeHintsSetFlagUSPosition (SizeHints *hints)
+{
+        hints->flags = USPosition;
+}
+
+void
+SizeHintsSetFlagUSSize (SizeHints *hints)
+{
+        hints->flags = USSize;
+}
+
+void
+SizeHintsSetFlagPPosition (SizeHints *hints)
+{
+        hints->flags = PPosition;
+}
+
+void
+SizeHintsSetFlagPSize (SizeHints *hints)
+{
+        hints->flags = PSize;
+}
+
+void
+SizeHintsSetFlagPMinSize (SizeHints *hints)
+{
+        hints->flags = PMinSize;
+}
+
+void
+SizeHintsSetFlagPMaxSize (SizeHints *hints)
+{
+        hints->flags = PMaxSize;
+}
+
+void
+SizeHintsSetFlagPResizeInc (SizeHints *hints)
+{
+        hints->flags = PResizeInc;
+}
+
+void
+SizeHintsSetFlagPAspect (SizeHints *hints)
+{
+        hints->flags = PAspect;
+}
+
+void
+SizeHintsSetFlagPBaseSize (SizeHints *hints)
+{
+        hints->flags = PBaseSize;
+}
+
+void
+SizeHintsSetFlagPWinGravity (SizeHints *hints)
+{
+        hints->flags = PWinGravity;
+}
+
+void
 SizeHintsSetPosition (SizeHints *hints,
 		      int        user_specified,
 		      INT32      x,
 		      INT32      y)
 {
 	hints->flags &= ~(USPosition | PPosition);
-	if(user_specified)
+	if (user_specified)
 		hints->flags |= USPosition;
 	else
 		hints->flags |= PPosition;
@@ -136,7 +340,7 @@ SizeHintsSetSize (SizeHints *hints,
 		  INT32      height)
 {
 	hints->flags &= ~(USSize | PSize);
-	if(user_specified)
+	if (user_specified)
 		hints->flags |= USSize;
 	else
 		hints->flags |= PSize;
@@ -222,54 +426,55 @@ GetWMSizeHints (XCBConnection *c,
 		SizeHints     *hints,
 		long          *supplied)
 {
-	XCBGetPropertyCookie cookie;
+        XCBGetPropertyCookie cookie;
 	XCBGetPropertyRep   *rep;
-
+	
 	cookie = XCBGetProperty (c, 0, window,
-			property, WM_SIZE_HINTS,
-			0L, 18); /* NumPropSizeElements = 18 (ICCCM version 1) */
+				 property, WM_SIZE_HINTS,
+				 0L, 18); /* NumPropSizeElements = 18 (ICCCM version 1) */
 	rep = XCBGetPropertyReply (c, cookie, 0);
 	if (!rep)
-		return 0;
-
+	        return 0;
+	
 	if ((rep->type.xid == WM_SIZE_HINTS.xid) &&
-			((rep->format == 8)  ||
-			 (rep->format == 16) ||
-			 (rep->format == 32)) &&
-			(rep->value_len >= 15)) /* OldNumPropSizeElements = 15 (pre-ICCCM) */
+	    ((rep->format == 8)  ||
+	     (rep->format == 16) ||
+	     (rep->format == 32)) &&
+	    (rep->value_len >= 15)) /* OldNumPropSizeElements = 15 (pre-ICCCM) */
 	{
-		long length;
+	        long length;
 		unsigned char *prop;
-
+		
 		length = XCBGetPropertyValueLength (rep);
 		/* FIXME: in GetProp.c of xcl, one move the memory.
 		 * Should we do that too ? */
-		prop = (unsigned char *) XCBGetPropertyValue (rep);
+		prop = (unsigned char *)malloc(sizeof(unsigned char)*length);
+		memcpy(prop, XCBGetPropertyValue (rep), length);
 		prop[length] = '\0';
 		hints = (SizeHints *)strdup (prop);
-
+		
 		*supplied = (USPosition | USSize   | 
-				PPosition  | PSize    |
-				PMinSize   | PMaxSize |
-				PResizeInc | PAspect);
+			     PPosition  | PSize    |
+			     PMinSize   | PMaxSize |
+			     PResizeInc | PAspect);
 		if (rep->value_len >= 18) /* NumPropSizeElements = 18 (ICCCM version 1) */
-			*supplied |= (PBaseSize | PWinGravity);
+		        *supplied |= (PBaseSize | PWinGravity);
 		else
 		{
-			hints->base_width  = 0;
+		        hints->base_width  = 0;
 			hints->base_height = 0;
 			hints->win_gravity = 0;
 		}
 		hints->flags &= (*supplied);	/* get rid of unwanted bits */
-
+		
 		free (rep);
-
+		
 		return 1;
 	}
-
+	
 	hints = NULL;
 	free (rep);
-
+	
 	return 0;
 }
 
@@ -307,7 +512,190 @@ struct WMHints {
 	XCBWINDOW window_group;    /* id of related window group */
 	/* this structure may be extended in the future */
 };
-#define NumWMHintsElements 9 /* number of elements in this structure */
+
+typedef enum {
+        XCBWMInputHint        = (1L << 0),
+	XCBWMStateHint        = (1L << 1),
+	XCBWMIconPixmapHint   = (1L << 2),
+	XCBWMIconWindowHint   = (1L << 3),
+	XCBWMIconPositionHint = (1L << 4),
+	XCBWMIconMaskHint     = (1L << 5),
+	XCBWMWindowGroupHint  = (1L << 6),
+	XCBWMXUrgencyHint     = (1L << 8)
+} XCBWM;
+
+#define XCBWMAllHints (InputHint     | StateHint        | IconPixmapHint | \
+                       IconWindowHint| IconPositionHint | IconMaskHint   | \
+                       WindowGroupHint)
+
+BOOL
+WMHintsGetInput(WMHints *hints)
+{
+        return hints->input;
+}
+
+XCBPIXMAP
+WMHintsGetIconPixmap(WMHints *hints)
+{
+        return hints->icon_pixmap;
+}
+
+XCBPIXMAP
+WMHintsGetIconMask(WMHints *hints)
+{
+        return hints->icon_mask;
+}
+
+XCBWINDOW
+WMHintsGetIconWindow(WMHints *hints)
+{
+        return hints->icon_window;
+}
+
+XCBWINDOW
+WMHintsGetWindowGroup(WMHints *hints)
+{
+        return hints->window_group;
+}
+
+
+BOOL
+WMHintsIsInputHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMInputHint);
+}
+
+BOOL
+WMHintsIsStateHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMStateHint);
+}
+
+BOOL
+WMHintsIsIconPixmapHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMIconPixmapHint);
+}
+
+BOOL
+WMHintsIsIconWindowHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMIconWindowHint);
+}
+
+BOOL
+WMHintsIsIconPositionHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMIconPositionHint);
+}
+
+BOOL
+WMHintsIsIconMaskHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMIconMaskHint);
+}
+
+BOOL
+WMHintsIsWindowGroupHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMWindowGroupHint);
+}
+
+BOOL
+WMHintsIsXUrgencyHint(WMHints *hints)
+{
+        return (hints->flags & XCBWMXUrgencyHint);
+}
+
+BOOL
+WMHintsStateIsWithdrawn(WMHints *hints)
+{
+        return (hints->initial_state == XCBWMWithdrawnState);
+}
+
+BOOL
+WMHintsStateIsNormal(WMHints *hints)
+{
+        return (hints->initial_state == XCBWMNormalState);
+}
+
+BOOL
+WMHintsStateIsIconic(WMHints *hints)
+{
+        return (hints->initial_state == XCBWMIconicState);
+}
+
+void
+WMHintsSetInput(WMHints *hints, BOOL input)
+{
+        hints->input = input;
+        hints->flags |= XCBWMInputHint;
+}
+
+void
+WMHintsSetIconic(WMHints *hints)
+{
+        hints->initial_state = XCBWMIconicState;
+        hints->flags |= XCBWMStateHint;
+}
+
+void
+WMHintsSetNormal(WMHints *hints)
+{
+        hints->initial_state = XCBWMNormalState;
+        hints->flags |= XCBWMStateHint;
+}
+
+void
+WMHintsSetWithdrawn(WMHints *hints)
+{
+        hints->initial_state = XCBWMWithdrawnState;
+        hints->flags |= XCBWMStateHint;
+}
+
+void
+WMHintsSetNone(WMHints *hints)
+{
+        hints->flags &= ~XCBWMStateHint;
+}
+
+void
+WMHintsSetUrgent(WMHints *hints)
+{
+        hints->flags |= XCBWMXUrgencyHint;
+}
+
+void
+WMHintsSetIconPixmap(WMHints *hints, XCBPIXMAP icon_pixmap)
+{
+        hints->icon_pixmap = icon_pixmap;
+        hints->flags |= XCBWMIconPixmapHint;
+}
+
+void
+WMHintsSetIconMask(WMHints *hints, XCBPIXMAP icon_mask)
+{
+        hints->icon_mask = icon_mask;
+        hints->flags |= XCBWMIconMaskHint;
+}
+
+void
+WMHintsSetIconWindow(WMHints *hints, XCBWINDOW icon_window)
+{
+        hints->icon_window = icon_window;
+        hints->flags |= XCBWMIconWindowHint;
+}
+
+void
+WMHintsSetWindowGroup(WMHints *hints, XCBWINDOW window_group)
+{
+        hints->window_group = window_group;
+        hints->flags |= XCBWMWindowGroupHint;
+}
+
+
+
+
 
 WMHints *
 GetWMHints (XCBConnection *c,
@@ -327,8 +715,8 @@ GetWMHints (XCBConnection *c,
 		return NULL;
 
 	if ((rep->type.xid != WM_HINTS.xid) ||
-			(rep->value_len < (NumWMHintsElements - 1)) ||
-			(rep->format != 32))
+	    (rep->value_len < (NumWMHintsElements - 1)) ||
+	    (rep->format != 32))
 	{
 		free (rep);
 		return NULL;
@@ -365,6 +753,47 @@ SetWMProtocols (XCBConnection *c,
 	WM_PROTOCOLS = InternAtomFastReply(c, proto, 0);
 
 	XCBChangeProperty(c, PropModeReplace, window, WM_PROTOCOLS, ATOM, 32, list_len, list);
+}
+
+int
+GetWMProtocols (XCBConnection *c,
+		XCBWINDOW      window,
+		CARD32        *list_len,
+		XCBATOM      **list)
+{
+        XCBGetPropertyCookie cookie;
+	XCBGetPropertyRep   *rep;
+	XCBATOM              property;
+
+	property = InternAtomFastReply(c,
+				       InternAtomFast(c,
+						      0,
+						      strlen("WM_PROTOCOLS"),
+						      "WM_PROTOCOLS"),
+				       NULL);
+	cookie = XCBGetProperty(c, 0, window,
+				property, ATOM, 0, 1000000L);
+	rep = XCBGetPropertyReply(c, cookie, 0);
+	if (!rep)
+	        return 0;
+	if ((rep->type.xid == ATOM.xid) ||
+	    (rep->format == 32))
+	{
+	        int length;
+		
+		length = XCBGetPropertyValueLength(rep);
+		*list_len = length;
+		*list = (XCBATOM *)malloc(sizeof(XCBATOM) * length);
+		if (!(*list))
+		{
+		        free(rep);
+			return 0;
+		}
+		memcpy(*list, XCBGetPropertyValue(rep), length);
+		free(rep);
+		return 1;
+	}
+	return 0;
 }
 
 #if HAS_DISCRIMINATED_NAME
