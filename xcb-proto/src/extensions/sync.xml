@@ -5,7 +5,7 @@ All Rights Reserved.  See the file COPYING in this directory
 for licensing information.
 -->
 <xcb header="sync" extension-xname="SYNC" extension-name="Sync">
-  <typedef oldname="CARD32" newname="ALARM" />
+  <xidtype name="ALARM" />
 
   <enum name="ALARMSTATE">
     <item name="Active" />
@@ -13,7 +13,7 @@ for licensing information.
     <item name="Destroyed" />
   </enum>
 
-  <typedef oldname="CARD32" newname="COUNTER" />
+  <xidtype name="COUNTER" />
 
   <enum name="TESTTYPE">
     <item name="PositiveTransition" />
