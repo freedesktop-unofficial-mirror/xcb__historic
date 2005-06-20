@@ -68,10 +68,9 @@ xcb_scanline_pad_get (XCBConnection *conn,
   for(; fmt != fmtend; ++fmt)
     if(fmt->depth == depth)
       {
-	printf ("dans test %d\n", fmt->scanline_pad);
 	return fmt->scanline_pad;
       }
-  printf ("pas dans test %d\n", XCBGetSetup (conn)->bitmap_format_scanline_pad);
+
   return XCBGetSetup (conn)->bitmap_format_scanline_pad;
 
 /*   XCBFORMATIter iter; */
@@ -220,12 +219,10 @@ XCBImageGet (XCBConnection *conn,
   if (!rep)
     return NULL;
 
-  printf ("Format %d\n", format);
-  printf ("Length %d\n", XCBGetImageDataLength(rep));
-  printf ("Length %ld\n", rep->length);
-  printf ("depth %d\n", rep->depth);
-
-  data = XCBGetImageData (rep);
+  data = malloc(XCBGetImageDataLength(rep));
+  if (!data)
+    return NULL;
+  memcpy(data, XCBGetImageData (rep), XCBGetImageDataLength (rep));
 
   if (format == XYPixmap)
     {
@@ -240,7 +237,6 @@ XCBImageGet (XCBConnection *conn,
     }
   else /* format == ZPixmap */
     {
-      printf ("Format : ZPixmap %d\n", xcb_scanline_pad_get (conn, rep->depth));
       image = XCBImageCreate (conn,
 				rep->depth,
 				ZPixmap,
@@ -305,15 +301,12 @@ XCBImagePut (XCBConnection *conn,
       dest_bits_per_pixel = 1;
       dest_scanline_pad = XCBGetSetup (conn)->bitmap_format_scanline_pad;
       left_pad = image->xoffset & (XCBGetSetup (conn)->bitmap_format_scanline_unit- 1);
-      printf ("PutImage Format xypixmap %d\n", image->format);
     }
   else
     {
       XCBFORMATIter iter;
       int           cur;
       
-      printf ("PutImage Format zpixmap %d\n", image->format);
-
       dest_bits_per_pixel = image->bits_per_pixel;
       dest_scanline_pad = image->bitmap_format_scanline_pad;
       left_pad = 0;
@@ -330,8 +323,6 @@ XCBImagePut (XCBConnection *conn,
 	register INT32 i, j;
 	XCBConnSetupSuccessRep *rep;
 	
-	printf ("Truc slow\n");
-
 	/* XXX slow, but works */
 	rep = XCBGetSetup (conn);
 	img.width = width;
