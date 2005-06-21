@@ -12,12 +12,11 @@
  */
 
 
-typedef struct XCBImage_ XCBImage; /**< A structure that describes an XCBImage */
+typedef struct XCBImage_ XCBImage;
 
 /**
  * @struct XCBImage
- * Inherits from the Ewl_Container and extends it to provide text and a cursor
- * for editing the contents of the text.
+ * A structure that describes an XCBImage.
  */
 struct XCBImage_
 {
@@ -39,8 +38,8 @@ typedef struct XCBShmSegmentInfo_ XCBShmSegmentInfo;
 
 /**
  * @struct XCBShmSegmentInfo
- * Inherits from the Ewl_Container and extends it to provide text and a cursor
- * for editing the contents of the text.
+ * A structure that stores the informations needed by the MIT Shm
+ * Extension.
  */
 struct XCBShmSegmentInfo_
 {
