@@ -26,4 +26,5 @@ AC_OUTPUT([Makefile
 	property/Makefile property/xcb-property.pc
 	icccm/Makefile icccm/xcb-icccm.pc
 	wm/Makefile wm/xcb-wm.pc
+	xcb_util_intro
 	])
