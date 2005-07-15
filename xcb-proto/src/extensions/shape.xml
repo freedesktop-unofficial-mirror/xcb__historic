@@ -29,6 +29,19 @@ authorization from the authors.
   <typedef oldname="CARD8" newname="SHAPE_OP" />
   <typedef oldname="CARD8" newname="SHAPE_KIND" />
 
+  <enum name="SHAPE_OP">
+    <item name="Set" />
+    <item name="Union" />
+    <item name="Intersect" />
+    <item name="Substract" />
+    <item name="Invert" />
+  </enum>
+
+  <enum name="SHAPE_KIND">
+    <item name="Bounding" />
+    <item name="Clip" />
+  </enum>
+
   <event name="Notify" number="0">
     <field type="SHAPE_KIND" name="shape_kind" />
     <field type="WINDOW" name="affected_window" />
