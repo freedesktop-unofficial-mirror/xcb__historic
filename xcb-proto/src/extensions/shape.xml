@@ -29,7 +29,8 @@ authorization from the authors.
   <typedef oldname="CARD8" newname="SHAPE_OP" />
   <typedef oldname="CARD8" newname="SHAPE_KIND" />
 
-  <enum name="SHAPE_OP">
+  <!-- Shape attributes of type SHAPE_OP. -->
+  <enum name="SO">
     <item name="Set" />
     <item name="Union" />
     <item name="Intersect" />
@@ -37,7 +38,8 @@ authorization from the authors.
     <item name="Invert" />
   </enum>
 
-  <enum name="SHAPE_KIND">
+  <!-- Shape attributes of type SHAPE_KIND. -->
+  <enum name="SK">
     <item name="Bounding" />
     <item name="Clip" />
   </enum>
