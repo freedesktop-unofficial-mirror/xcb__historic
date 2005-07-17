@@ -676,8 +676,10 @@ int XCBSync(XCBConnection *c, XCBGenericError **e);
       events are handled, you have to make a Ctrl-C to interrupt the
       program.
       </p>
-      <p><b>TODO</b>: one should tell what these functions return and
-    about the generic error</p>
+      <p>
+      <b>TODO</b>: one should tell what these functions return and
+      about the generic error
+      </p>
       <div class="comp">
         <div class="title">
 	Comparison Xlib/XCB
@@ -1334,11 +1336,40 @@ XCBConfigureWindow (c, win, XCBCWEventMask, values);
 	<p>
 	After we have registered for the event types we are interested
 	in, we need to enter a loop of receiving events and handling
-	them. There are various ways to write such a loop, but the
-	basic loop looks like this:
+	them. There are two ways to receive events: a blocking way and
+	a non blocking way:
+	</p>
+	<ul>
+	  <li>
+	  <span class="code">XCBWaitEvent (XCBConnection *c)</span>
+	  is the blocking way. It waits (so blocks...) until an event is
+	  queued in the X server. Then it retrieves it into a newly
+	  allocated structure (it dequeues it from the queue) and returns
+	  it. This structure has to be freed. The function returns
+	  <span class="code">NULL</span> if an error occurs.
+	  </li>
+	  <br />
+	  <li>
+	  <span class="code">XCBPollForEvent (XCBConnection *c, int
+	  *error)</span> is the non blocking way. It looks at the event
+	  queue and returns (and dequeues too) an existing event into
+	  a newly allocated structure. This structure has to be
+	  freed. It returns <span class="code">NULL</span> if there is
+	  no event. If an error occurs, the parameter <span
+	  class="code">error</span> will be filled with the error
+	  status.
+	  </li> 
+	</ul>
+	<p>
+	There are various ways to write such a loop. We present two
+	ways to write such a loop, with the two functions above. The
+	first one uses <span class="code">XCBWaitEvent</span>, which
+	is similar to an event Xlib loop using only <span
+	class="code">XNextEvent</span>:
 	</p>
 	<pre class="code">
   XCBGenericEvent *e;
+
   while ((e = XCBWaitEvent (c)))
     {
       switch (e-&gt;response_type)
@@ -1372,23 +1403,72 @@ XCBConfigureWindow (c, win, XCBCWEventMask, values);
     }
 </pre>
 	<p>
-	The <span class="code">XCBWaitEvent()</span> function fetches
-	the next event coming from the X server. If no event is
-	waiting, it returns NULL. When it returns a non NULL value,
-	the data is placed in a newly allocated structure, associated
-	to the event (and that should be freed). See below for the
-	description of common structure events.
+	You will certainly want to use <span
+	class="code">XCBPollForEvent(XCBConnection *c, int
+	*error)</span> if, in Xlib, you use <span
+	class="code">XPending</span>:
 	</p>
+	<pre class="code">
+  while (XPending (display))
+    {
+      XEvent ev;
+
+      XNextEvent(d, &ev);
+      
+      /* Manage your event */
+    }
+</pre>
+        <p>
+	Such a loop in XCB looks like:
+	</p>
+	<pre class="code">
+  XCBGenericEvent *ev;
+
+  while ((ev = XCBPollForEvent (conn, 0)))
+    {
+      /* Manage your event */
+    }
+</pre>
 	<p>
+	The events are managed in the same way as with <span
+	class="code">XCBWaitEvent</span>.
 	Obviously, we will need to give the user some way of
 	terminating the program. This is usually done by handling a
 	special "quit" event, as we will soon see.
 	</p>
+	<div class="comp">
+	  <div class="title">
+	    Comparison Xlib/XCB
+	  </div>
+	  <div class="xlib">
+	    <ul>
+	      <li>XNextEvent ()</li>
+	      </ul>
+	  </div>
+	  <div class="xcb">
+	    <ul>
+	      <li>XCBWaitEvent ()</li>
+	    </ul>
+	  </div>
+	  <div class="xlib">
+	    <ul>
+	      <li>XPending ()</li>
+	      <li>XNextEvent ()</li>
+	    </ul>
+	  </div>
+	  <div class="xcb">
+	    <ul>
+	      <li>XCBPollForEvent ()</li>
+	      <br />
+	    </ul>
+	  </div>
+	</div>
+	<p />
         <li class="subtitle"><a name="expose">Expose events</a></li>
 	<p>
 	The <span class="code">Expose</span> event is one of the most
-	basic events an application may receive. It will be sent to us
-	in one of several cases:
+	basic (and most used) events an application may receive. It
+	will be sent to us in one of several cases:
 	  <ul>
   	    <li>A window that covered part of our window has moved
 	    away, exposing part (or all) of our window.</li>
