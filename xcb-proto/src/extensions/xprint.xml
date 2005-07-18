@@ -106,7 +106,9 @@ authorization from the authors.
             <pad bytes="1" />
             <field type="CARD32" name="listCount" />
             <pad bytes="20" />
-            <list type="PRINTER" name="printers" />
+            <list type="PRINTER" name="printers">
+                <fieldref>listCount</fieldref>
+            </list>
         </reply>
     </request>
 
