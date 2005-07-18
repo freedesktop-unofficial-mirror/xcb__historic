@@ -34,8 +34,8 @@ authorization from the authors.
 
     <!-- XIDs -->
     <xidtype name="PORT" />
+    <xidtype name="ENCODING" />
          
-
     <!-- Types/Structs (double check these) -->
     <struct name="Rational">
         <field type="INT32" name="numerator" />
@@ -45,14 +45,14 @@ authorization from the authors.
     <struct name="AdaptorInfo">
         <field type="CARD32" name="base" />
         <field type="CARD16" name="name_size" />
-        <field type="CARD16" name="nports" />
-        <field type="CARD16" name="nformats" />
+        <field type="CARD16" name="num_ports" />
+        <field type="CARD16" name="num_formats" />
         <field type="CARD8" name="type" />
         <field type="CARD8" name="pad" />
     </struct>
 
     <struct name="EncodingInfo">
-        <field type="CARD32" name="encoding" />
+        <field type="ENCODING" name="encoding" />
         <field type="CARD16" name="name_size" />
         <field type="CARD16" name="width" />
         <field type="CARD16" name="height" />
@@ -137,8 +137,8 @@ authorization from the authors.
     
     <!-- Requests -->
     <request name="QueryExtension" opcode="0">
-        <field type="CARD16" name="major" />
-        <field type="CARD16" name="minor" />
+        <!--<field type="CARD16" name="major" />
+        <field type="CARD16" name="minor" />-->
         <reply>
             <pad bytes="1" />
             <field type="CARD16" name="major" />
