@@ -66,6 +66,14 @@ static lazyreply *get_lazyreply(XCBConnection *c, XCBExtension *ext)
     return data;
 }
 
+static void free_lazyreply(void *p)
+{
+    lazyreply *data = p;
+    if(data->tag == LAZY_FORCED)
+        free(data->value.reply);
+    free(data);
+}
+
 /* Public interface */
 
 /* Do not free the returned XCBQueryExtensionRep - on return, it's aliased
@@ -110,5 +118,5 @@ int _xcb_ext_init(XCBConnection *c)
 void _xcb_ext_destroy(XCBConnection *c)
 {
     pthread_mutex_destroy(&c->ext.lock);
-    _xcb_map_delete(c->ext.extensions, free);
+    _xcb_map_delete(c->ext.extensions, free_lazyreply);
 }

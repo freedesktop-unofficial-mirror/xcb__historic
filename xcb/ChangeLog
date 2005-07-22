@@ -1,3 +1,8 @@
+2005-07-21  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_ext.c:
+	Fix memory leak reported by Carl Worth (thanks Carl!).
+
 2005-05-22  Josh Triplett  <josh@freedesktop.org>
 
 	* src/c-client.xsl:
