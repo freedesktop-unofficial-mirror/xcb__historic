@@ -4,7 +4,10 @@ AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
 
 AC_CHECK_PROGS(M4, m4)
-AC_CHECK_PROGS(GPERF, gperf)
+AC_CHECK_PROGS(GPERF, gperf, [no])
+if test $GPERF = "no"; then
+	AC_MSG_ERROR([Can't find gperf, please install it and try again])
+fi
 AC_PROG_CC
 AC_PROG_LIBTOOL
 
