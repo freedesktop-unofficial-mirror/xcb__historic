@@ -26,6 +26,7 @@
 /* Connection management: the core of XCB. */
 
 #include <assert.h>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -42,6 +43,8 @@ static int write_setup(XCBConnection *c, XCBAuthInfo *auth_info)
     int count = 0;
     int endian = 0x01020304;
     int ret;
+
+    memset(&out, 0, sizeof(out));
 
     /* B = 0x42 = MSB first, l = 0x6c = LSB first */
     if(htonl(endian) == endian)
