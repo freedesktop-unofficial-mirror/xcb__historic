@@ -1,3 +1,13 @@
+2005-08-03  Trevor Woerner <twoerner.x@gmail.com>
+
+	reviewer: Jamey Sharp <jamey@minilop.net>
+
+	* configure.ac:
+	Allow people to not have check as long as they have at
+	least automake version 1.9. Older versions of automake
+	still work as long as check is installed or the NoCheck
+	instructions are followed.
+
 2005-07-21  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_conn.c:
