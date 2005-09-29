@@ -28,7 +28,7 @@ authorization from the authors.
 <xcb header="damage" extension-xname="DAMAGE" extension-name="Damage">
   <import>xfixes</import>
 
-  <typedef oldname="CARD32" newname="DAMAGE" />
+  <xidtype name="DAMAGE" />
 
   <enum name="ReportLevel">
     <item name="RawRectangles" />
