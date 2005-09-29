@@ -1,3 +1,11 @@
+2005-08-15  Trevor Woerner <twoerner.x@gmail.com>
+
+	reviewer: Jamey Sharp <jamey@minilop.net>
+
+	* src/Makefile.am:
+	Make builds work when the source and build directories
+	are different.
+
 2005-08-03  Trevor Woerner <twoerner.x@gmail.com>
 
 	reviewer: Jamey Sharp <jamey@minilop.net>

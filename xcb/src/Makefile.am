@@ -72,7 +72,7 @@ vpath %.xml $(XCBPROTO_XCBINCLUDEDIR) $(XCBPROTO_XCBINCLUDEDIR)/extensions
 	            --stringparam base-path $(XCBPROTO_XCBINCLUDEDIR)/ \
 	            --stringparam extension-path \
 	                          $(XCBPROTO_XCBINCLUDEDIR)/extensions/ \
-	            -o $@ c-client.xsl $< 
+	            -o $@ $(srcdir)/c-client.xsl $< 
 
 %.c: %.xml c-client.xsl
 	@n=`dirname $*`; test -d $$n || (echo mkdir $$n; mkdir $$n)
@@ -80,4 +80,4 @@ vpath %.xml $(XCBPROTO_XCBINCLUDEDIR) $(XCBPROTO_XCBINCLUDEDIR)/extensions
 	            --stringparam base-path $(XCBPROTO_XCBINCLUDEDIR)/ \
 	            --stringparam extension-path \
 	                          $(XCBPROTO_XCBINCLUDEDIR)/extensions/ \
-	            -o $@ c-client.xsl $< 
+	            -o $@ $(srcdir)/c-client.xsl $< 
