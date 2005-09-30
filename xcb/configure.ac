@@ -19,10 +19,19 @@ AC_CONFIG_HEADERS([src/config.h])
 
 AC_PROG_LIBTOOL
 AC_PROG_CC
+
 AC_PATH_PROG(XSLTPROC, xsltproc, no)
 if test "$XSLTPROC" = "no"; then
    AC_MSG_ERROR([XCB requires xsltproc.])
 fi
+
+HTML_CHECK_RESULT=false
+if test x"$HAVE_CHECK" = xtrue; then
+	if test x"$XSLTPROC" != xno; then
+		HTML_CHECK_RESULT=true
+	fi
+fi
+AC_SUBST(HTML_CHECK_RESULT)
 
 # Checks for pkg-config packages
 PKG_CHECK_MODULES(XCBPROTO, xcb-proto >= 0.9)
@@ -69,4 +78,4 @@ CDEBUGFLAGS="$optflags -Wall -pedantic -Wpointer-arith \
 	-Wstrict-prototypes -Wmissing-declarations -Wnested-externs"
 AC_SUBST(CDEBUGFLAGS)
 
-AC_OUTPUT([Makefile src/Makefile xcb.pc])
+AC_OUTPUT([Makefile src/Makefile tests/Makefile xcb.pc])
