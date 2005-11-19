@@ -27,7 +27,7 @@ authorization from the authors.
 -->
 
 <xcb header="xv" extension-xname="XVideo" extension-name="Xv">
-    <import>shm<import>
+    <import>shm</import>
     <!-- Probably doesn't work yet.  So far untested.  Target version is 2.2.  The docs suck. 6/5/2005 -->
 
     <!-- Implements version 2.0 of XV -->	
@@ -71,9 +71,10 @@ authorization from the authors.
         <field type="CARD16" name="height" />
         <field type="CARD32" name="data_size" />
         <field type="CARD32" name="num_planes" />
-        <field type="int" name="pitches" /> <!-- int* -->
-        <field type="int" name="offsets" /> <!-- int* -->
-        <field type="CARD8" name="data" /> <!-- char* -->
+        <!-- <field type="int" name="pitches" /> --> <!-- int* -->
+        <!-- <field type="int" name="offsets" /> --> <!-- int* -->
+        <!-- <field type="CARD8" name="data" /> --> <!-- char* -->
+        -->
         <!-- Some XPointer "obdata" -->
     </struct>
     
@@ -342,7 +343,7 @@ authorization from the authors.
     <request name="PutImage" opcode="18">
         <field type="PORT" name="port" />
         <field type="DRAWABLE" name="drawable" />
-        <field type="GC" name="gc" />
+        <field type="GCONTEXT" name="gc" />
         <field type="CARD32" name="id" />
         <field type="INT16" name="src_x" />
         <field type="INT16" name="src_y" />
@@ -363,7 +364,7 @@ authorization from the authors.
     <request name="ShmPutImage" opcode="19">
         <field type="PORT" name="port" />
         <field type="DRAWABLE" name="drawable" />
-        <field type="GC" name="gc" />
+        <field type="GCONTEXT" name="gc" />
         <field type="SEG" name="shmseg" />
         <field type="CARD32" name="id" />
         <field type="CARD32" name="offset" />
