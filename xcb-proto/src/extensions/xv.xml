@@ -27,7 +27,7 @@ authorization from the authors.
 -->
 
 <xcb header="xv" extension-xname="XVideo" extension-name="Xv">
-
+    <import>shm<import>
     <!-- Probably doesn't work yet.  So far untested.  Target version is 2.2.  The docs suck. 6/5/2005 -->
 
     <!-- Implements version 2.0 of XV -->	
@@ -339,8 +339,45 @@ authorization from the authors.
         </reply>
     </request>
 
-    <!-- Next in Xvproto.h there is a PutImage and ShmPutImage request.
-    are these the same as XCBPutImage/XCBShmPutImage? -->
-    
+    <request name="PutImage" opcode="18">
+        <field type="PORT" name="port" />
+        <field type="DRAWABLE" name="drawable" />
+        <field type="GC" name="gc" />
+        <field type="CARD32" name="id" />
+        <field type="INT16" name="src_x" />
+        <field type="INT16" name="src_y" />
+        <field type="CARD16" name="src_w" />
+        <field type="CARD16" name="src_h" />
+        <field type="INT16" name="drw_x" />
+        <field type="INT16" name="drw_y" />
+        <field type="CARD16" name="drw_w" />
+        <field type="CARD16" name="drw_h" />
+        <field type="CARD16" name="width" />
+        <field type="CARD16" name="height" />
+        <localfield type="CARD32" name="data_len" />
+        <list type="BYTE" name="data">
+            <value>data_len</value>
+        </list>
+    </request>
 
+    <request name="ShmPutImage" opcode="19">
+        <field type="PORT" name="port" />
+        <field type="DRAWABLE" name="drawable" />
+        <field type="GC" name="gc" />
+        <field type="SEG" name="shmseg" />
+        <field type="CARD32" name="id" />
+        <field type="CARD32" name="offset" />
+        <field type="INT16" name="src_x" />
+        <field type="INT16" name="src_y" />
+        <field type="CARD16" name="src_w" />
+        <field type="CARD16" name="src_h" />
+        <field type="INT16" name="drw_x" />
+        <field type="INT16" name="drw_y" />
+        <field type="CARD16" name="drw_w" />
+        <field type="CARD16" name="drw_h" />
+        <field type="CARD16" name="width" />
+        <field type="CARD16" name="height" />
+        <field type="CARD8" name="send_event" />
+        <pad bytes="3" />
+    </request>
 </xcb>
