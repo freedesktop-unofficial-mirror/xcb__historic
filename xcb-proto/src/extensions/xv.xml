@@ -65,6 +65,18 @@ authorization from the authors.
         <field type="CARD8" name="depth" />
     </struct>
 
+    <struct name="Image">
+        <field type="CARD32" name="id" />
+        <field type="CARD16" name="width" />
+        <field type="CARD16" name="height" />
+        <field type="CARD32" name="data_size" />
+        <field type="CARD32" name="num_planes" />
+        <field type="int" name="pitches" /> <!-- int* -->
+        <field type="int" name="offsets" /> <!-- int* -->
+        <field type="CARD8" name="data" /> <!-- char* -->
+        <!-- Some XPointer "obdata" -->
+    </struct>
+    
     <!-- I think this goes with the "QueryPortAttributes" request.  But it's not in the docs. --> 
     <struct name="AttributeInfo">
         <field type="CARD32" name="flags" />
@@ -292,7 +304,7 @@ authorization from the authors.
             <pad bytes="1" />
             <field type="CARD32" name="num_attributes" />
             <field type="CARD32" name="text_size" />
-            <!-- TODO: Make sure this is correct. Is there padding? -->
+            <pad bytes="16" />
             <list type="AttributeInfo" name="attributes" />
         </reply>
     </request>
@@ -303,7 +315,6 @@ authorization from the authors.
             <pad bytes="1" />
             <field type="CARD32" name="num_formats" />
             <pad bytes="20" />
-            <!-- TODO: Make sure that this is correct. -->
             <list type="ImageFormatInfo" name="format">
                 <fieldref>num_formats</fieldref>
             </list>
@@ -322,7 +333,9 @@ authorization from the authors.
             <field type="CARD16" name="width" />
             <field type="CARD16" name="height" />
             <pad bytes="12" />
-            <!-- TODO: What comes after this? I know something does. -->
+            <!-- An XvImage struct comes after this.  But it's
+            currently broken. -->
+            <field type="Image" name="image" />
         </reply>
     </request>
 
