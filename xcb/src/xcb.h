@@ -36,6 +36,12 @@
 extern "C" {
 #endif
 
+#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
+#define deprecated __attribute__((__deprecated__))
+#else
+#define deprecated
+#endif
+
 /* Pre-defined constants */
 
 /* current protocol version */
@@ -101,7 +107,7 @@ typedef struct XCBAuthInfo {
     char *data;
 } XCBAuthInfo;
 
-int XCBGetAuthInfo(int fd, XCBAuthInfo *info);
+int XCBGetAuthInfo(int fd, XCBAuthInfo *info) deprecated;
 
 
 /* xcb_out.c */
@@ -112,7 +118,8 @@ CARD32 XCBGetMaximumRequestLength(XCBConnection *c);
 
 /* xcb_in.c */
 
-XCBGenericEvent *XCBWaitEvent(XCBConnection *c);
+XCBGenericEvent *XCBWaitEvent(XCBConnection *c) deprecated;
+XCBGenericEvent *XCBWaitForEvent(XCBConnection *c);
 XCBGenericEvent *XCBPollForEvent(XCBConnection *c, int *error);
 unsigned int XCBGetRequestRead(XCBConnection *c);
 
@@ -140,11 +147,11 @@ void XCBDisconnect(XCBConnection *c);
 /* xcb_util.c */
 
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen);
-int XCBOpen(const char *host, int display);
-int XCBOpenTCP(const char *host, unsigned short port);
-int XCBOpenUnix(const char *file);
+int XCBOpen(const char *host, int display) deprecated;
+int XCBOpenTCP(const char *host, unsigned short port) deprecated;
+int XCBOpenUnix(const char *file) deprecated;
 
-XCBConnection *XCBConnectBasic(void); /* deprecated */
+XCBConnection *XCBConnectBasic(void) deprecated;
 XCBConnection *XCBConnect(const char *displayname, int *screenp);
 XCBConnection *XCBConnectToDisplayWithAuthInfo(const char *display, XCBAuthInfo *auth, int *screen);
 

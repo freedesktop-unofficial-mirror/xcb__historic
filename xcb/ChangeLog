@@ -1,5 +1,13 @@
 2005-12-07  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb.h, src/xcb_in.c:
+	Use GCC attribute extension, if available, to mark some
+	functions deprecated; and rename XCBWaitEvent to
+	XCBWaitForEvent, with a deprecated backwards compatibility
+	function.
+
+2005-12-07  Jamey Sharp  <jamey@minilop.net>
+
 	* src/xcb.h, src/xcb_conn.c, src/xcb_util.c:
 	Rename XCBConnect to XCBConnectToFD, and implement XCBConnect
 	and XCBConnectToDisplayWithAuthInfo, as specified by the XcbApi

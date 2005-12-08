@@ -126,6 +126,11 @@ done:
 
 XCBGenericEvent *XCBWaitEvent(XCBConnection *c)
 {
+    return XCBWaitForEvent(c);
+}
+
+XCBGenericEvent *XCBWaitForEvent(XCBConnection *c)
+{
     XCBGenericEvent *ret;
 
 #if XCBTRACEEVENT
