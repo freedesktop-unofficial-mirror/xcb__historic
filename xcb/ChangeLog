@@ -1,3 +1,12 @@
+2005-12-07  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb.h, src/xcb_conn.c, src/xcb_util.c:
+	Rename XCBConnect to XCBConnectToFD, and implement XCBConnect
+	and XCBConnectToDisplayWithAuthInfo, as specified by the XcbApi
+	documentation. Provide a trivial implementation of deprecated
+	XCBConnectBasic for backwards compatibility. Fix XCBParseDisplay
+	to accept a null screen pointer.
+
 2005-09-30  Trevor Woerner <twoerner.x@gmail.com>
 
 	reviewer: Jamey Sharp <jamey@minilop.net>

@@ -133,7 +133,7 @@ void XCBPrefetchExtensionData(XCBConnection *c, XCBExtension *ext);
 XCBConnSetupSuccessRep *XCBGetSetup(XCBConnection *c);
 int XCBGetFileDescriptor(XCBConnection *c);
 
-XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info);
+XCBConnection *XCBConnectToFD(int fd, XCBAuthInfo *auth_info);
 void XCBDisconnect(XCBConnection *c);
 
 
@@ -144,7 +144,9 @@ int XCBOpen(const char *host, int display);
 int XCBOpenTCP(const char *host, unsigned short port);
 int XCBOpenUnix(const char *file);
 
-XCBConnection *XCBConnectBasic(void);
+XCBConnection *XCBConnectBasic(void); /* deprecated */
+XCBConnection *XCBConnect(const char *displayname, int *screenp);
+XCBConnection *XCBConnectToDisplayWithAuthInfo(const char *display, XCBAuthInfo *auth, int *screen);
 
 int XCBSync(XCBConnection *c, XCBGenericError **e);
 

@@ -52,6 +52,9 @@ int XCBPopcount(CARD32 mask)
 int XCBParseDisplay(const char *name, char **host, int *display, int *screen)
 {
     char *colon;
+    int dummy_screen;
+    if(!screen)
+        screen = &dummy_screen;
     *screen = *display = 0;
     if(!name || !*name)
         name = getenv("DISPLAY");
@@ -128,37 +131,50 @@ int XCBOpenUnix(const char *file)
     return fd;
 }
 
-XCBConnection *XCBConnectBasic()
+XCBConnection *XCBConnect(const char *displayname, int *screenp)
 {
-    int fd, display = 0, screen = 0;
+    int fd, display = 0;
     char *host;
     XCBConnection *c;
     XCBAuthInfo auth;
 
-    if(!XCBParseDisplay(0, &host, &display, &screen))
-    {
-        fprintf(stderr, "Invalid DISPLAY\n");
-        abort();
-    }
+    if(!XCBParseDisplay(displayname, &host, &display, screenp))
+        return 0;
     fd = XCBOpen(host, display);
     free(host);
     if(fd == -1)
-    {
-        perror("XCBOpen");
-        abort();
-    }
+        return 0;
 
     XCBGetAuthInfo(fd, &auth);
-    c = XCBConnect(fd, &auth);
-    if(!c)
-    {
-        perror("XCBConnect");
-        abort();
-    }
-
+    c = XCBConnectToFD(fd, &auth);
     free(auth.name);
     free(auth.data);
     return c;
+}
+
+XCBConnection *XCBConnectToDisplayWithAuthInfo(const char *displayname, XCBAuthInfo *auth, int *screenp)
+{
+    int fd, display = 0;
+    char *host;
+
+    if(!XCBParseDisplay(displayname, &host, &display, screenp))
+        return 0;
+    fd = XCBOpen(host, display);
+    free(host);
+    if(fd == -1)
+        return 0;
+
+    return XCBConnectToFD(fd, auth);
+}
+
+/* backwards compatible interface: remove before 1.0 release */
+XCBConnection *XCBConnectBasic()
+{
+    XCBConnection *c = XCBConnect(0, 0);
+    if(c)
+        return c;
+    perror("XCBConnect");
+    abort();
 }
 
 int XCBSync(XCBConnection *c, XCBGenericError **e)

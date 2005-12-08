@@ -130,7 +130,7 @@ int XCBGetFileDescriptor(XCBConnection *c)
     return c->fd;
 }
 
-XCBConnection *XCBConnect(int fd, XCBAuthInfo *auth_info)
+XCBConnection *XCBConnectToFD(int fd, XCBAuthInfo *auth_info)
 {
     XCBConnection* c;
 
