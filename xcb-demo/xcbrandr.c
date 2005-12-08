@@ -120,8 +120,6 @@ main (int argc, char **argv)
   XCBGenericEvent *event;
   XCBRandRScreenChangeNotifyEvent *sce;
   char          *display_name = NULL;
-  char		*host;
-  int		display;
   int 		i, j;
   int		current_size;
   short		current_rate;
@@ -219,27 +217,7 @@ main (int argc, char **argv)
  
   if (verbose) query = 1;
 
-  if (!XCBParseDisplay(display_name, &host, &display, &screen)) {
-      fprintf(stderr, "Invalid DISPLAY\n");
-      exit(1);
-  }
-
-  int fd = XCBOpen(host, display);
-  free(host);
-  if (fd == -1) {
-      fprintf(stderr, "Error: XCBOpen\n");
-      exit(1);
-  }
-
-  /* Now we open the connection */
-  XCBAuthInfo auth;
-  XCBGetAuthInfo(fd, &auth);
-  c = XCBConnect(fd, &auth);
-
-  /* Free auth data */
-  free(auth.name);
-  free(auth.data);
-  
+  c = XCBConnect(display_name, &screen);
   if (!c) {
       fprintf (stderr, "Can't open display %s\n", display_name);
       exit (1);
