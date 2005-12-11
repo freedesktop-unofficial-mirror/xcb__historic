@@ -39,7 +39,7 @@ XCBAuxGetScreen (XCBConnection *c,
   i = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c));
   if (screen > i.rem - 1) return NULL; /* screen must be */
                                        /* between 0 and i.rem - 1 */
-  for (cur = 0; cur <= screen; XCBSCREENNext(&i), ++cur) {}
+  for (cur = 0; cur < screen; XCBSCREENNext(&i), ++cur) {}
   
   return i.data;
 }
