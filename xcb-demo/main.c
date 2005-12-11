@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include <X11/XCB/xcb.h>
+#include <X11/XCB/xcb_aux.h>
 #include "reply_formats.h"
 
 #ifdef VERBOSE
@@ -60,9 +61,10 @@ int main(int argc, char **argv)
 #ifdef TEST_THREADS
     pthread_t event_thread;
 #endif
+    int screen_num;
 
-    c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
+    c = XCBConnect(0, &screen_num);
+    root = XCBAuxGetScreen(c, screen_num);
 
 #ifdef TEST_THREADS
 # ifdef VERBOSE
@@ -240,6 +242,6 @@ void wait_events(XCBConnection *c)
     printf("wait_events() thread ID: %ld\n", pthread_self());
 # endif
 #endif
-    while((e = XCBWaitEvent(c)) && show_event(e))
+    while((e = XCBWaitForEvent(c)) && show_event(e))
         /* empty statement */ ;
 }

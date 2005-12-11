@@ -1,5 +1,6 @@
 
 #include <X11/XCB/xcb.h>
+#include <X11/XCB/xcb_aux.h>
 #include <X11/XCB/render.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -513,11 +514,12 @@ int main(int argc, char *argv[])
     XCBRenderQueryPictFormatsRep *formats_reply;
     XCBRenderPICTFORMAT  rootformat;
     XCBSCREEN *root;
+    int screen_num;
     
     XCBRenderPICTFORMINFO  forminfo_query, *forminfo_result;
     
-    c = XCBConnectBasic();
-    root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
+    c = XCBConnect(0, &screen_num);
+    root = XCBAuxGetScreen(c, screen_num);
     
     version_cookie = XCBRenderQueryVersion(c, (CARD32)0, (CARD32)3);
     version_reply = XCBRenderQueryVersionReply(c, version_cookie, 0);

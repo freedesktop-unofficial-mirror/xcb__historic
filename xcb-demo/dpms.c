@@ -12,7 +12,7 @@
 
 int main(int argc, char **argv)
 {
-	XCBConnection *c = XCBConnectBasic();
+	XCBConnection *c = XCBConnect(0, 0);
 	XCBDPMSGetVersionCookie vc;
 	XCBDPMSGetVersionRep *ver;
 	XCBDPMSCapableCookie cc;

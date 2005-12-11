@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include <X11/XCB/xcb.h>
+#include <X11/XCB/xcb_aux.h>
 #include <X11/XCB/randr.h>
 #include <X11/XCB/render.h>	/* we share subpixel information */
 #include <string.h>
@@ -228,18 +229,7 @@ main (int argc, char **argv)
       fprintf (stderr, "Can't open display %s\n", display_name);
       exit (1);
   }
-  if (screen < 0)
-    screen = 0;
-
-/* TODO: Figure out a way to do this later...
-  if (screen >= ScreenCount (c)) {
-    fprintf (stderr, "Invalid screen number %d (display has %d)\n",
-	     screen, ScreenCount (c));
-    exit (1);
-  }
-*/
-		
-  root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
+  root = XCBAuxGetScreen(c, screen);
   XCBRandRGetScreenInfoCookie scookie;
 
   int major_version, minor_version;
@@ -400,7 +390,7 @@ main (int argc, char **argv)
       {
 	while (1) {
 	int spo;
-	event = XCBWaitEvent(c);
+	event = XCBWaitForEvent(c);
 	
 	printf ("Event received, type = %d\n", event->response_type);
 	//update Xlib's knowledge of the event

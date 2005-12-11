@@ -127,9 +127,10 @@ main (int argc, char *argv[])
   CARD32           valwin[3];
   XCBRECTANGLE     rect_coord = { 0, 0, W_W, W_H};
   XCBGenericEvent *e;
+  int screen_num;
   
-  data.conn = XCBConnectBasic ();
-  screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (data.conn)).data;
+  data.conn = XCBConnect (0, &screen_num);
+  screen = XCBAuxGetScreen (data.conn, screen_num);
   data.depth = XCBAuxGetDepth (data.conn, screen);
 
   win.window = screen->root;
@@ -182,7 +183,7 @@ main (int argc, char *argv[])
 
   XCBSync (data.conn, 0); 
 
-  while ((e = XCBWaitEvent(data.conn)))
+  while ((e = XCBWaitForEvent(data.conn)))
     {
       switch (e->response_type)
 	{ 

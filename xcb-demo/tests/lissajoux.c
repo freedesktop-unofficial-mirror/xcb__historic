@@ -171,6 +171,7 @@ main (int argc, char *argv[])
   XCBRECTANGLE     rect_coord = { 0, 0, W_W, W_H};
   XCBGenericEvent *e;
   int              try_shm;
+  int              screen_num;
   
   try_shm = 0;
 
@@ -187,8 +188,8 @@ main (int argc, char *argv[])
   if (try_shm != 0)
     try_shm = 1;
 
-  data.conn = XCBConnectBasic ();
-  screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (data.conn)).data;
+  data.conn = XCBConnect (0, &screen_num);
+  screen = XCBAuxGetScreen(data.conn, screen_num);
   data.depth = XCBAuxGetDepth (data.conn, screen);
 
   win.window = screen->root;

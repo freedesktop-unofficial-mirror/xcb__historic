@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 {
     void (*ext_printer)(int, char *) = print_extension;
 
-    c = XCBConnectBasic();
+    c = XCBConnect(0, 0);
     if(!c)
     {
 	fputs("Connect failed.\n", stderr);

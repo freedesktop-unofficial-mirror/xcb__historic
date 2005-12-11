@@ -5,6 +5,7 @@
  */
 
 #include <X11/XCB/xcb.h>
+#include <X11/XCB/xcb_aux.h>
 #include "reply_formats.h"
 #include <math.h>
 #include <stdlib.h> /* for free(3) */
@@ -62,9 +63,10 @@ int main()
 	CARD32 mask = GCForeground | GCGraphicsExposures;
 	CARD32 values[2];
 	XCBDRAWABLE rootwin;
+	int screen_num;
 
-	c = XCBConnectBasic();
-	root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data;
+	c = XCBConnect(0, &screen_num);
+	root = XCBAuxGetScreen(c, screen_num);
 	get_depth();
 
 	rootwin.window = root->root;
@@ -188,7 +190,7 @@ void *event_thread(void *param)
 
 	while(1)
 	{
-		e = XCBWaitEvent(c);
+		e = XCBWaitForEvent(c);
 		if(!formatEvent(e))
 			return 0;
 		if(e->response_type == XCBExpose)
