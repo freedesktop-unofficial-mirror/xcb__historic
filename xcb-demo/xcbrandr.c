@@ -217,6 +217,12 @@ main (int argc, char **argv)
  
   if (verbose) query = 1;
 
+  if (!display_name)
+      display_name = getenv("DISPLAY");
+  if (!display_name) {
+      fprintf (stderr, "No display available\n");
+      exit (1);
+  }
   c = XCBConnect(display_name, &screen);
   if (!c) {
       fprintf (stderr, "Can't open display %s\n", display_name);
