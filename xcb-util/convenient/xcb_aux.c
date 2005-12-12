@@ -31,17 +31,11 @@ XCBSCREEN *
 XCBAuxGetScreen (XCBConnection *c,
 		 int            screen)
 {
-  XCBSCREENIter i;
-  int           cur;
-  
-  if (!c) return NULL;
-  
-  i = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c));
-  if (screen > i.rem - 1) return NULL; /* screen must be */
-                                       /* between 0 and i.rem - 1 */
-  for (cur = 0; cur < screen; XCBSCREENNext(&i), ++cur) {}
-  
-  return i.data;
+  XCBSCREENIter i = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c));
+  for (; i.rem; --screen, XCBSCREENNext(&i))
+    if (screen == 0)
+      return i.data;
+  return 0;
 }
 
 XCBVISUALTYPE *
