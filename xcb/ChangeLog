@@ -1,3 +1,10 @@
+2005-12-12  Jamey Sharp  <jamey@minilop.net>
+
+	* tests/check_public.c:
+	Fix segfault in fail_unless calls and provide more useful error
+	messages. Also remove DISPLAY from the environment and test
+	ParseDisplay on a null pointer.
+
 2005-12-07  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb.h, src/xcb_in.c:
