@@ -1,5 +1,13 @@
 2005-12-12  Jamey Sharp  <jamey@minilop.net>
 
+	* src/xcb_util.c:
+	Rewrite XCBParseDisplay to handle all error cases correctly.
+	Thanks to Travis Spencer for pointing out a problem with
+	the previous sscanf call; turns out that sscanf won't do what
+	I want anyway, so this version just uses strtoul.
+
+2005-12-12  Jamey Sharp  <jamey@minilop.net>
+
 	* tests/check_public.c:
 	Fix segfault in fail_unless calls and provide more useful error
 	messages. Also remove DISPLAY from the environment and test
