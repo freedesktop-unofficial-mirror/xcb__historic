@@ -328,13 +328,13 @@
         To ask informations to the X server, we have to make a request
         and ask for a reply. With Xlib, these two tasks are
         automatically done: Xlib locks the system, sends a request,
-        waits for a reply from the X server and unlock. This is
-        annoying, especially if one makes a lot of request to the X
-        server. Indeed, Xlib have to wait for the end of the reply
+        waits for a reply from the X server and unlocks. This is
+        annoying, especially if one makes a lot of requests to the X
+        server. Indeed, Xlib has to wait for the end of a reply
         before asking for the next request (because of the locks that
         Xlib sends). For example, here is a time-line of N=4
         requests/replies with Xlib, with a round-trip latency
-        <b>T_round_trip</b> that is 5 time long as the time required
+        <b>T_round_trip</b> that is 5 times long as the time required
         to write or read a request/reply (<b>T_write/T_read</b>):
 	</p>
 	<pre class="text">
@@ -342,7 +342,7 @@
 </pre>
         <ul>
           <li>W: Writing request</li>
-          <li>-: Wtalled, waiting for data</li>
+          <li>-: Stalled, waiting for data</li>
           <li>R: Reading reply</li>
         </ul>
         <p>
@@ -350,9 +350,10 @@
         </p>
         <p>
         With XCB, we can suppress most of the round-trips as the
-        requests and the replies are not locked. We usually ask for a
-        reply, then XCB returns to us a <b>cookie</b>, which an
-        identifier. Then, later, we ask for a reply and XCB returns a
+        requests and the replies are not locked. We usually send a
+        request, then XCB returns to us a <b>cookie</b>, which is an
+        identifier. Then, later, we ask for a reply using this
+        <b>cookie</b> and XCB returns a
         pointer to that reply. Hence, with XCB, we can send a lot of
         requests, and later in the program, ask for all the replies
         when we need them. Here is the time-line for 4
