@@ -49,7 +49,6 @@ authorization from the authors.
         <item name="Settable"><value>0x02</value></item>
     </enum>
     
-    <!-- Types/Structs (double check these) -->
     <struct name="Rational">
         <field type="INT32" name="numerator" />
         <field type="INT32" name="denominator" />
@@ -62,7 +61,7 @@ authorization from the authors.
         <field type="CARD16" name="num_formats" />
         <field type="CARD8" name="type" />
         <field type="CARD8" name="pad" />
-        <list type="CARD8" name="name">
+        <list type="char" name="name">
             <fieldref>name_size</fieldref>
         </list>
         <list type="Format" name="formats">
@@ -78,6 +77,9 @@ authorization from the authors.
         <field type="CARD16" name="height" />
         <field type="Rational" name="rate" />
         <field type="CARD16" name="pad" />
+        <list type="char" name="name">
+            <fieldref>name_size</fieldref>
+        </list>
     </struct>
 
     <struct name="Format">
@@ -103,7 +105,7 @@ authorization from the authors.
         <field type="INT32" name="min" />
         <field type="INT32" name="max" />
         <field type="CARD32" name="size" />
-        <list type="CARD8" name="name">
+        <list type="char" name="name">
             <fieldref>size</fieldref>
         </list>
     </struct>
@@ -172,8 +174,6 @@ authorization from the authors.
     
     <!-- Requests -->
     <request name="QueryExtension" opcode="0">
-        <!--<field type="CARD16" name="major" />
-        <field type="CARD16" name="minor" />-->
         <reply>
             <pad bytes="1" />
             <field type="CARD16" name="major" />
@@ -198,7 +198,7 @@ authorization from the authors.
         <reply>
             <pad bytes="1" />
             <field type="CARD16" name="num_encodings" />
-            <pad bytes="48" />
+            <pad bytes="24" />
             <list type="EncodingInfo" name="info">
                 <fieldref>num_encodings</fieldref>
             </list>
