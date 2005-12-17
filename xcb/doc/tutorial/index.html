@@ -20,6 +20,7 @@
     <li><a class="section" href="#notions">Basic XCB notions</a></li>
       <ol>
         <li><a class="subsection" href="#conn">The X Connection</a></li>
+	<li><a class="subsection" href="#requestsreplies">Requests and replies: the Xlib killers</a></li>
 	<li><a class="subsection" href="#gc">The Graphics Context</a></li>
 	<li>Object handles</li>
 	<li>Memory allocation for XCB structures</li>
@@ -105,6 +106,52 @@
 	<li>Creating and destroying a mouse cursor</li>
 	<li>Setting a window's mouse cursor</li>
       </ol>
+    <li><a class="subsection" href="#translation">Translation of basic Xlib functions and macros</a></li>
+      <ol>
+        <li><a class="subsection" href="#displaystructure">Members of the Display structure</a></li>
+          <ol>
+            <li><a class="subsection" href="#ConnectionNumber">ConnectionNumber</a></li>
+            <li><a class="subsection" href="#DefaultScreen">DefaultScreen</a></li>
+            <li><a class="subsection" href="#QLength">QLength</a></li>
+            <li><a class="subsection" href="#ScreenCount">ScreenCount</a></li>
+            <li><a class="subsection" href="#ServerVendor">ServerVendor</a></li>
+            <li><a class="subsection" href="#ProtocolVersion">ProtocolVersion</a></li>
+            <li><a class="subsection" href="#ProtocolRevision">ProtocolRevision</a></li>
+            <li><a class="subsection" href="#VendorRelease">VendorRelease</a></li>
+            <li><a class="subsection" href="#DisplayString">DisplayString</a></li>
+            <li><a class="subsection" href="#BitmapUnit">BitmapUnit</a></li>
+            <li><a class="subsection" href="#BitmapBitOrder">BitmapBitOrder</a></li>
+            <li><a class="subsection" href="#BitmapPad">BitmapPad</a></li>
+            <li><a class="subsection" href="#ImageByteOrder">ImageByteOrder</a></li>
+          </ol>
+        <li><a class="subsection" href="#screenofdisplay">ScreenOfDisplay related functions</a></li>
+          <ol>
+            <li><a class="subsection" href="#ScreenOfDisplay">ScreenOfDisplay</a></li>
+            <li><a class="subsection" href="#DefaultScreenOfDisplay">DefaultScreenOfDisplay</a></li>
+            <li><a class="subsection" href="#RootWindow">RootWindow / RootWindowOfScreen</a></li>
+            <li><a class="subsection" href="#DefaultRootWindow">DefaultRootWindow</a></li>
+            <li><a class="subsection" href="#DefaultVisual">DefaultVisual / DefaultVisualOfScreen</a></li>
+            <li><a class="subsection" href="#DefaultGC">DefaultGC / DefaultGCOfScreen</a></li>
+            <li><a class="subsection" href="#BlackPixel">BlackPixel / BlackPixelOfScreen</a></li>
+            <li><a class="subsection" href="#WhitePixel">WhitePixel / WhitePixelOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayWidth">DisplayWidth / WidthOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayHeight">DisplayHeight / HeightOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayWidthMM">DisplayWidthMM / WidthMMOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayHeightMM">DisplayHeightMM / HeightMMOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayPlanes">DisplayPlanes / DefaultDepth / DefaultDepthOfScreen / PlanesOfScreen</a></li>
+            <li><a class="subsection" href="#DefaultColormap">DefaultColormap / DefaultColormapOfScreen</a></li>
+            <li><a class="subsection" href="#MinCmapsOfScreen">MinCmapsOfScreen</a></li>
+            <li><a class="subsection" href="#MaxCmapsOfScreen">MaxCmapsOfScreen</a></li>
+            <li><a class="subsection" href="#DoesSaveUnders">DoesSaveUnders</a></li>
+            <li><a class="subsection" href="#DoesBackingStore">DoesBackingStore</a></li>
+            <li><a class="subsection" href="#EventMaskOfScreen">EventMaskOfScreen</a></li>
+          </ol>
+        <li><a class="subsection" href="#misc">Miscellaneaous macros</a></li>
+          <ol>
+            <li><a class="subsection" href="#DisplayOfScreen">DisplayOfScreen</a></li>
+            <li><a class="subsection" href="#DisplayCells">DisplayCells / CellsOfScreen</a></li>
+          </ol>
+      </ol>
   </ol>
   </div>
   <div class="section">
@@ -145,7 +192,7 @@
       is not ideal, for example
       <ul>
         <li><b>Small platforms</b>: Xlib is a large piece of code, and
-	it's difficult to make it smaaller</li>
+	it's difficult to make it smaller</li>
         <li><b>Latency hiding</b>: Xlib requests requiring a reply are
 	effectively synchronous: they block until the reply appears,
 	whether the result is needed immediately or not.</li>
@@ -275,6 +322,179 @@
 	supply this pointer to any XCB function that should send
 	messages to the X server or receive messages from this server.
 	</p>
+        <li class="subtitle"><a name="requestsreplies">Requests and
+        replies: the Xlib killers</a></li>
+	<p>
+        To ask informations to the X server, we have to make a request
+        and ask for a reply. With Xlib, these two tasks are
+        automatically done: Xlib locks the system, sends a request,
+        waits for a reply from the X server and unlock. This is
+        annoying, especially if one makes a lot of request to the X
+        server. Indeed, Xlib have to wait for the end of the reply
+        before asking for the next request (because of the locks that
+        Xlib sends). For example, here is a time-line of N=4
+        requests/replies with Xlib, with a round-trip latency
+        <b>T_round_trip</b> that is 5 time long as the time required
+        to write or read a request/reply (<b>T_write/T_read</b>):
+	</p>
+	<pre class="text">
+  W-----RW-----RW-----RW-----R
+</pre>
+        <ul>
+          <li>W: Writing request</li>
+          <li>-: Wtalled, waiting for data</li>
+          <li>R: Reading reply</li>
+        </ul>
+        <p>
+        The total time is N * (T_write + T_round_trip + T_read).
+        </p>
+        <p>
+        With XCB, we can suppress most of the round-trips as the
+        requests and the replies are not locked. We usually ask for a
+        reply, then XCB returns to us a <b>cookie</b>, which an
+        identifier. Then, later, we ask for a reply and XCB returns a
+        pointer to that reply. Hence, with XCB, we can send a lot of
+        requests, and later in the program, ask for all the replies
+        when we need them. Here is the time-line for 4
+        requests/replies when we use this property of XCB:
+        </p>
+	<pre class="text">
+  WWWW--RRRR
+</pre>
+        <p>
+        The total time is N * T_write + max (0, T_round_trip - (N-1) *
+        T_write) + N * T_read. Which can be considerably faster than
+        all those Xlib round-trips.
+        </p>
+        <p>
+        Here is a program that computes the time to create 500 atoms
+        with Xlib and XCB. It shows the Xlib way, the bad XCB way
+        (which is similar to Xlib) and the good XCB way. On my
+        computer, XCB is 25 times faster than Xlib.
+        </p>
+      <pre class="code">
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/time.h&gt;
+
+#include &lt;X11/XCB/xcb.h&gt;
+
+#include &lt;X11/Xlib.h&gt;
+
+double
+get_time(void)
+{
+  struct timeval timev;
+  
+  gettimeofday(&timev, NULL);
+
+  return (double)timev.tv_sec + (((double)timev.tv_usec) / 1000000);
+}
+
+int
+main ()
+{
+  XCBConnection       *c;
+  XCBATOM             *atoms;
+  XCBInternAtomCookie *cs;
+  char               **names;
+  int                  count;
+  int                  i;
+  double               start;
+  double               end;
+  double               diff;
+
+  /* Xlib */
+  Display *disp;
+  Atom    *atoms_x;
+  double   diff_x;
+
+  c = XCBConnectBasic ();
+
+  count = 500;
+  atoms = (XCBATOM *)malloc (count * sizeof (atoms));
+  names = (char **)malloc (count * sizeof (char *));
+
+  /* init names */
+  for (i = 0; i &lt; count; ++i)
+    {
+      char buf[100];
+
+      sprintf (buf, "NAME%d", i);
+      names[i] = strdup (buf);
+    }
+
+  /* bad use */
+  start = get_time ();
+
+  for (i = 0; i &lt; count; ++i)
+    atoms[i] = XCBInternAtomReply (c, 
+                                   XCBInternAtom (c,
+                                                  0,
+                                                  strlen(names[i]),
+                                                  names[i]),
+                                   NULL)->atom;
+
+  end = get_time ();
+  diff = end - start;
+  printf ("bad use time  : %f\n", diff);
+
+  /* good use */
+  start = get_time ();
+
+  cs = (XCBInternAtomCookie *) malloc (count * sizeof(XCBInternAtomCookie));
+  for(i = 0; i &lt; count; ++i)
+    cs[i] = XCBInternAtom (c, 0, strlen(names[i]), names[i]);
+
+  for(i = 0; i &lt; count; ++i)
+    {
+      XCBInternAtomRep *r;
+
+      r = XCBInternAtomReply(c, cs[i], 0);
+      if(r)
+        atoms[i] = r->atom;
+      free(r);
+    }
+
+  end = get_time ();
+  printf ("good use time : %f\n", end - start);
+  printf ("ratio         : %f\n", diff / (end - start));
+  diff = end - start;
+
+  /* free var */
+  for (i = 0; i &lt; count; ++i)
+    {
+      free (names[i]);
+    }
+  free (atoms);
+  free (cs);
+
+  XCBDisconnect (c);
+
+  /* Xlib */
+  disp = XOpenDisplay (getenv("DISPLAY"));
+
+  atoms_x = (Atom *)malloc (count * sizeof (atoms_x));
+
+  start = get_time ();
+
+  for (i = 0; i &lt; count; ++i)
+    atoms_x[i] = XInternAtom(disp, names[i], 0);
+
+  end = get_time ();
+  diff_x = end - start;
+  printf ("Xlib use time : %f\n", diff_x);
+  printf ("ratio         : %f\n", diff_x / diff);
+
+  free (atoms_x);
+  free (names);
+
+  XCloseDisplay (disp);
+  
+  return 1;
+}
+</pre>
         <li class="subtitle"><a name="gc">The Graphic Context</a></li>
 	<p>
 	When we perform various drawing operations (graphics, text,
@@ -291,11 +511,17 @@
 	the desired options, and pass this structure to all drawing
 	functions.
 	</p>
+        <p>
+        Note that graphic contexts have no client-side structure in
+        XCB, they're just XIDs. Xlib has a client-side structure
+        because it caches the GC contents so it can avoid making
+        redundant requests, but of course XCB doesn't do that.
+        </p>
         <li class="subtitle"><a name="events">Events</a></li>
 	<p>
 	A structure is used to pass events received from the X
-	server. XCB supports a large amount of event types (33 when
-	this tutorial was written). This structure contains the type
+	server. XCB supports exactly the events specified in the
+	protocol (33 events). This structure contains the type
 	of event received, as well as the data associated with the
 	event (e.g. position on the screen where the event was
 	generated, mouse button associated with the event, region of
@@ -339,41 +565,24 @@
 	library. This is easily done thanks to pkgconfig:
 	</p>
 	<pre class="text">
-gcc prog.c -o prog `pkg-config --cflags --libs xcb`
+gcc -Wall prog.c -o prog `pkg-config --cflags --libs xcb`
 </pre>
       </ol>
       <li class="title"><a name="openconn">Opening and closing the connection to an X server</a></li>
       <p>
       An X program first needs to open the connection to the X
-      server. There is a function that opens a connection with default
-      parameters (the display being the one in the environment
-      variable DISPLAY):
+      server. There is a function that opens a connection. It requires
+      the display name, or NULL. In the latter case, the display name
+      will be the one in the environment variable DISPLAY.
       </p>
       <pre class="code">
-XCBConnection *XCBConnectBasic (void);
+XCBConnection *XCBConnect (const char *displayname,
+                           int        *screenp);
 </pre>
       <p>
-      The returned structure is given by
-      </p>
-      <pre class="code">
-struct XCBConnection {
-    /* constant data */
-    XCBConnSetupSuccessRep *setup;
-    int fd;
-    CARD32 maximum_request_length;
-
-    /* I/O data */
-    pthread_mutex_t iolock;
-    _xcb_in in;
-    _xcb_out out;
-
-    /* misc data */
-    _xcb_ext ext;
-    _xcb_xid xid;
-};
-</pre>
-      <p>
-      Here is how the connection is opened:
+      The second parameter returns the screen number used for the
+      connection. The returned structure describes an XCB connection
+      and is opaque. Here is how the connection can be opened:
       </p>
       <pre class="code">
 #include &lt;X11/XCB/xcb.h&gt;
@@ -383,73 +592,14 @@ main (int argc, char *argv[])
 {
   XCBConnection *c;
   
-  /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  /* Open the connection to the X server. use the DISPLAY environment variable as the default display name */
+  c = XCBConnect (NULL, NULL);
 
   return 1;
 }
 </pre>
       <p>
-      If you want ot open a connection with a specific display, you
-      can use the function <span class="code">XCBConnect</span>, whose
-      prototype is:
-      </p>
-      <pre class="code">
-XCBConnection *XCBConnect (int fd, XCBAuthInfo *auth_info);
-</pre>
-      <p>
-      Here is how to use this function:
-      </p>
-      <pre class="code">
-#include &lt;stdlib.h&gt;
-#include &lt;stdio.h&gt;
-
-#include &lt;X11/XCB/xcb.h&gt;
-
-int
-main (int argc, char *argv[])
-{
-  XCBConnection *c;
-  char          *display_name;
-  char          *host;
-  int            display;
-  int            screen;
-  int            fd;            /* The file descriptor */
-  XCBAuthInfo    auth;          /* The authorization data */
-  
-  display_name = ":0.0";
-  if (!XCBParseDisplay (0, &amp;host, &amp;display, &amp;screen))
-    {
-      printf ("Invalid DISPLAY\n");
-      abort ();
-    }
-
-  fd = XCBOpen (host, display);
-  free (host);
-  if (fd == -1)
-    {
-      printf ("Error: XCBOpen\n");
-      abort();
-    }
-
-  /* Open the connection to the X server */
-  XCBGetAuthInfo (fd, &amp;auth);
-  c = XCBConnect (fd, &amp;auth);
-  if (!c)
-    {
-      printf ("Error: XCBConnect\n");
-      abort();
-    }
-
-  /* Free auth data */
-  free (auth.name);
-  free (auth.data);
-
-  return 1;
-}
-</pre>
-      <p>
-      Finally, to close a connection, it suffices to use:
+      To close a connection, it suffices to use:
       </p>
       <pre class="code">
 void XCBDisconnect (XCBConnection *c);
@@ -465,7 +615,7 @@ void XCBDisconnect (XCBConnection *c);
 	</div>
 	<div class="xcb">
 	<ul>
-  	  <li>XCBConnectBasic () or XCBConnect ()</li>
+  	  <li>XCBConnect ()</li>
 	</ul>
 	</div>
 	<div class="xlib">
@@ -530,12 +680,20 @@ main (int argc, char *argv[])
 {
   XCBConnection *c;
   XCBSCREEN     *screen;
+  int            screen_nbr;
+  XCBSCREENIter  iter;
   
-  /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  /* Open the connection to the X server. Use the DISPLAY environment variable */
+  c = XCBConnect (NULL, &screen_nbr);
   
-  /* Get the first screen */
-  screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
+  /* Get the screen #screen_nbr */
+  iter = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c));
+  for (; iter.rem; --screen_nbr, XCBSCREENNext (&iter))
+    if (screen_nbr == 0)
+      {
+        screen = iter.data;
+        break;
+      }
 
   printf ("\n");
   printf ("Informations of screen %ld:\n", screen-&gt;root.xid);
@@ -560,8 +718,7 @@ typedef struct {
 } XCBWINDOW;
 </pre>
       <p>
-      We first ask the X server to give an Id to our window, with this
-      function:
+      We first ask for a new Id for our window, with this function:
       </p>
       <pre class="code">
 XCBWINDOW XCBWINDOWNew(XCBConnection *c);
@@ -599,6 +756,8 @@ XCBVoidCookie XCBMapWindow (XCBConnection *c, XCBWINDOW window);
       150x150 pixels, positioned at the top-left corner of the screen:
       </p>
       <pre class="code">
+#include &lt;unistd.h&gt;
+
 #include &lt;X11/XCB/xcb.h&gt;
 
 int
@@ -609,7 +768,7 @@ main (int argc, char *argv[])
   XCBDRAWABLE    win;
   
   /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   
   /* Get the first screen */
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
@@ -634,7 +793,7 @@ main (int argc, char *argv[])
 
   XCBSync (c, 0);
   
-  while (1) {}
+  pause ();
 
   return 1;
 }
@@ -756,7 +915,7 @@ main (int argc, char *argv[])
   CARD32         value[1];
   
   /* Open the connection to the X server and get the first screen */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
 
   /* Create a black graphic context for drawing in the foreground */
@@ -1132,7 +1291,7 @@ main (int argc, char *argv[])
     {90, 100, 55, 40, 0, 270 << 6}};
   
   /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   
   /* Get the first screen */
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
@@ -1765,7 +1924,7 @@ main (int argc, char *argv[])
   CARD32           values[2];
   
   /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   
   /* Get the first screen */
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
@@ -2029,7 +2188,7 @@ main (int argc, char *argv[])
 
   
   /* Open the connection to the X server */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   
   /* Get the first screen */
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
@@ -2553,7 +2712,7 @@ main (int argc, char *argv[])
   XCBCOLORMAP    colormap;
   
   /* Open the connection to the X server and get the first screen */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
 
   colormap = screen-&gt;default_colormap;
@@ -2599,7 +2758,7 @@ main (int argc, char *argv[])
   XCBCOLORMAP    cmap
   
   /* Open the connection to the X server and get the first screen */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
 
   /* We create the window win here*/
@@ -2701,7 +2860,7 @@ main (int argc, char *argv[])
   XCBAllocColorRep *rep;
   
   /* Open the connection to the X server and get the first screen */
-  c = XCBConnectBasic ();
+  c = XCBConnect (NULL, NULL);
   screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
 
   /* We create the window win here*/
@@ -2885,6 +3044,725 @@ XCBVoidCookie XCBFreePixmap (XCBConnection *c,        /* Pointer to the XCBConne
 	<p>
 	<b>TODO</b>: Give an example, or a link to xpoints.c
 	</p>
+      </ol>
+      <li class="title"><a name="translation">Translation of basic Xlib functions and macros</a></li>
+      <p>
+      The problem when you want to port an Xlib program to XCB is that
+      you don't know if the Xlib function that you want to "translate"
+      is a X Window one or an Xlib macro. In that section, we describe
+      a way to translate the usual functions or macros that Xlib
+      provides. It's usually just a member of a structure.
+      </p>
+      <ol>
+        <li class="subtitle"><a name="displaystructure">Members of the Display structure</a></li>
+        In this section, we look at how to translate the macros that
+        returns some members of the <span class="code">Display</span>
+        structure. They are obtain by using a function that requires a
+        <span class="code">XCBConnection *</span> or a member of the
+        <span class="code">XCBConnSetupSuccessRep</span> structure
+        (via the function <span class="code">XCBGetSetup</span>), or
+        a function that requires that structure.
+        <ol>
+          <li class="subtitle"><a name="ConnectionNumber">ConnectionNumber</a></li>
+          <p>
+          This number is the file descriptor that connects the client
+          to the server. You just have to use that function:
+          </p>
+          <pre class="code">
+int XCBGetFileDescriptor(XCBConnection *c);
+</pre>
+          <li class="subtitle"><a name="DefaultScreen"></a>DefaultScreen</li>
+          <p>
+          That number is not stored by XCB. It is returned in the
+          second parameter of the function <span class="code"><a href="#openconn">XCBConnect</a></span>.
+          Hence, you have to store it yourself if you want to use
+          it. Then, to get the <span class="code">XCBSCREEN</span>
+          structure, you have to iterate on the screens.
+          The equivalent function of the Xlib's
+          <span class="code">ScreenOfDisplay</span> function can be
+          found <a href="#ScreenOfDisplay">below</a>. OK, here is the
+          small piece of code to get that number:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+int            screen_default_nbr;
+
+/* you pass the name of the display you want to XCBConnect */
+
+c = XCBConnect (display_name, &screen_default_nbr);
+
+/* screen_default_nbr contains now the number of the default screen */
+</pre>
+          <li class="subtitle"><a name="QLength"></a>QLength</li>
+          <p>
+          Not documented yet.
+          </p>
+          <li class="subtitle"><a name="ScreenCount"></a>ScreenCount</li>
+          <p>
+          You get the count of screens with the functions
+          <span class="code">XCBGetSetup</span>
+          and
+          <span class="code">XCBConnSetupSuccessRepRootsIter</span>
+          (if you need to iterate):
+          </p>
+          <pre class="code">
+XCBConnection *c;
+int            screen_count;
+
+/* you init the connection */
+
+screen_count = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).rem;
+
+/* screen_count contains now the count of screens */
+</pre>
+          <p>
+          If you don't want to iterate over the screens, a better way
+          to get that number is to use
+          <span class="code">XCBConnSetupSuccessRepRootsLength</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+int            screen_count;
+
+/* you init the connection */
+
+screen_count = XCBConnSetupSuccessRepRootsLength (XCBGetSetup (c));
+
+/* screen_count contains now the count of screens */
+</pre>
+          <li class="subtitle"><a name="ServerVendor"></a>ServerVendor</li>
+          <p>
+          You get the name of the vendor of the server hardware with
+          the functions <span class="code">XCBGetSetup</span>
+          and
+          <span
+          class="code">XCBConnSetupSuccessRepVendor</span>. Beware
+          that, unlike Xlib, the string returned by XCB is not
+          necessarily null-terminaled:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+char          *vendor = NULL;
+int            length;
+
+/* you init the connection */
+length = XCBConnSetupSuccessRepVendorLength (XCBGetSetup (c));
+vendor = (char *)malloc (length + 1);
+if (vendor)
+memcpy (vendor, XCBConnSetupSuccessRepVendor (XCBGetSetup (c)));
+vendor[length] = '\0';
+
+/* vendor contains now the name of the vendor. Must be freed when not used anymore */
+</pre>
+          <li class="subtitle"><a name="ProtocolVersion"></a>ProtocolVersion</li>
+          <p>
+          You get the major version of the protocol in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD16         protocol_major_version;
+
+/* you init the connection */
+
+protocol_major_version = XCBGetSetup (c)-&gt;protocol_major_version;
+
+/* protocol_major_version contains now the major version of the protocol */
+</pre>
+          <li class="subtitle"><a name="ProtocolRevision"></a>ProtocolRevision</li>
+          <p>
+          You get the minor version of the protocol in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD16         protocol_minor_version;
+
+/* you init the connection */
+
+protocol_minor_version = XCBGetSetup (c)-&gt;protocol_minor_version;
+
+/* protocol_minor_version contains now the minor version of the protocol */
+</pre>
+          <li class="subtitle"><a name="VendorRelease"></a>VendorRelease</li>
+          <p>
+          You get the number of the release of the server hardware in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD32         release_number;
+
+/* you init the connection */
+
+release_number = XCBGetSetup (c)-&gt;release_number;
+
+/* release_number contains now the number of the release of the server hardware */
+</pre>
+          <li class="subtitle"><a name="DisplayString"></a>DisplayString</li>
+          <p>
+          The name of the display is not stored in XCB. You have to
+          store it by yourself.
+          </p>
+          <li class="subtitle"><a name="BitmapUnit"></a>BitmapUnit</li>
+          <p>
+          You get the bitmap scanline unit in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD8          bitmap_format_scanline_unit;
+
+/* you init the connection */
+
+bitmap_format_scanline_unit = XCBGetSetup (c)-&gt;bitmap_format_scanline_unit;
+
+/* bitmap_format_scanline_unit contains now the bitmap scanline unit */
+</pre>
+          <li class="subtitle"><a name="BitmapBitOrder"></a>BitmapBitOrder</li>
+          <p>
+          You get the bitmap bit order in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD8          bitmap_format_bit_order;
+
+/* you init the connection */
+
+bitmap_format_bit_order = XCBGetSetup (c)-&gt;bitmap_format_bit_order;
+
+/* bitmap_format_bit_order contains now the bitmap bit order */
+</pre>
+          <li class="subtitle"><a name="BitmapPad"></a>BitmapPad</li>
+          <p>
+          You get the bitmap scanline pad in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD8          bitmap_format_scanline_pad;
+
+/* you init the connection */
+
+bitmap_format_scanline_pad = XCBGetSetup (c)-&gt;bitmap_format_scanline_pad;
+
+/* bitmap_format_scanline_pad contains now the bitmap scanline pad */
+</pre>
+          <li class="subtitle"><a name="ImageByteOrder"></a>ImageByteOrder</li>
+          <p>
+          You get the image byte order in the
+          <span class="code">XCBConnSetupSuccessRep</span>
+          structure, with the function <span class="code">XCBGetSetup</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+CARD8          image_byte_order;
+
+/* you init the connection */
+
+image_byte_order = XCBGetSetup (c)-&gt;image_byte_order;
+
+/* image_byte_order contains now the image byte order */
+</pre>
+        </ol>
+      <li class="subtitle"><a name="screenofdisplay">ScreenOfDisplay related functions</a></li>
+      <p>
+      in Xlib, <span class="code">ScreenOfDisplay</span> returns a
+      <span class="code">Screen</span> structure that contains
+      several characteristics of your screen. XCB has a similar
+      structure (<span class="code">XCBSCREEN</span>),
+      but the way to obtain it is a bit different. With
+      Xlib, you just provide the number of the screen and you grab it
+      from an array. With XCB, you iterate over all the screens to
+      obtain the one you want. The complexity of this operation is
+      O(n). So the best is to store this structure if you often use
+      it. See <a href="#ScreenOfDisplay">ScreenOfDisplay</a> just below.
+      </p>
+      <p>
+      Xlib provides generally two functions to obtain the characteristics
+      related to the screen. One with the display and the number of
+      the screen, which calls <span class="code">ScreenOfDisplay</span>,
+      and the other that uses the <span class="code">Screen</span> structure.
+      This might be a bit confusing. As mentioned above, with XCB, it
+      is better to store the <span class="code">XCBSCREEN</span>
+      structure. Then, you have to read the members of this
+      structure. That's why the Xlib functions are put by pairs (or
+      more) as, with XCB, you will use the same code.
+      </p>
+        <ol>
+          <li class="subtitle"><a name="ScreenOfDisplay">ScreenOfDisplay</a></li>
+          <p>
+          This function returns the Xlib <span class="code">Screen</span>
+          structure. With XCB, you iterate over all thee screens and
+          once you get the one you want, you return it:
+          </p>
+          <pre class="code"><a name="ScreenOfDisplay"></a>
+XCBSCREEN *ScreenOfDisplay (XCBConnection *c,
+                            int            screen)
+{
+  XCBSCREENIter iter;
+
+  iter = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c));
+  for (; iter.rem; --screen, XCBSCREENNext (&iter))
+    if (screen == 0)
+      return iter.data;
+
+  return NULL;
+}
+</pre>
+          <p>
+          As mentioned above, you might want to store the value
+          returned by this function.
+          </p>
+          <p>
+          All the functions below will use the result of that
+          fonction, as they just grab a specific member of the
+          <span class="code">XCBSCREEN</span> structure.
+          </p>
+          <li class="subtitle"><a name="DefaultScreenOfDisplay"></a>DefaultScreenOfDisplay</li>
+          <p>
+          It is the default screen that you obtain when you connect to
+          the X server. It suffices to call the <a href="#ScreenOfDisplay">ScreenOfDisplay</a>
+          function above with the connection and the number of the
+          default screen.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+int            screen_default_nbr;
+XCBSCREEN     *default_screen;  /* the returned default screen */
+
+/* you pass the name of the display you want to XCBConnect */
+
+c = XCBConnect (display_name, &screen_default_nbr);
+default_screen = ScreenOfDisplay (c, screen_default_nbr);
+
+/* default_screen contains now the default root window, or a NULL window if no screen is found */
+</pre>
+          <li class="subtitle"><a name="RootWindow">RootWindow / RootWindowOfScreen</a></li>
+          <p>
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+XCBWINDOW      root_window = { 0 };  /* the returned window */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  root_window = screen-&gt;root;
+
+/* root_window contains now the root window, or a NULL window if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DefaultRootWindow">DefaultRootWindow</a></li>
+          <p>
+          It is the root window of the default screen. So, you call
+          <a name="ScreenOfDisplay">ScreenOfDisplay</a> with the
+          default screen number and you get the
+          <a href="#RootWindow">root window</a> as above:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_default_nbr;
+XCBWINDOW      root_window = { 0 };  /* the returned root window */
+
+/* you pass the name of the display you want to XCBConnect */
+
+c = XCBConnect (display_name, &screen_default_nbr);
+screen = ScreenOfDisplay (c, screen_default_nbr);
+if (screen)
+  root_window = screen-&gt;root;
+
+/* root_window contains now the default root window, or a NULL window if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DefaultVisual">DefaultVisual / DefaultVisualOfScreen</a></li>
+          <p>
+          While a Visual is, in Xlib, a structure, in XCB, there are
+          two types: <span class="code">XCBVISUALID</span>, which is
+          the Id of the visual, and <span class="code">XCBVISUALTYPE</span>,
+          which corresponds to the Xlib Visual. To get the Id of the
+          visual of a screen, just get the
+           <span class="code">root_visual</span>
+           member of a <span class="code">XCBSCREEN</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+XCBVISUALID    root_visual = { 0 };    /* the returned visual Id */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  root_visual = screen-&gt;root_visual;
+
+/* root_visual contains now the value of the Id of the visual, or a NULL visual if no screen is found */
+</pre>
+          <p>
+          To get the <span class="code">XCBVISUALTYPE</span>
+          structure, it's a bit less easier. You have to get the
+          <span class="code">XCBSCREEN</span> structure that you want,
+          get its <span class="code">root_visual</span> member,
+          then iterate on the <span class="code">XCBDEPTH</span>s
+          and the <span class="code">XCBVISUALTYPE</span>s, and compare
+          the <span class="code">XCBVISUALID</span> of these <span class="code">XCBVISUALTYPE</span>s:
+          with <span class="code">root_visual</span>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+XCBVISUALID    root_visual = { 0 };
+XCBVISUATYPE  *visual_type = NULL;    /* the returned visual type */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  {
+    XCBDEPTHIter depth_iter;
+
+    depth_iter = XCBSCREENAllowedDepthsIter (screen_iter.data);
+    for (; depth_iter.rem; XCBDEPTHNext (&depth_iter))
+      {
+        XCBVISUALTYPEIter visual_iter;
+
+        visual_iter = XCBDEPTHVisualsIter (depth_iter.data);
+        for (; visual_iter.rem; XCBVISUALTYPENext (&visual_iter))
+          {
+            if (screen-&gt;root_visual.id == visual_iter.data-&gt;visual_id.id)
+              {
+                visual_type = visual_iter.data;
+                break;
+              }
+          }
+      }
+  }
+
+/* visual_type contains now the visual structure, or a NULL visual structure if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DefaultGC">DefaultGC / DefaultGCOfScreen</a></li>
+          <p>
+          This default Graphic Context is just a newly created Graphic
+          Context, associated to the root window of a
+          <span class="code">XCBSCREEN</span>,
+          using the black white pixels of that screen:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+XCBGCONTEXT    gc = { 0 };    /* the returned default graphic context */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  {
+    XCBDRAWABLE draw;
+    CARD32      mask;
+    CARD32      values[2];
+
+    gc = XCBGCONTEXTNew (c);
+    draw.window = screen-&gt;root;
+    mask = GCForeground | GCBackground;
+    values[0] = screen-&gt;black_pixel;
+    values[1] = screen-&gt;white_pixel;
+    XCBCreateGC (c, gc, draw, mask, values);
+  }
+
+/* gc contains now the default graphic context */
+</pre>
+          <li class="subtitle"><a name="BlackPixel">BlackPixel / BlackPixelOfScreen</a></li>
+          <p>
+          It is the Id of the black pixel, which is in the structure
+          of an <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         black_pixel = 0;    /* the returned black pixel */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  black_pixel = screen-&gt;black_pixel;
+
+/* black_pixel contains now the value of the black pixel, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="WhitePixel">WhitePixel / WhitePixelOfScreen</a></li>
+          <p>
+          It is the Id of the white pixel, which is in the structure
+          of an <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         white_pixel = 0;    /* the returned white pixel */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  white_pixel = screen-&gt;white_pixel;
+
+/* white_pixel contains now the value of the white pixel, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DisplayWidth">DisplayWidth / WidthOfScreen</a></li>
+          <p>
+          It is the width in pixels of the screen that you want, and
+          which is in the structure of the corresponding
+          <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         width_in_pixels = 0;    /* the returned width in pixels */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  width_in_pixels = screen-&gt;width_in_pixels;
+
+/* width_in_pixels contains now the width in pixels, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DisplayHeight">DisplayHeight / HeightOfScreen</a></li>
+          <p>
+          It is the height in pixels of the screen that you want, and
+          which is in the structure of the corresponding
+          <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         height_in_pixels = 0;    /* the returned height in pixels */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  height_in_pixels = screen-&gt;height_in_pixels;
+
+/* height_in_pixels contains now the height in pixels, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DisplayWidthMM">DisplayWidthMM / WidthMMOfScreen</a></li>
+          <p>
+          It is the width in millimeters of the screen that you want, and
+          which is in the structure of the corresponding
+          <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         width_in_millimeters = 0;    /* the returned width in millimeters */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  width_in_millimeters = screen-&gt;width_in_millimeters;
+
+/* width_in_millimeters contains now the width in millimeters, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DisplayHeightMM">DisplayHeightMM / HeightMMOfScreen</a></li>
+          <p>
+          It is the height in millimeters of the screen that you want, and
+          which is in the structure of the corresponding
+          <span class="code">XCBSCREEN</span>.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         height_in_millimeters = 0;    /* the returned height in millimeters */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  height_in_millimeters = screen-&gt;height_in_millimeters;
+
+/* height_in_millimeters contains now the height in millimeters, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DisplayPlanes">DisplayPlanes / DefaultDepth / DefaultDepthOfScreen / PlanesOfScreen</a></li>
+          <p>
+          It is the depth (in bits) of the root window of the
+          screen. You get it from the <span class="code">XCBSCREEN</span> structure.
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD8          root_depth = 0;  /* the returned depth of the root window */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  root_depth = screen-&gt;root_depth;
+
+/* root_depth contains now the depth of the root window, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DefaultColormap">DefaultColormap / DefaultColormapOfScreen</a></li>
+          <p>
+          This is the default colormap of the screen (and not the
+          (default) colormap of the default screen !). As usual, you
+          get it from the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+XCBCOLORMAP    default_colormap = { 0 };  /* the returned default colormap */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  default_colormap = screen-&gt;default_colormap;
+
+/* default_colormap contains now the default colormap, or a NULL colormap if no screen is found */
+</pre>
+          <li class="subtitle"><a name="MinCmapsOfScreen"></a>MinCmapsOfScreen</li>
+          <p>
+          You get the minimum installed colormaps in the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD16         min_installed_maps = 0;  /* the returned minimum installed colormaps */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  min_installed_maps = screen-&gt;min_installed_maps;
+
+/* min_installed_maps contains now the minimum installed colormaps, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="MaxCmapsOfScreen"></a>MaxCmapsOfScreen</li>
+          <p>
+          You get the maximum installed colormaps in the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD16         max_installed_maps = 0;  /* the returned maximum installed colormaps */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  max_installed_maps = screen-&gt;max_installed_maps;
+
+/* max_installed_maps contains now the maximum installed colormaps, or 0 if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DoesSaveUnders"></a>DoesSaveUnders</li>
+          <p>
+          You know if <span class="code">save_unders</span> is set,
+          by looking in the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+BOOL           save_unders = 0;  /* the returned value of save_unders */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  save_unders = screen-&gt;save_unders;
+
+/* save_unders contains now the value of save_unders, or FALSE if no screen is found */
+</pre>
+          <li class="subtitle"><a name="DoesBackingStore"></a>DoesBackingStore</li>
+          <p>
+          You know the value of <span class="code">backing_stores</span>,
+          by looking in the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+BYTE           backing_stores = 0;  /* the returned value of backing_stores */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  backing_stores = screen-&gt;backing_stores;
+
+/* backing_stores contains now the value of backing_stores, or FALSE if no screen is found */
+</pre>
+          <li class="subtitle"><a name="EventMaskOfScreen"></a>EventMaskOfScreen</li>
+          <p>
+          To get the current input masks,
+          you look in the <span class="code">XCBSCREEN</span> structure:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBSCREEN     *screen;
+int            screen_nbr;
+CARD32         current_input_masks = 0;  /* the returned value of current input masks */
+
+/* you init the connection and screen_nbr */
+
+screen = ScreenOfDisplay (c, screen_nbr);
+if (screen)
+  current_input_masks = screen-&gt;current_input_masks;
+
+/* current_input_masks contains now the value of the current input masks, or FALSE if no screen is found */
+</pre>
+        </ol>
+      <li class="subtitle"><a name="misc">Miscellaneous macros</a></li>
+        <ol>
+          <li class="subtitle"><a name="DisplayOfScreen"></a>DisplayOfScreen</li>
+          <p> 
+          in Xlib, the <span class="code">Screen</span> structure
+          stores its associated <span class="code">Display</span>
+          structure. This is not the case in the X Window protocol,
+          hence, it's also not the case in XCB. So you have to store
+          it by yourself.
+          </p>
+          <li class="subtitle"><a name="DisplayCells"></a>DisplayCells / CellsOfScreen</li>
+          <p>
+          To get the colormap entries,
+          you look in the <span class="code">XCBVISUALTYPE</span>
+          structure, that you grab like <a class="subsection" href="#DefaultVisual">here</a>:
+          </p>
+          <pre class="code">
+XCBConnection *c;
+XCBVISUALTYPE *visual_type;
+CARD16         colormap_entries = 0;  /* the returned value of the colormap entries */
+
+/* you init the connection and visual_type */
+
+if (visual_type)
+  colormap_entries = visual_type-&gt;colormap_entries;
+
+/* colormap_entries contains now the value of the colormap entries, or FALSE if no screen is found */
+</pre>
+        </ol>
       </ol>
     </ol>
   </div>
