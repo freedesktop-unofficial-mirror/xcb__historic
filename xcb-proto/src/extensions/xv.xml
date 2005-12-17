@@ -35,7 +35,20 @@ authorization from the authors.
     <!-- XIDs -->
     <xidtype name="PORT" />
     <xidtype name="ENCODING" />
-         
+
+    <enum name="Type">
+        <item name="InputMask"><value>0x00000001</value></item>
+        <item name="OutputMask"><value>0x00000002</value></item>
+        <item name="VideoMask"><value>0x00000004</value></item>
+        <item name="StillMask"><value>0x00000008</value></item>
+        <item name="ImageMask"><value>0x00000010</value></item>
+    </enum>
+
+    <enum name="AttributeFlag">
+        <item name="Gettable"><value>0x01</value></item>
+        <item name="Settable"><value>0x02</value></item>
+    </enum>
+    
     <!-- Types/Structs (double check these) -->
     <struct name="Rational">
         <field type="INT32" name="numerator" />
@@ -49,6 +62,13 @@ authorization from the authors.
         <field type="CARD16" name="num_formats" />
         <field type="CARD8" name="type" />
         <field type="CARD8" name="pad" />
+        <list type="CARD8" name="name">
+            <fieldref>name_size</fieldref>
+        </list>
+        <list type="Format" name="formats">
+            <fieldref>num_formats</fieldref>
+        </list>
+
     </struct>
 
     <struct name="EncodingInfo">
@@ -78,12 +98,14 @@ authorization from the authors.
         <!-- Some XPointer "obdata" -->
     </struct>
     
-    <!-- I think this goes with the "QueryPortAttributes" request.  But it's not in the docs. --> 
     <struct name="AttributeInfo">
         <field type="CARD32" name="flags" />
         <field type="INT32" name="min" />
         <field type="INT32" name="max" />
         <field type="CARD32" name="size" />
+        <list type="CARD8" name="name">
+            <fieldref>size</fieldref>
+        </list>
     </struct>
 
     <struct name="ImageFormatInfo">
@@ -164,7 +186,7 @@ authorization from the authors.
         <reply>
             <pad bytes="1" />
             <field type="CARD16" name="num_adaptors" />
-            <pad bytes="48" />
+            <pad bytes="22" />
             <list type="AdaptorInfo" name="info">
                 <fieldref>num_adaptors</fieldref>
             </list>
@@ -290,7 +312,6 @@ authorization from the authors.
     <request name="GetPortAttribute" opcode="14">
         <field type="PORT" name="port" />
         <field type="ATOM" name="attribute" />
-        <field type="INT32" name="value" />
         <reply>
             <pad bytes="1" />
             <field type="INT32" name="value" />
@@ -306,7 +327,9 @@ authorization from the authors.
             <field type="CARD32" name="num_attributes" />
             <field type="CARD32" name="text_size" />
             <pad bytes="16" />
-            <list type="AttributeInfo" name="attributes" />
+            <list type="AttributeInfo" name="attributes">
+                <fieldref>num_attributes</fieldref>
+            </list>
         </reply>
     </request>
 
