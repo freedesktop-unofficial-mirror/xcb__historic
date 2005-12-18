@@ -11,6 +11,9 @@ struct Data_
   XCBGCONTEXT    gc;
   XCBCOLORMAP    cmap;
   CARD8          format;
+
+  XCBImage      *image;
+  CARD32        *palette;
 };
 
 #endif /* __TEST_H__ */

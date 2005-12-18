@@ -36,66 +36,63 @@ double origin_y = -1.2;
 double width = 3.6;
 double height = 2.4;
 
-/* Numbers of colrs in the palette */
+/* Numbers of colors in the palette */
 int cmax = 316;
-/* palette */
-CARD32 *palette;
 
 void
-palette_julia (Data data)
+palette_julia (Data *datap)
 {
   XCBAllocColorRep *rep;
   int               i;
 
-  palette = (CARD32 *)malloc (sizeof (CARD32) * cmax);
+  datap->palette = (CARD32 *)malloc (sizeof (CARD32) * cmax);
   
   for (i = 0 ; i < cmax ; i++)
     {
       if (i < 128)
-	rep = XCBAllocColorReply (data.conn,
-				  XCBAllocColor (data.conn,
-						 data.cmap,
+	rep = XCBAllocColorReply (datap->conn,
+				  XCBAllocColor (datap->conn,
+						 datap->cmap,
 						 i<<9, 0, 0),
 				  0);
       else if (i < 255)
-	rep = XCBAllocColorReply (data.conn,
-				  XCBAllocColor (data.conn,
-						 data.cmap,
+	rep = XCBAllocColorReply (datap->conn,
+				  XCBAllocColor (datap->conn,
+						 datap->cmap,
 						 65535, (i-127)<<9, 0),
 				  0);
       else
-	rep = XCBAllocColorReply (data.conn,
-				  XCBAllocColor (data.conn,
-						 data.cmap,
+	rep = XCBAllocColorReply (datap->conn,
+				  XCBAllocColor (datap->conn,
+						 datap->cmap,
 						 65535, 65535, (i-255)<<10),
 				  0);
       
       if (!rep)
-	palette[i] = 0;
+	datap->palette[i] = 0;
       else
-	palette[i] = rep->pixel;
+	datap->palette[i] = rep->pixel;
       free (rep);
     }
   
 }
 
 void
-draw_julia (Data data)
+draw_julia (Data *datap)
 {
-  XCBImage *image;
   double    zr, zi, t;
   int       c;
   int       i, j;
   
-  image = XCBImageGet (data.conn, data.draw,
+  datap->image = XCBImageGet (datap->conn, datap->draw,
 		       0, 0, W_W, W_H,
-		       AllPlanes, data.format);
+		       AllPlanes, datap->format);
   
-  for (i = 0 ; i < image->width ; i++)
-    for (j = 0 ; j < image->height ; j++)
+  for (i = 0 ; i < datap->image->width ; i++)
+    for (j = 0 ; j < datap->image->height ; j++)
       {
-	zr = origin_x + width * (double)i / (double)image->width;
-	zi = origin_y + height * (double)j / (double)image->height;
+	zr = origin_x + width * (double)i / (double)datap->image->width;
+	zi = origin_y + height * (double)j / (double)datap->image->height;
 	c = 0;
 	while ((zr*zr + zi*zi < 4.0) &&
 	       (c < cmax-1))
@@ -105,12 +102,12 @@ draw_julia (Data data)
 	    zi = 2.0*t*zi + ci;
 	    c++;
 	  }
-	XCBImagePutPixel (image,
+	XCBImagePutPixel (datap->image,
 			  i,j,
-			  palette[c]);
+			  datap->palette[c]);
       }
 
-  XCBImagePut (data.conn, data.draw, data.gc, image,
+  XCBImagePut (datap->conn, datap->draw, datap->gc, datap->image,
 	       0, 0, 0, 0, W_W, W_H);
 }
 
@@ -127,7 +124,7 @@ main (int argc, char *argv[])
   CARD32           valwin[3];
   XCBRECTANGLE     rect_coord = { 0, 0, W_W, W_H};
   XCBGenericEvent *e;
-  int screen_num;
+  int              screen_num;
   
   data.conn = XCBConnect (0, &screen_num);
   screen = XCBAuxGetScreen (data.conn, screen_num);
@@ -150,7 +147,7 @@ main (int argc, char *argv[])
   data.draw.window = XCBWINDOWNew (data.conn);
   mask = XCBCWBackPixel | XCBCWEventMask | XCBCWDontPropagate;
   valwin[0] = screen->white_pixel;
-  valwin[1] = KeyPressMask | ButtonReleaseMask | ExposureMask;
+  valwin[1] = KeyReleaseMask | ButtonReleaseMask | ExposureMask;
   valwin[2] = ButtonPressMask;
   XCBCreateWindow (data.conn, 0,
 		   data.draw.window,
@@ -179,20 +176,32 @@ main (int argc, char *argv[])
 		     data.draw.window,
 		     screen->root_visual);
 
-  palette_julia (data);
+  palette_julia (&data);
 
   XCBSync (data.conn, 0); 
 
   while ((e = XCBWaitForEvent(data.conn)))
     {
       switch (e->response_type)
-	{ 
+	{
 	case XCBExpose:
 	  {
 	    XCBCopyArea(data.conn, rect, data.draw, bgcolor,
 			0, 0, 0, 0, W_W, W_H);
-	    draw_julia (data);
+	    draw_julia (&data);
 	    XCBSync (data.conn, 0);
+	    break;
+	  }
+	case XCBKeyRelease:
+	case XCBButtonRelease:
+	  {
+            if (data.palette)
+              free (data.palette);
+            if (data.image)
+              XCBImageDestroy (data.image);
+            free (e);
+            XCBDisconnect (data.conn);
+            exit (0);
 	    break;
 	  }
 	}
