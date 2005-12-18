@@ -120,12 +120,12 @@ step (Data data)
 
 /* Return 0 if shm is not availaible, 1 otherwise */
 void
-shm_test (Data data)
+shm_test (Data *datap)
 {
   XCBShmQueryVersionRep *rep;
 
-  rep = XCBShmQueryVersionReply (data.conn,
-				 XCBShmQueryVersion (data.conn),
+  rep = XCBShmQueryVersionReply (datap->conn,
+				 XCBShmQueryVersion (datap->conn),
 				 NULL);
   if (rep)
     {
@@ -136,25 +136,25 @@ shm_test (Data data)
 	format = rep->pixmap_format;
       else
 	format = 0;
-      data.image = XCBImageSHMCreate (data.conn, data.depth,
+      datap->image = XCBImageSHMCreate (datap->conn, datap->depth,
 				      format, NULL, W_W, W_H);
-      assert(data.image);
+      assert(datap->image);
 
       shminfo.shmid = shmget (IPC_PRIVATE,
-			      data.image->bytes_per_line*data.image->height,
+			      datap->image->bytes_per_line*datap->image->height,
 			      IPC_CREAT | 0777);
       assert(shminfo.shmid != -1);
       shminfo.shmaddr = shmat (shminfo.shmid, 0, 0);
       assert(shminfo.shmaddr);
-      data.image->data = shminfo.shmaddr;
+      datap->image->data = shminfo.shmaddr;
 
-      shminfo.shmseg = XCBShmSEGNew (data.conn);
-      XCBShmAttach (data.conn, shminfo.shmseg,
+      shminfo.shmseg = XCBShmSEGNew (datap->conn);
+      XCBShmAttach (datap->conn, shminfo.shmseg,
 		    shminfo.shmid, 0);
       assert(shmctl(shminfo.shmid, IPC_RMID, 0) != -1);
     }
 
-  if (data.image)
+  if (datap->image)
     {
       printf ("Use of shm.\n");
       do_shm = 1;
@@ -164,7 +164,7 @@ shm_test (Data data)
       printf ("Can't use shm. Use standard functions.\n");
       shmdt (shminfo.shmaddr);		       
       shmctl (shminfo.shmid, IPC_RMID, 0);
-      data.image = NULL;
+      datap->image = NULL;
     }
 }
 
@@ -242,7 +242,7 @@ main (int argc, char *argv[])
   XCBSync (data.conn, 0); 
 
   if (try_shm)
-    shm_test (data);
+    shm_test (&data);
 
   time_start = get_time ();
   t_previous = 0.0;
