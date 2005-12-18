@@ -38,7 +38,7 @@ get_time(void)
 }
 
 void
-draw_lissajoux (Data data)
+draw_lissajoux (Data *datap)
 {
   int       i, nbr;
   double    a1, a2, p1, p2;
@@ -47,18 +47,18 @@ draw_lissajoux (Data data)
   
   if (do_shm)
     { 
-      i = XCBImageSHMGet (data.conn, data.draw,
-			  data.image, shminfo,
+      i = XCBImageSHMGet (datap->conn, datap->draw,
+			  datap->image, shminfo,
 			  0, 0,
 			  AllPlanes);
       assert(i);
     }
   else
     {
-      data.image = XCBImageGet (data.conn, data.draw,
-				0, 0, W_W, W_H,
-				AllPlanes, data.format);
-      assert(data.image);
+      datap->image = XCBImageGet (datap->conn, datap->draw,
+                                  0, 0, W_W, W_H,
+                                  AllPlanes, datap->format);
+      assert(datap->image);
     }
   
   pi = 3.1415926535897;
@@ -73,7 +73,7 @@ draw_lissajoux (Data data)
       {
 	x = cos (a1*i*period/nbr + p1);
 	y = sin (a2*i*period/nbr + p2);
-	XCBImagePutPixel (data.image,
+	XCBImagePutPixel (datap->image,
 			  (int)((double)(W_W-5)*(x+1)/2.0),
 			  (int)((double)(W_H-5)*(y+1)/2.0), 65535);
       }
@@ -85,35 +85,39 @@ draw_lissajoux (Data data)
       {
 	x = cos (a1*i*period/nbr + p1);
 	y = sin (a2*i*period/nbr + p2);
-	XCBImagePutPixel (data.image,
+	XCBImagePutPixel (datap->image,
 			  (int)((double)(W_W-5)*(x+1)/2.0),
 			  (int)((double)(W_H-5)*(y+1)/2.0), 0);
       }
 
   if (do_shm)
-    XCBImageSHMPut (data.conn, data.draw, data.gc,
-		    data.image, shminfo,
+    XCBImageSHMPut (datap->conn, datap->draw, datap->gc,
+		    datap->image, shminfo,
 		    0, 0, 0, 0, W_W, W_H, 0);
   else
-    XCBImagePut (data.conn, data.draw, data.gc, data.image,
-		 0, 0, 0, 0, W_W, W_H);
+    {
+      XCBImagePut (datap->conn, datap->draw, datap->gc, datap->image,
+                   0, 0, 0, 0, W_W, W_H);
+      XCBImageDestroy (datap->image);
+    }
 }
 
 void
-step (Data data)
+step (Data *datap)
 {
   loop_count++;
   t = get_time () - time_start;
 
   if (t <= 20.0)
     {
-      draw_lissajoux (data);
+      draw_lissajoux (datap);
     }
   else
     {
       printf("FRAME COUNT..: %i frames\n", loop_count);
       printf("TIME.........: %3.3f seconds\n", t);
       printf("AVERAGE FPS..: %3.3f fps\n", (double)loop_count / t);
+      XCBDisconnect (datap->conn);
       exit(0);
     }
 }
@@ -261,7 +265,7 @@ main (int argc, char *argv[])
 	    }
 	  free (e);
         }
-      step (data);
+      step (&data);
       XCBFlush (data.conn);
       t_previous = t;
     }
