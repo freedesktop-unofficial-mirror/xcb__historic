@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -44,14 +46,20 @@ draw_lissajoux (Data data)
   double    x, y;
   
   if (do_shm)
-    XCBImageSHMGet (data.conn, data.draw,
-		    data.image, shminfo,
-		    0, 0,
-		    AllPlanes);
+    { 
+      i = XCBImageSHMGet (data.conn, data.draw,
+			  data.image, shminfo,
+			  0, 0,
+			  AllPlanes);
+      assert(i);
+    }
   else
-    data.image = XCBImageGet (data.conn, data.draw,
-			      0, 0, W_W, W_H,
-			      AllPlanes, data.format);
+    {
+      data.image = XCBImageGet (data.conn, data.draw,
+				0, 0, W_W, W_H,
+				AllPlanes, data.format);
+      assert(data.image);
+    }
   
   pi = 3.1415926535897;
   period = 2.0 * pi;
@@ -92,7 +100,7 @@ draw_lissajoux (Data data)
 }
 
 void
-loop (Data data)
+step (Data data)
 {
   loop_count++;
   t = get_time () - time_start;
@@ -130,17 +138,20 @@ shm_test (Data data)
 	format = 0;
       data.image = XCBImageSHMCreate (data.conn, data.depth,
 				      format, NULL, W_W, W_H);
+      assert(data.image);
 
       shminfo.shmid = shmget (IPC_PRIVATE,
 			      data.image->bytes_per_line*data.image->height,
 			      IPC_CREAT | 0777);
+      assert(shminfo.shmid != -1);
       shminfo.shmaddr = shmat (shminfo.shmid, 0, 0);
+      assert(shminfo.shmaddr);
       data.image->data = shminfo.shmaddr;
 
       shminfo.shmseg = XCBShmSEGNew (data.conn);
       XCBShmAttach (data.conn, shminfo.shmseg,
 		    shminfo.shmid, 0);
-      shmctl(shminfo.shmid, IPC_RMID, 0);
+      assert(shmctl(shminfo.shmid, IPC_RMID, 0) != -1);
     }
 
   if (data.image)
@@ -227,8 +238,6 @@ main (int argc, char *argv[])
 		   W_W, W_H);
   XCBPolyFillRectangle(data.conn, rect, bgcolor, 1, &rect_coord);
 
-  XCBMapWindow (data.conn, data.draw.window);
-
   data.format = ZPixmap;
   XCBSync (data.conn, 0); 
 
@@ -243,21 +252,18 @@ main (int argc, char *argv[])
       if (e)
 	{
 	  switch (e->response_type)
-	    { 
+	    {
 	    case XCBExpose:
-	      {
-		XCBCopyArea(data.conn, rect, data.draw, bgcolor,
-			    0, 0, 0, 0, W_W, W_H);
-		XCBSync (data.conn, 0);
-		break;
-	      }
+	      XCBCopyArea(data.conn, rect, data.draw, bgcolor,
+		          0, 0, 0, 0, W_W, W_H);
+	      XCBSync (data.conn, 0);
+	      break;
 	    }
 	  free (e);
-	}
-      loop (data);
+        }
+      step (data);
       XCBFlush (data.conn);
       t_previous = t;
     }
-
-  return 1;
+  /*NOTREACHED*/
 }
