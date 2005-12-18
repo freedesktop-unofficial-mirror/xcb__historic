@@ -93,7 +93,7 @@ ConfigRates(XCBRandRGetScreenInfoRep *config, int sizeID, int *nrates)
 	XCBRandRRefreshRatesNext(&ri);
     }
     
-    ents = XCBRandRRefreshRatesRates(ri.data);
+    ents = (short *)XCBRandRRefreshRatesRates(ri.data);
     *nrates = XCBRandRRefreshRatesRatesLength(ri.data);
     
     if (!nrates) {
