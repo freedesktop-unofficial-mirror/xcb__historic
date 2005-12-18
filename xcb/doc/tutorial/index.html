@@ -3150,7 +3150,7 @@ int            length;
 length = XCBConnSetupSuccessRepVendorLength (XCBGetSetup (c));
 vendor = (char *)malloc (length + 1);
 if (vendor)
-memcpy (vendor, XCBConnSetupSuccessRepVendor (XCBGetSetup (c)));
+memcpy (vendor, XCBConnSetupSuccessRepVendor (XCBGetSetup (c)), length);
 vendor[length] = '\0';
 
 /* vendor contains now the name of the vendor. Must be freed when not used anymore */
