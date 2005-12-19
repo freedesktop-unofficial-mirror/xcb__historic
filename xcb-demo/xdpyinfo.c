@@ -16,8 +16,9 @@ void print_screen(XCBSCREEN *s);
 int main(int argc, char **argv)
 {
     void (*ext_printer)(int, char *) = print_extension;
+    int screen;
 
-    c = XCBConnect(0, 0);
+    c = XCBConnect(0, &screen);
     if(!c)
     {
 	fputs("Connect failed.\n", stderr);
@@ -32,7 +33,7 @@ int main(int argc, char **argv)
     print_setup(c);
     /* "\n" "focus:  window 0x%x, revert to %s" (e.g. PointerRoot) */
     list_extensions(ext_printer);
-    /* "\n" "default screen number:    %d" */
+    printf("\n" "default screen number:    %d", screen);
     list_screens();
     fputs("\n", stdout);
 
