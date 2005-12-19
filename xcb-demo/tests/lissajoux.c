@@ -134,6 +134,7 @@ shm_test (Data *datap)
   if (rep)
     {
       CARD8 format;
+      int shmctl_status;
       
       if (rep->shared_pixmaps && 
 	  (rep->major_version > 1 || rep->minor_version > 0))
@@ -155,7 +156,8 @@ shm_test (Data *datap)
       shminfo.shmseg = XCBShmSEGNew (datap->conn);
       XCBShmAttach (datap->conn, shminfo.shmseg,
 		    shminfo.shmid, 0);
-      assert(shmctl(shminfo.shmid, IPC_RMID, 0) != -1);
+      shmctl_status = shmctl(shminfo.shmid, IPC_RMID, 0);
+      assert(shmctl_status != -1);
     }
 
   if (datap->image)
