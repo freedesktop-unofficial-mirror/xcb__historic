@@ -28,11 +28,11 @@ int main(int argc, char **argv)
 	if(!strcmp(argv[argc], "-queryExtensions"))
 	    ext_printer = query_extension;
 
-    // "name of display:    %s" "\n"
+    /* "name of display:    %s" "\n" */
     print_setup(c);
-    // "\n" "focus:  window 0x%x, revert to %s" (e.g. PointerRoot)
+    /* "\n" "focus:  window 0x%x, revert to %s" (e.g. PointerRoot) */
     list_extensions(ext_printer);
-    // "\n" "default screen number:    %d"
+    /* "\n" "default screen number:    %d" */
     list_screens();
     fputs("\n", stdout);
 
@@ -47,7 +47,7 @@ void print_setup()
     fputs("\n" "vendor string:    ", stdout);
     fwrite(XCBConnSetupSuccessRepVendor(XCBGetSetup(c)), 1, XCBConnSetupSuccessRepVendorLength(XCBGetSetup(c)), stdout);
     printf("\n" "vendor release number:    %d", (int) XCBGetSetup(c)->release_number);
-    // "\n" "XFree86 version: %d.%d.%d.%d"
+    /* "\n" "XFree86 version: %d.%d.%d.%d" */
     printf("\n" "maximum request size:  %d bytes", XCBGetSetup(c)->maximum_request_length * 4);
     printf("\n" "motion buffer size:  %d", (int)XCBGetSetup(c)->motion_buffer_size);
     printf("\n" "bitmap unit, bit order, padding:    %d, %s, %d", XCBGetSetup(c)->bitmap_format_scanline_unit, (XCBGetSetup(c)->bitmap_format_bit_order == LSBFirst) ? "LSBFirst" : "MSBFirst", XCBGetSetup(c)->bitmap_format_scanline_pad);

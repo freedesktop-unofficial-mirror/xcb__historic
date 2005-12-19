@@ -79,9 +79,11 @@ usage(void)
   /*NOTREACHED*/
 }
 
-// Same idea as xc/lib/Xrandr.c (XRRConfigRates).
-// Returns the rates for a given screen.
-// Would be nice to put in another library or something.
+/*
+ * Same idea as xc/lib/Xrandr.c (XRRConfigRates).
+ * Returns the rates for a given screen.
+ * Would be nice to put in another library or something.
+ */
 short*
 ConfigRates(XCBRandRGetScreenInfoRep *config, int sizeID, int *nrates)
 {
@@ -135,6 +137,11 @@ main (int argc, char **argv)
   int		width = 0, height = 0;
   int		have_pixel_size = 0;
   XCBGenericError *err;
+  CARD16 mask = (CARD16) StructureNotifyMask;
+  CARD32 values[1];
+  XCBRandRGetScreenInfoCookie scookie;
+  int major_version, minor_version;
+  XCBRandRQueryVersionRep *rr_version;
 
   program_name = argv[0];
   if (argc == 1) query = 1;
@@ -230,19 +237,18 @@ main (int argc, char **argv)
       exit (1);
   }
   root = XCBAuxGetScreen(c, screen);
-  XCBRandRGetScreenInfoCookie scookie;
-
-  int major_version, minor_version;
-  XCBRandRQueryVersionRep *rr_version;
-  rr_version = XCBRandRQueryVersionReply(c, XCBRandRQueryVersion(c, 1, 1), &err);
+  rr_version = XCBRandRQueryVersionReply(c, XCBRandRQueryVersion(c, 1, 1), 0);
+  if (!rr_version) {
+      fprintf(stderr, "Can't get VersionReply.\n");
+      exit (1);
+  }
   major_version = rr_version->major_version;
   minor_version = rr_version->minor_version;
 
   scookie = XCBRandRGetScreenInfo(c, root->root);
-  sc = XCBRandRGetScreenInfoReply(c, scookie, &err);
-
-  if (sc == NULL || err) {
-	fprintf(stderr, "Can't get screen info.\n");
+  sc = XCBRandRGetScreenInfoReply(c, scookie, 0);
+  if (!sc) {
+	fprintf(stderr, "Can't get ScreenInfo.\n");
 	exit (1);
   }
 
@@ -304,8 +310,11 @@ main (int argc, char **argv)
     }
   }
 
-  //rotations = XRRConfigRotations(sc, &current_rotation);
+#if 0
+  rotations = XRRConfigRotations(sc, &current_rotation);
+#else
   rotations = sc->rotation;
+#endif
 
   rotation = 1 << rot ;
   if (query) {
@@ -361,8 +370,6 @@ main (int argc, char **argv)
   }
 
   /* we should test configureNotify on the root window */
-  CARD16 mask = (CARD16) StructureNotifyMask;
-  CARD32 values[1];
   values[0] = 1;
   XCBConfigureWindow(c, root->root, mask, values);
 
@@ -370,15 +377,16 @@ main (int argc, char **argv)
 
   if (setit) {
     XCBRandRSetScreenConfigCookie sscc;
+    XCBRandRSetScreenConfigRep *config;
     sscc = XCBRandRSetScreenConfig(c, root->root, CurrentTime, sc->config_timestamp, size,
 	    (short) (rotation | reflection), rate);
-    status = XCBRandRSetScreenConfigReply(c, sscc, &err)->status;
-    
-    if (err && status) {
+    config = XCBRandRSetScreenConfigReply(c, sscc, &err);
+    if (!config) {
 	fprintf(stderr, "Can't set the screen. Error Code: %i Status:%i\n",
 		err->error_code, status);
 	exit(1);
     }
+    status = config->status;
   }
     
   const XCBQueryExtensionRep *qrre_rep = XCBRandRInit(c);
@@ -393,9 +401,13 @@ main (int argc, char **argv)
 	event = XCBWaitForEvent(c);
 	
 	printf ("Event received, type = %d\n", event->response_type);
-	//update Xlib's knowledge of the event
-	////Not sure what the equiv of this is or if we need it.
-	//XRRUpdateConfiguration (&event);
+#if 0
+	/*
+	 * update Xlib's knowledge of the event
+	 * Not sure what the equiv of this is or if we need it.
+	 */
+	XRRUpdateConfiguration (&event);
+#endif
 	
 	if (event->response_type == ConfigureNotify)
 	  printf("Received ConfigureNotify Event!\n");
@@ -431,7 +443,9 @@ main (int argc, char **argv)
 	}
       }
   }
-  //XRRFreeScreenConfigInfo(sc);
+#if 0
+  XRRFreeScreenConfigInfo(sc);
+#endif
   free(sc);
   free(c);
   return(0);

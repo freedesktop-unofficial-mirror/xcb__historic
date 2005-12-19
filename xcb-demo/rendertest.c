@@ -18,7 +18,7 @@ XCBRenderPICTFORMINFO *get_pictforminfo(XCBRenderQueryPictFormatsRep *reply, XCB
 XCBConnection   *c;
 XCBRenderPICTFORMAT pf;
 
-inline XCBRenderFIXED make_fixed(INT16 i, INT16 f)
+XCBRenderFIXED make_fixed(INT16 i, INT16 f)
 {
     return (i << 16) | (f & 0xffff);
 }
@@ -547,7 +547,9 @@ int main(int argc, char *argv[])
     rootformat = get_pictformat_from_visual(formats_reply, root->root_visual);
     fprintf(stdout, "\n***** found root PICTFORMAT:   %ld *****\n", rootformat.xid);
    
-    //draw_window(c, formats_reply);
+#if 0
+    draw_window(c, formats_reply);
+#endif
     
     /* It's very important to free the replys. We don't want memory leaks. */
     free(version_reply);
