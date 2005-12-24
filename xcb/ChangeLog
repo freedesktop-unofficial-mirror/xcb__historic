@@ -1,3 +1,13 @@
+2005-12-24  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_xlib.c, src/xcbxlib.h, src/Makefile.am:
+	New header and two functions specifically for Xlib's use, so
+	we can quit installing xcbint.h.
+
+	* src/xcb_out.c, src/xcbint.h:
+	Now that Xlib uses entirely public API, force_sequence_wrap is
+	purely internal to xcb_out.
+
 2005-12-20  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_util.c:
