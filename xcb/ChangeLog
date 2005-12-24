@@ -1,3 +1,10 @@
+2005-12-20  Jamey Sharp  <jamey@minilop.net>
+
+	* src/xcb_util.c:
+	Use AF_UNIX instead of PF_UNIX, because they're interchangeable
+	on Linux (and 4.x BSD?) but on MacOS X the latter is not
+	available. Thanks to Ian Osgood for testing.
+
 2005-12-12  Jamey Sharp  <jamey@minilop.net>
 
 	* src/xcb_util.c:

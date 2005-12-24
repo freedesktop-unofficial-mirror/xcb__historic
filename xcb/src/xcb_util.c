@@ -137,7 +137,7 @@ int XCBOpenUnix(const char *file)
     struct sockaddr_un addr = { AF_UNIX };
     strcpy(addr.sun_path, file);
 
-    fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if(fd == -1)
         return -1;
     if(connect(fd, (struct sockaddr *) &addr, sizeof(addr)) == -1)
