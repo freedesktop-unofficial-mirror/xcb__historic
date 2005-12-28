@@ -78,4 +78,7 @@ CDEBUGFLAGS="$optflags -Wall -pedantic -Wpointer-arith \
 	-Wstrict-prototypes -Wmissing-declarations -Wnested-externs"
 AC_SUBST(CDEBUGFLAGS)
 
-AC_OUTPUT([Makefile src/Makefile tests/Makefile xcb.pc])
+AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
+AC_CONFIG_FILES([xcb.pc])
+
+AC_OUTPUT
