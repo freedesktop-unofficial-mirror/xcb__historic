@@ -44,6 +44,16 @@ authorization from the authors.
         <item name="ImageMask"><value>0x00000010</value></item>
     </enum>
 
+    <enum name="ImageFormatInfoType">
+        <item name="RGB" />
+        <item name="YUV" />
+    </enum>
+
+    <enum name="ImageFormatInfoFormat">
+        <item name="Packed" />
+        <item name="Planar" />
+    </enum>
+
     <enum name="AttributeFlag">
         <item name="Gettable"><value>0x01</value></item>
         <item name="Settable"><value>0x02</value></item>
@@ -55,7 +65,7 @@ authorization from the authors.
     </struct>
 
     <struct name="AdaptorInfo">
-        <field type="CARD32" name="base" />
+        <field type="PORT" name="base_id" />
         <field type="CARD16" name="name_size" />
         <field type="CARD16" name="num_ports" />
         <field type="CARD16" name="num_formats" />
@@ -76,7 +86,10 @@ authorization from the authors.
         <field type="CARD16" name="width" />
         <field type="CARD16" name="height" />
         <field type="Rational" name="rate" />
-        <field type="CARD16" name="pad" />
+        <!--
+        Xvproto.h has a padding CARD16 here but the name
+        overlaps.
+        -->
         <list type="char" name="name">
             <fieldref>name_size</fieldref>
         </list>
@@ -198,7 +211,11 @@ authorization from the authors.
         <reply>
             <pad bytes="1" />
             <field type="CARD16" name="num_encodings" />
-            <pad bytes="24" />
+            <!--
+            In Xvproto.h this padding is 24 bytes
+            in actuality it is 22 bytes
+            -->
+            <pad bytes="22" />
             <list type="EncodingInfo" name="info">
                 <fieldref>num_encodings</fieldref>
             </list>
