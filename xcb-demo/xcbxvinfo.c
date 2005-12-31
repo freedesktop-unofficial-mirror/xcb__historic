@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <X11/XCB/xcb.h>
 #include <X11/XCB/xv.h>
 
@@ -17,6 +18,17 @@ XCBSCREEN *ScreenOfDisplay (XCBConnection *c, int screen)
         if (screen == 0)
             return iter.data;
     return NULL;
+}
+
+static int nstrcmp(char *b, int n, char *s) {
+    while (n > 0) {
+	if (*s == '\0')
+	    return 1;
+	if (*b - *s != 0)
+	    return *b - *s;
+	b++, s++, --n;
+    }
+    return -(*s != '\0');
 }
 
 int main(int argc, char *argv[])
@@ -86,8 +98,8 @@ int main(int argc, char *argv[])
         {
             ainfo = adaptors_iter.data;
             fprintf(stdout, "  Adaptor #%i: \"%s\"\n", j, XCBXvAdaptorInfoName(ainfo));
-            fprintf(stdout, "    number of ports: %li\n", ainfo->num_ports);
-            fprintf(stdout, "    port base: %li\n", ainfo->base_id);
+            fprintf(stdout, "    number of ports: %i\n", ainfo->num_ports);
+            fprintf(stdout, "    port base: %li\n", ainfo->base_id.xid);
             fprintf(stdout, "    operations supported: ");
 
             switch(ainfo->type & (XCBXvTypeInputMask | XCBXvTypeOutputMask)) {
@@ -116,7 +128,7 @@ int main(int argc, char *argv[])
             fprintf(stdout, "    supported visuals:\n");
             for (k=0; k < ainfo->num_formats; k++, format++)
                 fprintf(stdout, "      depth %i, visualID 0x%2lx\n",
-                        format->depth, format->visual);
+                        format->depth, format->visual.id);
             
             attr_rep = XCBXvQueryPortAttributesReply(c,
                     XCBXvQueryPortAttributes(c, ainfo->base_id), NULL);
@@ -128,7 +140,7 @@ int main(int argc, char *argv[])
 
                 for (k = 0; k < nattr; k++) {
                     attribute = attr_iter.data;
-                    fprintf(stdout, "      \"%s\" (range %i to %i)\n",
+                    fprintf(stdout, "      \"%s\" (range %li to %li)\n",
                             XCBXvAttributeInfoName(attribute),
                             attribute->min,
                             attribute->max);
@@ -156,7 +168,7 @@ int main(int argc, char *argv[])
                                 XCBXvGetPortAttributeReply(c,
                                     XCBXvGetPortAttribute(c, ainfo->base_id, the_atom),
                                     NULL);
-                            if (pattr_rep) fprintf(stdout, " (current value is %i)", pattr_rep->value);
+                            if (pattr_rep) fprintf(stdout, " (current value is %li)", pattr_rep->value);
                             free(pattr_rep);
                         }
                         fprintf(stdout, "\n");
@@ -180,7 +192,9 @@ int main(int argc, char *argv[])
                 int n;
                 for (n = 0; n < nencode; n++) {
                     encoding = encoding_iter.data;
-                    if (!strcmp(XCBXvEncodingInfoName(encoding), "XV_IMAGE"))
+                    if (!nstrcmp(XCBXvEncodingInfoName(encoding),
+				 XCBXvEncodingInfoNameLength(encoding),
+				 "XV_IMAGE"))
                         ImageEncodings++;
                     XCBXvEncodingInfoNext(&encoding_iter);
                 }
@@ -192,14 +206,18 @@ int main(int argc, char *argv[])
                     encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
                     for(n = 0; n < nencode; n++) {
                         encoding = encoding_iter.data;
-                        if(strcmp(XCBXvEncodingInfoName(encoding), "XV_IMAGE")) {
+                        if(nstrcmp(XCBXvEncodingInfoName(encoding),
+				   XCBXvEncodingInfoNameLength(encoding),
+				   "XV_IMAGE")) {
                             if (j == adaptors_rep->num_adaptors - 1) {
                                 printf("hi\n");
                             }
-                            fprintf(stdout, "      encoding ID #%li: \"%s\"\n",
-                                    encoding->encoding,
+                            fprintf(stdout,
+				    "      encoding ID #%li: \"%*s\"\n",
+                                    encoding->encoding.xid,
+                                    XCBXvEncodingInfoNameLength(encoding),
                                     XCBXvEncodingInfoName(encoding));
-                            fprintf(stdout, "        size: %li x %li\n",
+                            fprintf(stdout, "        size: %i x %i\n",
                                     encoding->width,
                                     encoding->height);
                             fprintf(stdout, "        rate: %f\n",
@@ -214,9 +232,11 @@ int main(int argc, char *argv[])
                         encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
                         for(n = 0; n < nencode; n++) {
                             encoding = encoding_iter.data;
-                            if(!strcmp(XCBXvEncodingInfoName(encoding), "XV_IMAGE")) {
+                            if(!nstrcmp(XCBXvEncodingInfoName(encoding),
+					XCBXvEncodingInfoNameLength(encoding),
+					"XV_IMAGE")) {
                                 fprintf(stdout, 
-                                        "    maximum XvImage size: %li x %li\n",	
+                                        "    maximum XvImage size: %i x %i\n",	
                                         encoding->width, encoding->height);
                                 break;
                             }
@@ -235,7 +255,7 @@ int main(int argc, char *argv[])
                         for(n = 0; n < numImages; n++) {
                             format = formats_iter.data;
                             memcpy(imageName, &(format->id), 4);
-                            fprintf(stdout, "      id: 0x%x", format->id);
+                            fprintf(stdout, "      id: 0x%lx", format->id);
                             if(isprint(imageName[0]) && isprint(imageName[1]) &&
                                     isprint(imageName[2]) && isprint(imageName[3])) 
                             {
@@ -290,7 +310,7 @@ int main(int argc, char *argv[])
                                         format->depth);
 
                                 fprintf(stdout, "        red, green, blue masks: " 
-                                        "0x%x, 0x%x, 0x%x\n", 
+                                        "0x%lx, 0x%lx, 0x%lx\n", 
                                         format->red_mask,
                                         format->green_mask,
                                         format->blue_mask);
