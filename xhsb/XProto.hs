@@ -1,14 +1,19 @@
-{-# OPTIONS -ffi #-}
-module XProto(internAtom) where
+{-# OPTIONS -fglasgow-exts -ffi #-}
+module XProto(internAtom, Atom, InternAtomReply(..)) where
 
 import XCB
 import XCBExt
 import CForeign
 import Foreign
-import System.IO.Unsafe(unsafeInterleaveIO)
+import Data.Generics
 
 foreign import ccall "XProto.glue.h" _internAtom :: Ptr XCBConnection -> Word8 -> Word16 -> CString -> IO Word32
 
-internAtom c onlyIfExists name = do
-    reply <- requestWithReply c $ withCStringLen name (\(name, name_len)-> _internAtom c (if onlyIfExists then 1 else 0) (toEnum name_len) name)
-    unsafeInterleaveIO $ withForeignPtr reply (\replyPtr-> peekElemOff replyPtr 2)
+type Atom = Word32
+
+data InternAtomReply = InternAtomReply { internAtomResponseType :: Word8, internAtomSequence :: Word16, internAtomLength :: Word32, internAtomAtom :: Atom }
+    deriving (Typeable, Data)
+
+internAtom :: Ptr XCBConnection -> Bool -> String -> IO InternAtomReply
+internAtom c onlyIfExists name =
+    requestWithReply c $ withCStringLen name (\(name, name_len)-> _internAtom c (if onlyIfExists then 1 else 0) (toEnum name_len) name)
