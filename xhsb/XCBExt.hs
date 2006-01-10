@@ -1,14 +1,12 @@
 {-# OPTIONS -ffi #-}
-module XCBExt(request, requestWithReply) where
+module XCBExt(ReplyReader, readSize, readStorable, readBool, request, requestWithReply) where
 
 import XCB
 import Control.Exception
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Foreign
-
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Generics
 import Debug.Trace
 
 trace' s = trace $ " * " ++ s
@@ -35,24 +33,12 @@ readBool = do
     v <- readSize 1
     return $ (v :: Word8) /= 0
 
-readReply :: Data reply => ReaderT (ForeignPtr Word32) IO reply
-readReply = ret
-    where
-        ret = evalStateT (fromConstrM reader c) 0
-        reader :: Typeable a => ReplyReader a
-        reader = fail "no reader for this type"
-            `extR` (readBool)
-            `extR` (readStorable :: ReplyReader Word8)
-            `extR` (readStorable :: ReplyReader Word16)
-            `extR` (readStorable :: ReplyReader Word32)
-        c = indexConstr (dataTypeOf $ retTypeM ret) 1
-
 foreign import ccall "X11/XCB/xcbext.h XCBWaitForReply" _waitForReply :: Ptr XCBConnection -> Word32 -> Ptr (Ptr XCBGenericError) -> IO (Ptr Word32)
 
 request :: IO Word32 -> IO Word32
 request = return . trace' "sent request" =<< throwIf (== 0) (const "couldn't send request")
 
-requestWithReply :: Data reply => Ptr XCBConnection -> IO Word32 -> IO reply
-requestWithReply c req = do
+requestWithReply :: Ptr XCBConnection -> ReplyReader reply -> IO Word32 -> IO reply
+requestWithReply c readReply req = do
     cookie <- request req
-    unsafeInterleaveIO $ trace' "got reply" $ throwIfNull "couldn't get reply" (_waitForReply c cookie nullPtr) >>= newForeignPtr finalizerFree >>= runReaderT readReply
+    unsafeInterleaveIO $ trace' "got reply" $ throwIfNull "couldn't get reply" (_waitForReply c cookie nullPtr) >>= newForeignPtr finalizerFree >>= runReaderT (evalStateT readReply 0)

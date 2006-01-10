@@ -16,4 +16,10 @@ data InternAtomReply = InternAtomReply { internAtomResponseType :: Word8, intern
 
 internAtom :: Ptr XCBConnection -> Bool -> String -> IO InternAtomReply
 internAtom c onlyIfExists name =
-    requestWithReply c $ withCStringLen name (\(name, name_len)-> _internAtom c (fromBool onlyIfExists) (toEnum name_len) name)
+        requestWithReply c reader $ withCStringLen name (\(name, name_len)-> _internAtom c (fromBool onlyIfExists) (toEnum name_len) name)
+    where reader = do
+            responseType <- readStorable
+            sequence <- readStorable
+            length <- readStorable
+            atom <- readStorable
+            return $ InternAtomReply responseType sequence length atom
