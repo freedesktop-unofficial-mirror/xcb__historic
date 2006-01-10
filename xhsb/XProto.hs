@@ -16,4 +16,4 @@ data InternAtomReply = InternAtomReply { internAtomResponseType :: Word8, intern
 
 internAtom :: Ptr XCBConnection -> Bool -> String -> IO InternAtomReply
 internAtom c onlyIfExists name =
-    requestWithReply c $ withCStringLen name (\(name, name_len)-> _internAtom c (if onlyIfExists then 1 else 0) (toEnum name_len) name)
+    requestWithReply c $ withCStringLen name (\(name, name_len)-> _internAtom c (fromBool onlyIfExists) (toEnum name_len) name)
