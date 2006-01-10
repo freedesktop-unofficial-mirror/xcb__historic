@@ -26,12 +26,12 @@ readSize size = do
 retTypeM :: Monad m => m a -> a
 retTypeM _ = undefined
 
-readGenericM :: Storable a => ReplyReader a
-readGenericM = action
+readStorable :: Storable a => ReplyReader a
+readStorable = action
     where action = readSize (sizeOf $ retTypeM action)
 
-readBoolM :: ReplyReader Bool
-readBoolM = do
+readBool :: ReplyReader Bool
+readBool = do
     v <- readSize 1
     return $ (v :: Word8) /= 0
 
@@ -41,10 +41,10 @@ readReply = ret
         ret = evalStateT (fromConstrM reader c) 0
         reader :: Typeable a => ReplyReader a
         reader = fail "no reader for this type"
-            `extR` (readBoolM)
-            `extR` (readGenericM :: ReplyReader Word8)
-            `extR` (readGenericM :: ReplyReader Word16)
-            `extR` (readGenericM :: ReplyReader Word32)
+            `extR` (readBool)
+            `extR` (readStorable :: ReplyReader Word8)
+            `extR` (readStorable :: ReplyReader Word16)
+            `extR` (readStorable :: ReplyReader Word32)
         c = indexConstr (dataTypeOf $ retTypeM ret) 1
 
 foreign import ccall "X11/XCB/xcbext.h XCBWaitForReply" _waitForReply :: Ptr XCBConnection -> Word32 -> Ptr (Ptr XCBGenericError) -> IO (Ptr Word32)
