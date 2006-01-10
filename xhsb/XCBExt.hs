@@ -49,6 +49,7 @@ readReply = ret
 
 foreign import ccall "X11/XCB/xcbext.h XCBWaitForReply" _waitForReply :: Ptr XCBConnection -> Word32 -> Ptr (Ptr XCBGenericError) -> IO (Ptr Word32)
 
+request :: IO Word32 -> IO Word32
 request = return . trace' "sent request" =<< throwIf (== 0) (const "couldn't send request")
 
 requestWithReply :: Data reply => Ptr XCBConnection -> IO Word32 -> IO reply
