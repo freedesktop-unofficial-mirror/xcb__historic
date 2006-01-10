@@ -9,6 +9,9 @@ import Foreign
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Generics
+import Debug.Trace
+
+trace' s = trace $ " * " ++ s
 
 type ReplyReader a = StateT Int (ReaderT (ForeignPtr Word32) IO) a
 
@@ -17,8 +20,8 @@ readSize size = do
     last <- get
     let cur = (last + size - 1) .&. (-size)
     put $ cur + size
-    p <- ask
-    liftIO $ liftIO $ unsafeInterleaveIO $ withForeignPtr p $ \p'-> peek $ plusPtr p' cur
+    p <- return . trace' "read pointer" =<< ask
+    liftIO $ liftIO $ unsafeInterleaveIO $ withForeignPtr p $ \p'-> trace' "peek" $ peek $ plusPtr p' cur
 
 retTypeM :: Monad m => m a -> a
 retTypeM _ = undefined
@@ -46,9 +49,9 @@ readReply = ret
 
 foreign import ccall "X11/XCB/xcbext.h XCBWaitForReply" _waitForReply :: Ptr XCBConnection -> Word32 -> Ptr (Ptr XCBGenericError) -> IO (Ptr Word32)
 
-request = throwIf (== 0) (const "couldn't send request")
+request = return . trace' "sent request" =<< throwIf (== 0) (const "couldn't send request")
 
 requestWithReply :: Data reply => Ptr XCBConnection -> IO Word32 -> IO reply
 requestWithReply c req = do
     cookie <- request req
-    unsafeInterleaveIO $ throwIfNull "couldn't get reply" (_waitForReply c cookie nullPtr) >>= newForeignPtr finalizerFree >>= runReaderT readReply
+    unsafeInterleaveIO $ trace' "got reply" $ throwIfNull "couldn't get reply" (_waitForReply c cookie nullPtr) >>= newForeignPtr finalizerFree >>= runReaderT readReply
