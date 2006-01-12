@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-Copyright (C) 2005 Jeremy Kolb.
+Copyright (C) 2006 Jeremy Kolb.
 All Rights Reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,9 +28,7 @@ authorization from the authors.
 
 <xcb header="xv" extension-xname="XVideo" extension-name="Xv">
     <import>shm</import>
-    <!-- Probably doesn't work yet.  So far untested.  Target version is 2.2.  The docs suck. 6/5/2005 -->
-
-    <!-- Implements version 2.0 of XV -->	
+    <!-- Implements version 2.2 of XV -->
 
     <!-- XIDs -->
     <xidtype name="PORT" />
@@ -106,11 +104,16 @@ authorization from the authors.
         <field type="CARD16" name="height" />
         <field type="CARD32" name="data_size" />
         <field type="CARD32" name="num_planes" />
-        <!-- <field type="int" name="pitches" /> --> <!-- int* -->
-        <!-- <field type="int" name="offsets" /> --> <!-- int* -->
-        <!-- <field type="CARD8" name="data" /> --> <!-- char* -->
-        -->
-        <!-- Some XPointer "obdata" -->
+        <list type="CARD32" name="pitches">
+            <fieldref>num_planes</fieldref>
+        </list>
+        <list type="CARD32" name="offsets">
+            <fieldref>num_planes</fieldref>
+        </list>
+        <list type="CARD8" name="data">
+            <fieldref>data_size</fieldref>
+        </list>
+        <!-- Some XPointer "obdata" for SHM use-->
     </struct>
     
     <struct name="AttributeInfo">
@@ -374,9 +377,12 @@ authorization from the authors.
             <field type="CARD16" name="width" />
             <field type="CARD16" name="height" />
             <pad bytes="12" />
-            <!-- An XvImage struct comes after this.  But it's
-            currently broken. -->
-            <field type="Image" name="image" />
+            <list type="CARD32" name="pitches">
+                <fieldref>num_planes</fieldref>
+            </list>
+            <list type="CARD32" name="offsets">
+                <fieldref>num_planes</fieldref>
+            </list>
         </reply>
     </request>
 
@@ -395,9 +401,9 @@ authorization from the authors.
         <field type="CARD16" name="drw_h" />
         <field type="CARD16" name="width" />
         <field type="CARD16" name="height" />
-        <localfield type="CARD32" name="data_len" />
-        <list type="BYTE" name="data">
-            <value>data_len</value>
+        <localfield type="CARD32" name="data_size" />
+        <list type="CARD8" name="data">
+            <fieldref>data_size</fieldref>
         </list>
     </request>
 
@@ -419,6 +425,5 @@ authorization from the authors.
         <field type="CARD16" name="width" />
         <field type="CARD16" name="height" />
         <field type="CARD8" name="send_event" />
-        <pad bytes="3" />
     </request>
 </xcb>
