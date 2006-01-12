@@ -22,13 +22,25 @@ XCBSCREEN *ScreenOfDisplay (XCBConnection *c, int screen)
 
 static int nstrcmp(char *b, int n, char *s) {
     while (n > 0) {
-	if (*s == '\0')
-	    return 1;
-	if (*b - *s != 0)
-	    return *b - *s;
-	b++, s++, --n;
+        if (*s == '\0')
+            return 1;
+        if (*b - *s != 0)
+            return *b - *s;
+        b++, s++, --n;
     }
     return -(*s != '\0');
+}
+
+/* 
+ * Copies a string s of size n and returns it with a NULL appended.
+ * String returned is allocated with malloc and should be freed later.
+ */
+static char *ExtractString(char *s, int n) {
+    char *str;
+    str = (char *)malloc(sizeof(char) * (n+1));
+    strncpy(str, s, n); 
+    str[n] = '\0';
+    return str;
 }
 
 int main(int argc, char *argv[])
@@ -36,6 +48,7 @@ int main(int argc, char *argv[])
     XCBConnection *c;
     int scrn;
     char *display_name = NULL;
+    char *name = NULL;
     XCBWINDOW root_window = {0};
     XCBSCREEN *screen;
     XCBXvQueryExtensionRep *query_ext;
@@ -97,10 +110,12 @@ int main(int argc, char *argv[])
         for (j = 0; j < adaptors_rep->num_adaptors; j++)
         {
             ainfo = adaptors_iter.data;
-            fprintf(stdout, "  Adaptor #%i: \"%s\"\n", j, XCBXvAdaptorInfoName(ainfo));
+            name = ExtractString(XCBXvAdaptorInfoName(ainfo), XCBXvAdaptorInfoNameLength(ainfo));
+            fprintf(stdout, "  Adaptor #%i: \"%s\"\n", j, name);
             fprintf(stdout, "    number of ports: %i\n", ainfo->num_ports);
             fprintf(stdout, "    port base: %li\n", ainfo->base_id.xid);
             fprintf(stdout, "    operations supported: ");
+            free(name);
 
             switch(ainfo->type & (XCBXvTypeInputMask | XCBXvTypeOutputMask)) {
                 case XCBXvTypeInputMask:
@@ -129,7 +144,7 @@ int main(int argc, char *argv[])
             for (k=0; k < ainfo->num_formats; k++, format++)
                 fprintf(stdout, "      depth %i, visualID 0x%2lx\n",
                         format->depth, format->visual.id);
-            
+
             attr_rep = XCBXvQueryPortAttributesReply(c,
                     XCBXvQueryPortAttributes(c, ainfo->base_id), NULL);
             nattr = attr_rep->num_attributes;
@@ -153,7 +168,7 @@ int main(int argc, char *argv[])
                         XCBInternAtomRep *atom_rep;
 
                         fprintf(stdout, "              client gettable attribute");
-                        
+
                         atom_rep = XCBInternAtomReply(c,
                                 XCBInternAtom(c,
                                     1, 
@@ -162,12 +177,12 @@ int main(int argc, char *argv[])
                                     XCBXvAttributeInfoName(attribute)),
                                 NULL);
                         the_atom = atom_rep->atom;
-                        
+
                         if (the_atom.xid != 0) {
                             XCBXvGetPortAttributeRep *pattr_rep =
                                 XCBXvGetPortAttributeReply(c,
-                                    XCBXvGetPortAttribute(c, ainfo->base_id, the_atom),
-                                    NULL);
+                                        XCBXvGetPortAttribute(c, ainfo->base_id, the_atom),
+                                        NULL);
                             if (pattr_rep) fprintf(stdout, " (current value is %li)", pattr_rep->value);
                             free(pattr_rep);
                         }
@@ -187,16 +202,16 @@ int main(int argc, char *argv[])
             XCBXvEncodingInfoIter encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
             XCBXvEncodingInfo *encoding;
 
+            int ImageEncodings = 0;
             if (nencode) {
-                int ImageEncodings = 0;
                 int n;
                 for (n = 0; n < nencode; n++) {
                     encoding = encoding_iter.data;
-                    if (!nstrcmp(XCBXvEncodingInfoName(encoding),
-				 XCBXvEncodingInfoNameLength(encoding),
-				 "XV_IMAGE"))
+                    name = ExtractString(XCBXvEncodingInfoName(encoding), XCBXvEncodingInfoNameLength(encoding));
+                    if (!nstrcmp(name, strlen(name), "XV_IMAGE"))
                         ImageEncodings++;
                     XCBXvEncodingInfoNext(&encoding_iter);
+                    free(name);
                 }
 
                 if(nencode - ImageEncodings) {
@@ -206,124 +221,119 @@ int main(int argc, char *argv[])
                     encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
                     for(n = 0; n < nencode; n++) {
                         encoding = encoding_iter.data;
-                        if(nstrcmp(XCBXvEncodingInfoName(encoding),
-				   XCBXvEncodingInfoNameLength(encoding),
-				   "XV_IMAGE")) {
-                            if (j == adaptors_rep->num_adaptors - 1) {
-                                printf("hi\n");
-                            }
+                        name = ExtractString(XCBXvEncodingInfoName(encoding), XCBXvEncodingInfoNameLength(encoding));
+                        if(nstrcmp(name, strlen(name), "XV_IMAGE")) {
                             fprintf(stdout,
-				    "      encoding ID #%li: \"%*s\"\n",
+                                    "      encoding ID #%li: \"%*s\"\n",
                                     encoding->encoding.xid,
-                                    XCBXvEncodingInfoNameLength(encoding),
-                                    XCBXvEncodingInfoName(encoding));
+                                    strlen(name),
+                                    name);
                             fprintf(stdout, "        size: %i x %i\n",
                                     encoding->width,
                                     encoding->height);
                             fprintf(stdout, "        rate: %f\n",
                                     (float)encoding->rate.numerator/
                                     (float)encoding->rate.denominator);
+                            free(name);
                         }
                         XCBXvEncodingInfoNext(&encoding_iter);
                     }
-
-                    if(ImageEncodings && (ainfo->type & XCBXvTypeImageMask)) {
-                        char imageName[5] = {0, 0, 0, 0, 0};
-                        encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
-                        for(n = 0; n < nencode; n++) {
-                            encoding = encoding_iter.data;
-                            if(!nstrcmp(XCBXvEncodingInfoName(encoding),
-					XCBXvEncodingInfoNameLength(encoding),
-					"XV_IMAGE")) {
-                                fprintf(stdout, 
-                                        "    maximum XvImage size: %i x %i\n",	
-                                        encoding->width, encoding->height);
-                                break;
-                            }
-                        }
-                        XCBXvListImageFormatsRep *formats_rep;
-                        formats_rep = XCBXvListImageFormatsReply(c,
-                                XCBXvListImageFormats(c, ainfo->base_id),
-                                NULL);
-
-                        int numImages = formats_rep->num_formats;
-                        XCBXvImageFormatInfo *format;
-                        XCBXvImageFormatInfoIter formats_iter = XCBXvListImageFormatsFormatIter(formats_rep);
-                        fprintf(stdout, "    Number of image formats: %i\n",
-                                numImages);
-
-                        for(n = 0; n < numImages; n++) {
-                            format = formats_iter.data;
-                            memcpy(imageName, &(format->id), 4);
-                            fprintf(stdout, "      id: 0x%lx", format->id);
-                            if(isprint(imageName[0]) && isprint(imageName[1]) &&
-                                    isprint(imageName[2]) && isprint(imageName[3])) 
-                            {
-                                fprintf(stdout, " (%s)\n", imageName);
-                            } else {
-                                fprintf(stdout, "\n");
-                            }
-                            fprintf(stdout, "        guid: ");
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[0]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[1]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[2]);
-                            fprintf(stdout, "%02x-", (unsigned char) 
-                                    format->guid[3]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[4]);
-                            fprintf(stdout, "%02x-", (unsigned char) 
-                                    format->guid[5]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[6]);
-                            fprintf(stdout, "%02x-", (unsigned char) 
-                                    format->guid[7]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[8]);
-                            fprintf(stdout, "%02x-", (unsigned char) 
-                                    format->guid[9]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[10]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[11]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[12]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[13]);
-                            fprintf(stdout, "%02x", (unsigned char) 
-                                    format->guid[14]);
-                            fprintf(stdout, "%02x\n", (unsigned char) 
-                                    format->guid[15]);
-
-                            fprintf(stdout, "        bits per pixel: %i\n",
-                                    format->bpp);
-                            fprintf(stdout, "        number of planes: %i\n",
-                                    format->num_planes);
-                            fprintf(stdout, "        type: %s (%s)\n", 
-                                    (format->type == XCBXvImageFormatInfoTypeRGB) ? "RGB" : "YUV",
-                                    (format->format == XCBXvImageFormatInfoFormatPacked) ? "packed" : "planar");
-
-                            if(format->type == XCBXvImageFormatInfoTypeRGB) {
-                                fprintf(stdout, "        depth: %i\n", 
-                                        format->depth);
-
-                                fprintf(stdout, "        red, green, blue masks: " 
-                                        "0x%lx, 0x%lx, 0x%lx\n", 
-                                        format->red_mask,
-                                        format->green_mask,
-                                        format->blue_mask);
-                            } else {
-
-                            }
-                            XCBXvImageFormatInfoNext(&formats_iter);
-                        }
-                        free(formats_rep);
-                    }
-
                 }
 
+                if(ImageEncodings && (ainfo->type & XCBXvTypeImageMask)) {
+                    char imageName[5] = {0, 0, 0, 0, 0};
+                    encoding_iter = XCBXvQueryEncodingsInfoIter(qencodings_rep);
+                    for(n = 0; n < nencode; n++) {
+                        encoding = encoding_iter.data;
+                        name = ExtractString(XCBXvEncodingInfoName(encoding), XCBXvEncodingInfoNameLength(encoding));
+                        if(!nstrcmp(name, strlen(name), "XV_IMAGE")) {
+                            fprintf(stdout, 
+                                    "    maximum XvImage size: %i x %i\n",	
+                                    encoding->width, encoding->height);
+                            break;
+                        }
+                        free(name);
+                    }
+                    XCBXvListImageFormatsRep *formats_rep;
+                    formats_rep = XCBXvListImageFormatsReply(c,
+                            XCBXvListImageFormats(c, ainfo->base_id),
+                            NULL);
+
+                    int numImages = formats_rep->num_formats;
+                    XCBXvImageFormatInfo *format;
+                    XCBXvImageFormatInfoIter formats_iter = XCBXvListImageFormatsFormatIter(formats_rep);
+                    fprintf(stdout, "    Number of image formats: %i\n",
+                            numImages);
+
+                    for(n = 0; n < numImages; n++) {
+                        format = formats_iter.data;
+                        memcpy(imageName, &(format->id), 4);
+                        fprintf(stdout, "      id: 0x%lx", format->id);
+                        if(isprint(imageName[0]) && isprint(imageName[1]) &&
+                                isprint(imageName[2]) && isprint(imageName[3])) 
+                        {
+                            fprintf(stdout, " (%s)\n", imageName);
+                        } else {
+                            fprintf(stdout, "\n");
+                        }
+                        fprintf(stdout, "        guid: ");
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[0]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[1]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[2]);
+                        fprintf(stdout, "%02x-", (unsigned char) 
+                                format->guid[3]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[4]);
+                        fprintf(stdout, "%02x-", (unsigned char) 
+                                format->guid[5]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[6]);
+                        fprintf(stdout, "%02x-", (unsigned char) 
+                                format->guid[7]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[8]);
+                        fprintf(stdout, "%02x-", (unsigned char) 
+                                format->guid[9]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[10]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[11]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[12]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[13]);
+                        fprintf(stdout, "%02x", (unsigned char) 
+                                format->guid[14]);
+                        fprintf(stdout, "%02x\n", (unsigned char) 
+                                format->guid[15]);
+
+                        fprintf(stdout, "        bits per pixel: %i\n",
+                                format->bpp);
+                        fprintf(stdout, "        number of planes: %i\n",
+                                format->num_planes);
+                        fprintf(stdout, "        type: %s (%s)\n", 
+                                (format->type == XCBXvImageFormatInfoTypeRGB) ? "RGB" : "YUV",
+                                (format->format == XCBXvImageFormatInfoFormatPacked) ? "packed" : "planar");
+
+                        if(format->type == XCBXvImageFormatInfoTypeRGB) {
+                            fprintf(stdout, "        depth: %i\n", 
+                                    format->depth);
+
+                            fprintf(stdout, "        red, green, blue masks: " 
+                                    "0x%lx, 0x%lx, 0x%lx\n", 
+                                    format->red_mask,
+                                    format->green_mask,
+                                    format->blue_mask);
+                        } else {
+
+                        }
+                        XCBXvImageFormatInfoNext(&formats_iter);
+                    }
+                    free(formats_rep);
+                }
             }
             free(qencodings_rep);
             XCBXvAdaptorInfoNext(&adaptors_iter);
