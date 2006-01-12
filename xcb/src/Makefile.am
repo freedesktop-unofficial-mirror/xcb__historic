@@ -15,7 +15,10 @@ EXTHEADERS = \
 		extensions/xc_misc.h \
 		extensions/xevie.h \
 		extensions/xf86dri.h \
-		extensions/xfixes.h
+		extensions/xfixes.h \
+		extensions/xprint.h \
+		extensions/xv.h \
+		extensions/xvmc.h
 EXTSOURCES = \
 		extensions/bigreq.c \
 		extensions/composite.c \
@@ -31,7 +34,10 @@ EXTSOURCES = \
 		extensions/xc_misc.c \
 		extensions/xevie.c \
 		extensions/xf86dri.c \
-		extensions/xfixes.c
+		extensions/xfixes.c \
+		extensions/xprint.c \
+		extensions/xv.c \
+		extensions/xvmc.c
 EXTENSIONS = $(EXTSOURCES) $(EXTHEADERS)
 
 COREHEADERS = xproto.h xcb_types.h
