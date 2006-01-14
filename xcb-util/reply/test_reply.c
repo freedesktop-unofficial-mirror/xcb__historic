@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 {
 	int count = 10;
 	char *pattern = "*";
-	XCBConnection *c = XCBConnectBasic();
+	XCBConnection *c = XCBConnect(NULL, NULL);
 	ReplyHandlers *h = allocReplyHandlers(c);
 	pthread_t reply_thread;
 
