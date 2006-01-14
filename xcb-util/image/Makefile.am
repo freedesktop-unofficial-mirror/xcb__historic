@@ -6,8 +6,8 @@ lib_LTLIBRARIES = libXCBImage.la
 xcbinclude_HEADERS = xcb_image.h
 
 AM_CFLAGS = -Wall
-INCLUDES = $(XCB_CFLAGS)
-LDADD = $(XCB_LIBS)
+INCLUDES = $(XCB_CFLAGS) -I../convenient
+LDADD = $(XCB_LIBS) -L../convenient -lXCBAux
 
 libXCBImage_la_SOURCES = xcb_image.c
 

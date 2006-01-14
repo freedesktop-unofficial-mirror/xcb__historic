@@ -7,6 +7,7 @@
 #include <X11/XCB/shm.h>
 #include <X11/Xlib.h>
 
+#include "xcb_aux.h"
 #include "xcb_image.h"
 
 #define W_W 4
@@ -107,29 +108,6 @@ reflect_window (XCBConnection *c,
 }
 
 int
-get_depth(XCBConnection   *c,
-	  XCBSCREEN       *root)
-{
-  XCBDRAWABLE drawable = { root->root };
-  XCBGetGeometryRep *geom;
-  geom = XCBGetGeometryReply(c, XCBGetGeometry(c, drawable), 0);
-  int depth;
-
-  if(!geom)
-    {
-      perror("GetGeometry(root) failed");
-      exit (0);
-    }
-  
-  depth = geom->depth;
-  fprintf(stderr, "Root 0x%lx: %dx%dx%d\n",
-	  root->root.xid, geom->width, geom->height, geom->depth);
-  free(geom);
-
-  return depth;
-}
-
-int
 main (int argc, char *argv[])
 {
   XCBConnection   *c;
@@ -144,12 +122,13 @@ main (int argc, char *argv[])
   CARD32           valgc[2];
   CARD32           valwin[3];
   int              depth;
+  int              screen_nbr;
   XCBGenericEvent *e;
   
   /* Open the connexion to the X server and get the first screen */
-  c = XCBConnectBasic ();
-  screen = XCBConnSetupSuccessRepRootsIter (XCBGetSetup (c)).data;
-  depth = get_depth (c, screen);
+  c = XCBConnect (NULL, &screen_nbr);
+  screen = XCBAuxGetScreen (c, screen_nbr);
+  depth = XCBAuxGetDepth (c, screen);
 
   /* Create a black graphic context for drawing in the foreground */
   win.window = screen->root;
@@ -230,7 +209,7 @@ main (int argc, char *argv[])
 
   XCBSync (c, 0); 
 
-  while ((e = XCBWaitEvent(c)))
+  while ((e = XCBWaitForEvent(c)))
     {
       switch (e->response_type)
 	{ 
