@@ -64,7 +64,7 @@ static int handleEvent(EventHandlers *evenths, XCBGenericEvent *event)
 void eventLoop(EventHandlers *evenths)
 {
 	XCBGenericEvent *event;
-	while((event = XCBWaitEvent(evenths->c)))
+	while((event = XCBWaitForEvent(evenths->c)))
 	{
 		handleEvent(evenths, event);
 		free(event);
