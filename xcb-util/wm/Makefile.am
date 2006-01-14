@@ -6,8 +6,9 @@ lib_LTLIBRARIES = libXCBWM.la
 xcbinclude_HEADERS = xcb_wm.h
 
 AM_CFLAGS = -Wall
-INCLUDES = $(XCB_CFLAGS) -I../atom -I../event -I../property -I../icccm
+INCLUDES = $(XCB_CFLAGS) -I../convenient -I../atom -I../event -I../property -I../icccm
 LDADD = $(XCB_LIBS) \
+	-L../convenient -lXCBAux \
 	-L../atom -lXCBAtom \
 	-L../event -lXCBEvent \
 	-L../property -lXCBProperty \

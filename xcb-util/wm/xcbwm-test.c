@@ -5,8 +5,8 @@
 #include <assert.h>
 
 #include <X11/XCB/xcb.h>
-#include <X11/XCB/xcbint.h>
 #include "reply_formats.h"
+#include "xcb_aux.h"
 #include "xcb_event.h"
 #include "xcb_atom.h"
 #include "xcb_icccm.h"
@@ -180,12 +180,13 @@ int main(int argc, char **argv)
 	PropertyHandlers *prophs;
 	XCBWINDOW root;
 	pthread_t event_thread;
+        int screen_nbr;
 	int i;
 
 	byChild = AllocTable();
 	byParent = AllocTable();
 
-	c = XCBConnectBasic();
+	c = XCBConnect(NULL, &screen_nbr);
 
 	evenths = allocEventHandlers(c);
 
@@ -207,7 +208,7 @@ int main(int argc, char **argv)
 		pthread_create(&event_thread, 0, (void *(*)(void *))eventLoop, evenths);
 	}
 
-	root = XCBConnSetupSuccessRepRootsIter(XCBGetSetup(c)).data->root;
+	root = XCBAuxGetScreen(c, screen_nbr)->root;
 
 	{
 		CARD32 mask = XCBCWEventMask;
