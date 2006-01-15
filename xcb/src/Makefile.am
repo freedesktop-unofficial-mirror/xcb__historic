@@ -10,6 +10,7 @@ EXTHEADERS = \
 		extensions/randr.h \
 		extensions/record.h \
 		extensions/render.h \
+		extensions/res.h \
 		extensions/dpms.h \
 		extensions/sync.h \
 		extensions/xc_misc.h \
@@ -29,6 +30,7 @@ EXTSOURCES = \
 		extensions/randr.c \
 		extensions/record.c \
 		extensions/render.c \
+		extensions/res.c \
 		extensions/dpms.c \
 		extensions/sync.c \
 		extensions/xc_misc.c \
