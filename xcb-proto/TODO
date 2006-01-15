@@ -1,0 +1,30 @@
+Last Updated: 01/15/06
+
+Extension Status:
+
+X - Present, tested, works.
+U - Present, untested.
+I - Incomplete.
+
+X BIG-REQESTS
+X COMPOSITE
+X DAMAGE
+X DPMS
+X GLX
+X MIT-SCREEN-SAVER
+X MIT-SHM
+X RANDR
+X RECORD
+X RENDER
+X SHAPE
+X SYNC
+X X-Resource
+X XC-MISC
+X XEVIE
+X XFIXES
+U XFree86-DRI
+I XpExtension (XPrint)
+X XVideo
+U XVideo-MotionCompensation
+
+
