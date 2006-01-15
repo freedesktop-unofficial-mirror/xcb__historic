@@ -9,6 +9,7 @@ nobase_xcbinclude_HEADERS = xcb.xsd                  \
                             extensions/randr.xml     \
                             extensions/record.xml    \
                             extensions/render.xml    \
+			    extensions/res.xml       \
                             extensions/shape.xml     \
                             extensions/shm.xml       \
                             extensions/sync.xml      \
