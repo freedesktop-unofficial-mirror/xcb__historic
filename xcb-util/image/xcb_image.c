@@ -305,13 +305,12 @@ XCBImagePut (XCBConnection *conn,
   else
     {
       XCBFORMATIter iter;
-      int           cur;
       
       dest_bits_per_pixel = image->bits_per_pixel;
       dest_scanline_pad = image->bitmap_format_scanline_pad;
       left_pad = 0;
       iter =  XCBConnSetupSuccessRepPixmapFormatsIter (XCBGetSetup (conn));
-      for (cur = 0 ; cur < iter.rem ; cur++, XCBFORMATNext (&iter))
+      for (; iter.rem ; XCBFORMATNext (&iter))
 	if (iter.data->depth == image->depth)
 	  {
 	    dest_bits_per_pixel = iter.data->bits_per_pixel;
