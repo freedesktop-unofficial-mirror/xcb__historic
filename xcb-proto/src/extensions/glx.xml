@@ -26,6 +26,24 @@ sale, use or other dealings in this Software without prior written
 authorization from the authors.
 -->
 
+<!--
+Note that on X.org servers before 6.9 (and probably others as well) the length
+field in the reply is computed incorrectly for GetFBConfigs and
+VendorPrivateWithReply vendor_code 0x10004 (GetFBConfigsSGIX). For these
+requests the reply structure begins:
+	<pad bytes="1" />
+	<field type="CARD32" name="numVisuals" />
+	<field type="CARD32" name="numProps" />
+The correct value for the length field is
+	numVisuals * numProps * 2
+but on broken servers the "* 2" was missing. A workaround that is correct for
+all implementations is to rewrite the length field on receipt on the client
+side, using the expression above.
+
+The patch that fixed this server bug in X.org CVS is here:
+	http://cvs.freedesktop.org/xorg/xserver/xorg/GL/glx/glxcmds.c?r1=1.6&r2=1.7
+-->
+
 <xcb header="glx" extension-xname="GLX" extension-name="Glx">
 	<!-- target support: 1.3 -->
 
