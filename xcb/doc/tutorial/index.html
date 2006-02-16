@@ -3433,7 +3433,7 @@ if (screen)
   {
     XCBDEPTHIter depth_iter;
 
-    depth_iter = XCBSCREENAllowedDepthsIter (screen_iter.data);
+    depth_iter = XCBSCREENAllowedDepthsIter (screen);
     for (; depth_iter.rem; XCBDEPTHNext (&depth_iter))
       {
         XCBVISUALTYPEIter visual_iter;
